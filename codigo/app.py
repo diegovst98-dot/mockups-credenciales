@@ -36,7 +36,7 @@ class App:
         f_boton = tkfont.Font(family="Segoe UI", size=13, weight="bold")
 
         tk.Label(raiz, text="Mockups de fotochecks", font=f_titulo, bg=FONDO, fg=GRIS).pack(pady=(28, 2))
-        tk.Label(raiz, text="Logo del cliente  →  3 propuestas listas para WhatsApp",
+        tk.Label(raiz, text="Logo del cliente  →  9 propuestas listas para WhatsApp",
                  font=f_normal, bg=FONDO, fg="#777").pack(pady=(0, 20))
 
         marco = tk.Frame(raiz, bg=FONDO)
@@ -82,7 +82,7 @@ class App:
             messagebox.showwarning("Falta el nombre", "Escribe el nombre de la empresa cliente.")
             return
         self.boton_generar.config(state="disabled", text="Generando…")
-        self.estado.config(text="Creando los 3 estilos, dame unos segundos…")
+        self.estado.config(text="Creando los 9 estilos, dame unos segundos…")
         threading.Thread(target=self._trabajo, args=(cliente,), daemon=True).start()
 
     def _trabajo(self, cliente):

@@ -1,5 +1,19 @@
 # Mockups de credenciales DISECOD — Spec de diseño (v1 + v2 visual)
 
+> **v7 — Loop 3-roles de 3 horas (2026-06-12 noche): 5 → 9 plantillas.**
+> Diseñador/dev/curador iterando sobre 8 logos (Unilever, Añay, GV, Interbank, Frutos
+> del Norte, negro, blanco, ACME). Nuevos: **Ejecutivo** (marfil minimal, refs S.
+> Abogados/NGR), **Pase de visita** (patrón Niubiz ⭐, sin foto, N° de pase — upsell),
+> **Clásico** (banda superior, el patrón más pedido), **Retrato** (foto a sangre mitad
+> superior, ref La Esquina), **Nocturno** (vertical oscuro, aro de marca, QR — cubre
+> el hueco "oscuro vertical"). Mejorados: reverso E1/E5 con eco real del gesto frontal
+> + QR; E5 con nombre sans en dos pesos y pleca de marca (ya no calca al corporativo);
+> E4 con fila EMPRESA/DNI (aire al pie). **Desplazado: Corporativo de banda lateral**
+> (redundante con Clásico/Moderno; regla del tope de 9). Numeración final = orden de
+> `ESTILOS`: 1 Clásico · 2 Full color · 3 Premium · 4 Institucional · 5 Moderno ·
+> 6 Ejecutivo · 7 Retrato · 8 Nocturno · 9 Pase de visita. Puntajes del jurado:
+> todos ≥9.1 (Premium 9.4, Nocturno/E4/E7-pase 9.2). Herramienta: `render_pruebas.py`.
+
 > **v6 — Loop de calidad 3-roles (2026-06-12 PM):** ciclo DISEÑADOR→AJUSTADOR→INSPECTOR
 > hasta superar 9/10 en ambos jurados (2 ciclos). Cambios: estilo 2 sin franja blanca curva
 > (color pleno de borde a borde, datos en blanco — pedido de Diego); foto+DNI centrados

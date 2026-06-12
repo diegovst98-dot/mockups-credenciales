@@ -644,55 +644,6 @@ def campo(d, xy, etiqueta, valor, color_etq, color_val, centrado=False, tam_valo
 GRIS_ETIQUETA = (152, 154, 160)
 
 
-def estilo1_frontal(logo, pal, cliente):
-    """Corporativo: banda lateral sólida con la foto, área blanca con grilla limpia."""
-    prim, sec, oro = pal
-    prim_txt = marca_legible(prim)
-    banda_txt = texto_sobre(prim)
-    t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
-    d = ImageDraw.Draw(t)
-    BANDA = 332
-    d.rectangle([0, 0, BANDA, CARD_H], fill=tuple(prim[:3]))
-    d.rectangle([BANDA, 0, BANDA + 2, CARD_H], fill=tuple(oro[:3]))
-    # foto protagonista en la banda, sin marcos
-    t.alpha_composite(foto_redondeada(250, 314, 14), ((BANDA - 250) // 2, 88))
-    texto_tracking(d, (BANDA // 2, 444), "DNI", fuente("semibold", 19),
-                   mezcla(banda_txt, prim, 0.4), tracking=5, centrado=True)
-    d.text((BANDA // 2, 474), DATOS["id"].split()[-1], font=fuente("semibold", 31), fill=banda_txt, anchor="ma")
-    # área blanca: logo flotante, nombre y campos
-    pegar_logo(t, logo, (396, 56, 340, 96), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
-    d.text((396, 218), DATOS["nombre"], font=fuente("display-bold", 56), fill=TINTA)
-    d.line([398, 310, 558, 310], fill=tuple(oro[:3]), width=2)
-    campo(d, (398, 358), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA)
-    campo(d, (398, 466), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt)
-    t.putalpha(mascara_redondeada(CARD_W, CARD_H))
-    return t
-
-
-def estilo1_reverso(logo, pal, cliente):
-    """Reverso corporativo: banda lateral eco del frontal cargando el QR,
-    área blanca con normas y contacto en la misma grilla del frontal."""
-    prim, sec, oro = pal
-    prim_txt = marca_legible(prim)
-    banda_txt = texto_sobre(prim)
-    t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
-    d = ImageDraw.Draw(t)
-    BANDA = 332
-    d.rectangle([0, 0, BANDA, CARD_H], fill=tuple(prim[:3]))
-    d.rectangle([BANDA, 0, BANDA + 2, CARD_H], fill=tuple(oro[:3]))
-    placa = placa_qr(cliente, 176)
-    t.alpha_composite(placa, ((BANDA - placa.width) // 2, 172))
-    d.text((BANDA // 2, 426), "Escanee para validar", font=fuente("semibold", 23), fill=banda_txt, anchor="ma")
-    pegar_logo(t, logo, (396, 64, 340, 92), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
-    d.text((396, 224), "Esta credencial es personal", font=fuente("semibold", 28), fill=TINTA)
-    d.text((396, 264), "e intransferible.", font=fuente("semibold", 28), fill=TINTA)
-    d.line([398, 348, 558, 348], fill=tuple(oro[:3]), width=2)
-    campo(d, (398, 396), "SITIO WEB", "www.suempresa.com", GRIS_ETIQUETA, TINTA, tam_valor=27)
-    campo(d, (398, 496), "CENTRAL", "(01) 000 0000", GRIS_ETIQUETA, TINTA, tam_valor=27)
-    t.putalpha(mascara_redondeada(CARD_W, CARD_H))
-    return t
-
-
 def estilo2_frontal(logo, pal, cliente):
     """Full color: color de marca pleno, logo en silueta blanca, panel blanco curvo al pie."""
     prim, sec, oro = pal
@@ -799,11 +750,11 @@ def estilo4_frontal(logo, pal, cliente):
     # foto circular solapando el arco, un solo aro blanco
     t.alpha_composite(aro(296, (255, 255, 255), 10), ((V_W - 296) // 2, 256))
     t.alpha_composite(foto_circular(272), ((V_W - 272) // 2, 268))
-    d.text((V_W // 2, 618), DATOS["nombre"], font=fuente("display-bold", 48), fill=TINTA, anchor="ma")
-    d.text((V_W // 2, 692), DATOS["cargo"], font=fuente("regular", 30), fill=(110, 113, 120), anchor="ma")
-    d.line([V_W // 2 - 60, 752, V_W // 2 + 60, 752], fill=tuple(oro[:3]), width=2)
-    campo(d, (V_W // 2, 796), "EMPRESA", cliente, GRIS_ETIQUETA, marca_legible(prim), centrado=True)
-    campo(d, (V_W // 2, 892), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, centrado=True)
+    d.text((V_W // 2, 630), DATOS["nombre"], font=fuente("display-bold", 48), fill=TINTA, anchor="ma")
+    d.text((V_W // 2, 706), DATOS["cargo"], font=fuente("regular", 30), fill=(110, 113, 120), anchor="ma")
+    d.line([V_W // 2 - 60, 768, V_W // 2 + 60, 768], fill=tuple(oro[:3]), width=2)
+    campo(d, (192, 820), "EMPRESA", cliente, GRIS_ETIQUETA, marca_legible(prim), centrado=True, tam_valor=28)
+    campo(d, (462, 820), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, centrado=True, tam_valor=28)
     d.rectangle([0, V_H - 14, V_W, V_H], fill=tuple(prim[:3]))
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
@@ -1057,16 +1008,63 @@ def estilo9_reverso(logo, pal, cliente):
     return t
 
 
+def estilo10_frontal(logo, pal, cliente):
+    """Nocturno: vertical oscuro, aro de la foto en color de marca,
+    fila de campos y filo de marca al pie (refs UCV / China Polo verticales)."""
+    prim, sec, oro = pal
+    fondo = mezcla((30, 30, 34), prim, 0.10)
+    acento = ajustar(prim, 1.45) if saturacion(prim) > 0.12 else ORO
+    tinte_claro = ajustar(prim, 1.75) if saturacion(prim) > 0.12 else ORO_CLARO
+    t = Image.new("RGBA", (V_W, V_H), tuple(fondo[:3]) + (255,))
+    d = ImageDraw.Draw(t)
+    pegar_logo(t, logo, ((V_W - 320) // 2, 76, 320, 110), fondo_claro=False, tinte=tinte_claro)
+    t.alpha_composite(aro(300, acento, 5), ((V_W - 300) // 2, 264))
+    t.alpha_composite(foto_circular(282), ((V_W - 282) // 2, 273))
+    d.text((V_W // 2, 642), DATOS["nombre"], font=fuente("display-bold", 50), fill=(246, 245, 242), anchor="ma")
+    d.text((V_W // 2, 718), DATOS["cargo"], font=fuente("regular", 29), fill=(170, 172, 180), anchor="ma")
+    d.line([V_W // 2 - 60, 780, V_W // 2 + 60, 780], fill=tuple(oro[:3]), width=2)
+    campo(d, (192, 830), "EMPRESA", cliente, (140, 142, 150), tinte_claro, centrado=True, tam_valor=28)
+    campo(d, (462, 830), "DNI", DATOS["id"].split()[-1], (140, 142, 150), (228, 228, 232), centrado=True, tam_valor=28)
+    d.rectangle([0, V_H - 10, V_W, V_H], fill=tuple(acento[:3]))
+    t.putalpha(mascara_redondeada(V_W, V_H))
+    return t
+
+
+def estilo10_reverso(logo, pal, cliente):
+    """Reverso nocturno: logo arriba, QR sobre placa y contacto en claro."""
+    prim, sec, oro = pal
+    fondo = mezcla((30, 30, 34), prim, 0.10)
+    acento = ajustar(prim, 1.45) if saturacion(prim) > 0.12 else ORO
+    tinte_claro = ajustar(prim, 1.75) if saturacion(prim) > 0.12 else ORO_CLARO
+    t = Image.new("RGBA", (V_W, V_H), tuple(fondo[:3]) + (255,))
+    d = ImageDraw.Draw(t)
+    pegar_logo(t, logo, ((V_W - 300) // 2, 96, 300, 104), fondo_claro=False, tinte=tinte_claro)
+    d.line([V_W // 2 - 60, 286, V_W // 2 + 60, 286], fill=tuple(oro[:3]), width=2)
+    t.alpha_composite(placa_qr(cliente + "-r", 196), ((V_W - 240) // 2, 360))
+    d.text((V_W // 2, 668), "Escanee para validar la credencial",
+           font=fuente("semibold", 26), fill=(228, 228, 232), anchor="ma")
+    d.text((V_W // 2, 714), "www.suempresa.com", font=fuente("semibold", 25), fill=tinte_claro, anchor="ma")
+    d.text((V_W // 2, 850), "Esta credencial es personal e intransferible.",
+           font=fuente("regular", 23), fill=(150, 152, 160), anchor="ma")
+    d.rectangle([0, V_H - 10, V_W, V_H], fill=tuple(acento[:3]))
+    t.putalpha(mascara_redondeada(V_W, V_H))
+    return t
+
+
+# Los números de cara al vendedor/cliente salen del ORDEN de esta lista
+# (el nombre interno de las funciones es histórico). Tope del sistema: 9 plantillas;
+# una idea nueva entra solo si desplaza a la de menor puntuación (loop 2026-06-12:
+# Nocturno desplazó al Corporativo de banda lateral, cubierto por el Clásico).
 ESTILOS = [
-    ("Estilo 1 — Corporativo", estilo1_frontal, estilo1_reverso),
+    ("Estilo 1 — Clásico", estilo8_frontal, estilo8_reverso),
     ("Estilo 2 — Full color", estilo2_frontal, estilo2_reverso),
     ("Estilo 3 — Premium", estilo3_frontal, estilo3_reverso),
     ("Estilo 4 — Institucional", estilo4_frontal, estilo4_reverso),
     ("Estilo 5 — Moderno", estilo5_frontal, estilo5_reverso),
     ("Estilo 6 — Ejecutivo", estilo6_frontal, estilo6_reverso),
-    ("Estilo 7 — Pase de visita", estilo7_frontal, estilo7_reverso),
-    ("Estilo 8 — Clásico", estilo8_frontal, estilo8_reverso),
-    ("Estilo 9 — Retrato", estilo9_frontal, estilo9_reverso),
+    ("Estilo 7 — Retrato", estilo9_frontal, estilo9_reverso),
+    ("Estilo 8 — Nocturno", estilo10_frontal, estilo10_reverso),
+    ("Estilo 9 — Pase de visita", estilo7_frontal, estilo7_reverso),
 ]
 
 
