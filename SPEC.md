@@ -1,5 +1,12 @@
 # Mockups de credenciales DISECOD — Spec de diseño (v1 + v2 visual)
 
+> **v6 — Loop de calidad 3-roles (2026-06-12 PM):** ciclo DISEÑADOR→AJUSTADOR→INSPECTOR
+> hasta superar 9/10 en ambos jurados (2 ciclos). Cambios: estilo 2 sin franja blanca curva
+> (color pleno de borde a borde, datos en blanco — pedido de Diego); foto+DNI centrados
+> ópticamente en banda (E1) y panel diagonal (E5) con foto más protagonista; DNI del premium
+> como campo ETIQUETA/valor centrado bajo la foto (consistencia del sistema); logo del
+> institucional +6%. Puntajes finales: E1 9.3 · E2 9.2 · E3 9.4-9.5 · E4 9.2 · E5 9.1-9.2.
+
 > **v5 — Rediseño de dirección de arte (2026-06-12, "no me gustan para nada" de Diego):**
 > las 5 plantillas se reescribieron bajo reglas estrictas de diseño: UN gesto gráfico por
 > tarjeta + blanco generoso; estructura tipográfica de credencial (helper `campo()`:

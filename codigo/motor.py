@@ -654,17 +654,17 @@ def estilo1_frontal(logo, pal, cliente):
     BANDA = 332
     d.rectangle([0, 0, BANDA, CARD_H], fill=tuple(prim[:3]))
     d.rectangle([BANDA, 0, BANDA + 2, CARD_H], fill=tuple(oro[:3]))
-    # foto flotando en la banda, sin marcos
-    t.alpha_composite(foto_redondeada(232, 292, 14), ((BANDA - 232) // 2, 72))
-    texto_tracking(d, (BANDA // 2, 412), "DNI", fuente("semibold", 19),
+    # foto protagonista en la banda, sin marcos
+    t.alpha_composite(foto_redondeada(250, 314, 14), ((BANDA - 250) // 2, 88))
+    texto_tracking(d, (BANDA // 2, 444), "DNI", fuente("semibold", 19),
                    mezcla(banda_txt, prim, 0.4), tracking=5, centrado=True)
-    d.text((BANDA // 2, 442), DATOS["id"].split()[-1], font=fuente("semibold", 31), fill=banda_txt, anchor="ma")
+    d.text((BANDA // 2, 474), DATOS["id"].split()[-1], font=fuente("semibold", 31), fill=banda_txt, anchor="ma")
     # área blanca: logo flotante, nombre y campos
     pegar_logo(t, logo, (396, 56, 340, 96), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
-    d.text((396, 206), DATOS["nombre"], font=fuente("display-bold", 56), fill=TINTA)
-    d.line([398, 298, 558, 298], fill=tuple(oro[:3]), width=2)
-    campo(d, (398, 344), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA)
-    campo(d, (398, 452), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt)
+    d.text((396, 218), DATOS["nombre"], font=fuente("display-bold", 56), fill=TINTA)
+    d.line([398, 310, 558, 310], fill=tuple(oro[:3]), width=2)
+    campo(d, (398, 358), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA)
+    campo(d, (398, 466), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
@@ -691,22 +691,21 @@ def estilo2_frontal(logo, pal, cliente):
     prim, sec, oro = pal
     claro = luminancia(prim) >= 0.45
     col_txt = (255, 255, 255) if not claro else TINTA
+    col_suave = mezcla(col_txt, prim, 0.30)
     t = gradiente_vertical(V_W, V_H, ajustar(prim, 1.04), ajustar(prim, 0.86)).convert("RGBA")
     d = ImageDraw.Draw(t)
     # logo en silueta (blanca sobre oscuro / tinta sobre claro), flotando
     pieza = logo_tenido(logo, 320, 112, (255, 255, 255) if not claro else marca_legible(prim))
-    t.alpha_composite(pieza, ((V_W - pieza.width) // 2, 54 + (112 - pieza.height) // 2))
+    t.alpha_composite(pieza, ((V_W - pieza.width) // 2, 56 + (112 - pieza.height) // 2))
     # foto circular con un solo aro blanco
-    t.alpha_composite(aro(306, (255, 255, 255), 8), ((V_W - 306) // 2, 232))
-    t.alpha_composite(foto_circular(286), ((V_W - 286) // 2, 242))
-    d.text((V_W // 2, 606), DATOS["nombre"], font=fuente("display-bold", 52), fill=col_txt, anchor="ma")
-    d.text((V_W // 2, 686), DATOS["cargo"], font=fuente("regular", 30),
-           fill=mezcla(col_txt, prim, 0.18), anchor="ma")
-    d.line([V_W // 2 - 60, 748, V_W // 2 + 60, 748], fill=tuple(oro[:3]), width=2)
-    # panel blanco curvo con los datos
-    t.alpha_composite(capa_onda(V_W, V_H, (255, 255, 255), 255, 812, 18, 1.1, 0.3))
-    campo(d, (V_W // 2, 856), "EMPRESA", cliente, GRIS_ETIQUETA, marca_legible(prim), centrado=True)
-    d.text((V_W // 2, 944), DATOS["id"], font=fuente("semibold", 24), fill=GRIS_ETIQUETA, anchor="ma")
+    t.alpha_composite(aro(310, (255, 255, 255), 8), ((V_W - 310) // 2, 238))
+    t.alpha_composite(foto_circular(290), ((V_W - 290) // 2, 248))
+    # color pleno de borde a borde: los datos van en blanco sobre el color
+    d.text((V_W // 2, 618), DATOS["nombre"], font=fuente("display-bold", 52), fill=col_txt, anchor="ma")
+    d.text((V_W // 2, 698), DATOS["cargo"], font=fuente("regular", 30), fill=col_suave, anchor="ma")
+    d.line([V_W // 2 - 60, 762, V_W // 2 + 60, 762], fill=tuple(oro[:3]), width=2)
+    campo(d, (V_W // 2, 806), "EMPRESA", cliente, col_suave, col_txt, centrado=True)
+    campo(d, (V_W // 2, 902), "DNI", DATOS["id"].split()[-1], col_suave, col_txt, centrado=True, tam_valor=28)
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
@@ -744,10 +743,11 @@ def estilo3_frontal(logo, pal, cliente):
     d.line([78, 290, 238, 290], fill=tuple(oro[:3]) + (255,), width=2)
     campo(d, (78, 338), "CARGO", DATOS["cargo"], (140, 142, 150), (228, 228, 232))
     campo(d, (78, 446), "EMPRESA", cliente, (140, 142, 150), ORO_CLARO)
-    d.text((78, 548), DATOS["id"], font=fuente("regular", 24), fill=(130, 132, 140))
-    # foto circular con un solo aro dorado fino
+    # foto circular con un solo aro dorado fino + DNI centrado debajo
     t.alpha_composite(aro(296, oro, 3), (646, 172))
     t.alpha_composite(foto_circular(280), (654, 180))
+    campo(d, (794, 500), "DNI", DATOS["id"].split()[-1], (140, 142, 150), (228, 228, 232),
+          centrado=True, tam_valor=28)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
@@ -787,8 +787,8 @@ def estilo4_frontal(logo, pal, cliente):
     caja_arco = _cabecera_arco(t, prim, 270, 440)
     d = ImageDraw.Draw(t)
     d.arc(caja_arco, 8, 172, fill=tuple(oro[:3]), width=3)
-    pieza = logo_tenido(logo, 320, 116, (255, 255, 255) if not claro else marca_legible(prim))
-    t.alpha_composite(pieza, ((V_W - pieza.width) // 2, 52 + (116 - pieza.height) // 2))
+    pieza = logo_tenido(logo, 340, 124, (255, 255, 255) if not claro else marca_legible(prim))
+    t.alpha_composite(pieza, ((V_W - pieza.width) // 2, 46 + (124 - pieza.height) // 2))
     # foto circular solapando el arco, un solo aro blanco
     t.alpha_composite(aro(296, (255, 255, 255), 10), ((V_W - 296) // 2, 256))
     t.alpha_composite(foto_circular(272), ((V_W - 272) // 2, 268))
@@ -830,18 +830,18 @@ def estilo5_frontal(logo, pal, cliente):
     d = ImageDraw.Draw(t)
     d.polygon([(704, 0), (CARD_W, 0), (CARD_W, CARD_H), (584, CARD_H)], fill=tuple(prim[:3]))
     d.line([704, 0, 584, CARD_H], fill=tuple(oro[:3]), width=3)
-    # foto en el panel diagonal
+    # foto protagonista en el panel diagonal
     banda_txt = texto_sobre(prim)
-    t.alpha_composite(foto_redondeada(232, 292, 14), (712, 72))
-    texto_tracking(d, (828, 412), "DNI", fuente("semibold", 19),
+    t.alpha_composite(foto_redondeada(252, 316, 14), (706, 88))
+    texto_tracking(d, (832, 446), "DNI", fuente("semibold", 19),
                    mezcla(banda_txt, prim, 0.4), tracking=5, centrado=True)
-    d.text((828, 442), DATOS["id"].split()[-1], font=fuente("semibold", 31), fill=banda_txt, anchor="ma")
+    d.text((832, 476), DATOS["id"].split()[-1], font=fuente("semibold", 31), fill=banda_txt, anchor="ma")
     # área blanca
     pegar_logo(t, logo, (64, 56, 340, 96), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
-    d.text((64, 206), DATOS["nombre"], font=fuente("display-bold", 52), fill=TINTA)
-    d.line([66, 292, 226, 292], fill=tuple(oro[:3]), width=2)
-    campo(d, (66, 340), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA)
-    campo(d, (66, 448), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt)
+    d.text((64, 214), DATOS["nombre"], font=fuente("display-bold", 52), fill=TINTA)
+    d.line([66, 300, 226, 300], fill=tuple(oro[:3]), width=2)
+    campo(d, (66, 348), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA)
+    campo(d, (66, 456), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
