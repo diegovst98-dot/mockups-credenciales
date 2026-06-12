@@ -644,6 +644,13 @@ def campo(d, xy, etiqueta, valor, color_etq, color_val, centrado=False, tam_valo
 GRIS_ETIQUETA = (152, 154, 160)
 
 
+def web_cliente(cliente):
+    """Dominio ficticio pero personalizado con el nombre del cliente:
+    'www.unileverandina.pe' vende la ilusión; 'www.suempresa.com' la mata."""
+    base = re.sub(r"[^a-z0-9]", "", slug(cliente).lower())[:22] or "suempresa"
+    return f"www.{base}.pe"
+
+
 def estilo2_frontal(logo, pal, cliente):
     """Full color: color de marca pleno, logo en silueta blanca, panel blanco curvo al pie."""
     prim, sec, oro = pal
@@ -682,7 +689,7 @@ def estilo2_reverso(logo, pal, cliente):
                      align="center", spacing=14)
     d.line([V_W // 2 - 60, 596, V_W // 2 + 60, 596], fill=tuple(oro[:3]), width=2)
     t.alpha_composite(placa_qr(cliente + "-r", 192), ((V_W - 236) // 2, 648))
-    d.text((V_W // 2, 922), "www.suempresa.com", font=fuente("semibold", 26), fill=(248, 247, 244), anchor="ma")
+    d.text((V_W // 2, 922), web_cliente(cliente), font=fuente("semibold", 26), fill=(248, 247, 244), anchor="ma")
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
@@ -701,11 +708,10 @@ def estilo3_frontal(logo, pal, cliente):
     d.line([78, 290, 238, 290], fill=tuple(oro[:3]) + (255,), width=2)
     campo(d, (78, 338), "CARGO", DATOS["cargo"], (140, 142, 150), (228, 228, 232))
     campo(d, (78, 446), "EMPRESA", cliente, (140, 142, 150), ORO_CLARO)
-    # foto circular con un solo aro dorado fino + DNI centrado debajo
-    t.alpha_composite(aro(296, oro, 3), (646, 172))
+    campo(d, (380, 446), "DNI", DATOS["id"].split()[-1], (140, 142, 150), (228, 228, 232))
+    # foto circular con aro neutro fino: el oro vive SOLO en el marco perimetral
+    t.alpha_composite(aro(296, (206, 208, 214), 3), (646, 172))
     t.alpha_composite(foto_circular(280), (654, 180))
-    campo(d, (794, 500), "DNI", DATOS["id"].split()[-1], (140, 142, 150), (228, 228, 232),
-          centrado=True, tam_valor=28)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
@@ -722,7 +728,9 @@ def estilo3_reverso(logo, pal, cliente):
     d.line([CARD_W // 2 - 60, 310, CARD_W // 2 + 60, 310], fill=tuple(oro[:3]) + (255,), width=2)
     d.text((CARD_W // 2, 348), "Esta credencial es personal e intransferible.",
            font=fuente("regular", 26), fill=(178, 180, 188), anchor="ma")
-    d.text((CARD_W // 2, 404), "www.suempresa.com", font=fuente("semibold", 28), fill=ORO_CLARO, anchor="ma")
+    d.text((CARD_W // 2, 404), web_cliente(cliente), font=fuente("semibold", 28), fill=ORO_CLARO, anchor="ma")
+    campo(d, (CARD_W // 2, 478), "VIGENCIA", "2026 — 2027", (140, 142, 150), (228, 228, 232),
+          centrado=True, tam_valor=27)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
@@ -772,7 +780,7 @@ def estilo4_reverso(logo, pal, cliente):
     t.paste(pseudo_qr(cliente + "-r", 212), ((V_W - 212) // 2, 386))
     d.text((V_W // 2, 648), "Escanee para validar la credencial",
            font=fuente("semibold", 26), fill=TINTA, anchor="ma")
-    d.text((V_W // 2, 692), "www.suempresa.com  ·  (01) 000 0000",
+    d.text((V_W // 2, 692), f"{web_cliente(cliente)}  ·  (01) 700 0000",
            font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
     d.line([V_W // 2 - 60, 768, V_W // 2 + 60, 768], fill=tuple(oro[:3]), width=2)
     d.rectangle([0, V_H - 14, V_W, V_H], fill=tuple(prim[:3]))
@@ -824,8 +832,8 @@ def estilo5_reverso(logo, pal, cliente):
     d.text((478, 232), "Esta credencial es personal", font=fuente("semibold", 28), fill=TINTA)
     d.text((478, 272), "e intransferible.", font=fuente("semibold", 28), fill=TINTA)
     d.line([480, 356, 640, 356], fill=tuple(oro[:3]), width=2)
-    campo(d, (480, 404), "SITIO WEB", "www.suempresa.com", GRIS_ETIQUETA, TINTA, tam_valor=27)
-    campo(d, (480, 504), "CENTRAL", "(01) 000 0000", GRIS_ETIQUETA, TINTA, tam_valor=27)
+    campo(d, (480, 404), "SITIO WEB", web_cliente(cliente), GRIS_ETIQUETA, TINTA, tam_valor=27)
+    campo(d, (480, 504), "CENTRAL", "(01) 700 0000", GRIS_ETIQUETA, TINTA, tam_valor=27)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
@@ -858,7 +866,7 @@ def estilo6_reverso(logo, pal, cliente):
     d.line([84, 92, CARD_W - 84, 92], fill=tuple(oro[:3]), width=2)
     pegar_logo(t, logo, (CARD_W // 2 - 150, 136, 300, 86), fondo_claro=True, tinte=prim_txt)
     t.paste(pseudo_qr(cliente, 184, bg=MARFIL), (CARD_W // 2 - 92, 268))
-    campo(d, (CARD_W // 2, 478), "SITIO WEB", "www.suempresa.com",
+    campo(d, (CARD_W // 2, 478), "SITIO WEB", web_cliente(cliente),
           GRIS_ETIQUETA, TINTA, centrado=True, tam_valor=27)
     d.line([84, 588, CARD_W - 84, 588], fill=tuple(oro[:3]), width=2)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
@@ -878,13 +886,13 @@ def estilo7_frontal(logo, pal, cliente):
                    GRIS_ETIQUETA, tracking=6, centrado=True)
     d.text((V_W // 2, 352), "VISITANTE", font=fuente("display-black", 84), fill=TINTA, anchor="ma")
     d.line([V_W // 2 - 60, 496, V_W // 2 + 60, 496], fill=tuple(oro[:3]), width=2)
-    d.text((V_W // 2, 532), "Porte este pase en un lugar visible.",
+    d.text((V_W // 2, 532), "Válido únicamente el día de emisión.",
            font=fuente("regular", 26), fill=GRIS_ETIQUETA, anchor="ma")
     bloque_y = 668
     d.rectangle([0, bloque_y, V_W, V_H], fill=tuple(prim[:3]))
     col_blq = (255, 255, 255) if not claro else TINTA
     texto_tracking(d, (V_W // 2, bloque_y + 70), "N° DE PASE", fuente("semibold", 20),
-                   mezcla(col_blq, prim, 0.35), tracking=5, centrado=True)
+                   mezcla(col_blq, prim, 0.15), tracking=5, centrado=True)
     d.text((V_W // 2, bloque_y + 106), "0128", font=fuente("display-bold", 88), fill=col_blq, anchor="ma")
     d.text((V_W // 2, bloque_y + 256), f"Autorizado por {cliente}",
            font=fuente("semibold", 25), fill=mezcla(col_blq, prim, 0.2), anchor="ma")
@@ -917,7 +925,7 @@ def estilo7_reverso(logo, pal, cliente):
     t.paste(pseudo_qr(cliente + "-r", 190), ((V_W - 190) // 2, y + 80))
     d.text((V_W // 2, y + 304), "Registre su ingreso y salida",
            font=fuente("semibold", 26), fill=TINTA, anchor="ma")
-    d.text((V_W // 2, y + 348), "www.suempresa.com",
+    d.text((V_W // 2, y + 348), web_cliente(cliente),
            font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
     d.rectangle([0, V_H - 14, V_W, V_H], fill=tuple(prim[:3]))
     t.putalpha(mascara_redondeada(V_W, V_H))
@@ -962,8 +970,8 @@ def estilo8_reverso(logo, pal, cliente):
     d.text((360, 218), "Esta credencial es personal", font=fuente("semibold", 28), fill=TINTA)
     d.text((360, 258), "e intransferible.", font=fuente("semibold", 28), fill=TINTA)
     d.line([362, 342, 522, 342], fill=tuple(oro[:3]), width=2)
-    campo(d, (362, 390), "SITIO WEB", "www.suempresa.com", GRIS_ETIQUETA, TINTA, tam_valor=27)
-    campo(d, (362, 490), "CENTRAL", "(01) 000 0000", GRIS_ETIQUETA, TINTA, tam_valor=27)
+    campo(d, (362, 390), "SITIO WEB", web_cliente(cliente), GRIS_ETIQUETA, TINTA, tam_valor=27)
+    campo(d, (362, 490), "CENTRAL", "(01) 700 0000", GRIS_ETIQUETA, TINTA, tam_valor=27)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
@@ -978,11 +986,11 @@ def estilo9_frontal(logo, pal, cliente):
     t.paste(foto_carnet(V_W, ALTO_F), (0, 0))
     d = ImageDraw.Draw(t)
     d.rectangle([0, ALTO_F, V_W, ALTO_F + 4], fill=tuple(oro[:3]))
-    pegar_logo(t, logo, (64, ALTO_F + 56, 300, 90), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
-    d.text((64, ALTO_F + 196), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA)
-    d.text((64, ALTO_F + 272), DATOS["cargo"], font=fuente("regular", 29), fill=GRIS_ETIQUETA)
-    campo(d, (64, ALTO_F + 360), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=27)
-    campo(d, (400, ALTO_F + 360), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=27)
+    pegar_logo(t, logo, (64, ALTO_F + 32, 260, 78), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    d.text((64, ALTO_F + 156), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA)
+    d.text((64, ALTO_F + 238), DATOS["cargo"], font=fuente("regular", 29), fill=GRIS_ETIQUETA)
+    campo(d, (64, ALTO_F + 330), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=27)
+    campo(d, (400, ALTO_F + 330), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=27)
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
@@ -1002,7 +1010,7 @@ def estilo9_reverso(logo, pal, cliente):
     t.paste(pseudo_qr(cliente + "-r", 190), ((V_W - 190) // 2, 566))
     d.text((V_W // 2, 788), "Escanee para validar la credencial",
            font=fuente("semibold", 26), fill=TINTA, anchor="ma")
-    d.text((V_W // 2, 832), "www.suempresa.com  ·  (01) 000 0000",
+    d.text((V_W // 2, 832), f"{web_cliente(cliente)}  ·  (01) 700 0000",
            font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
@@ -1043,7 +1051,7 @@ def estilo10_reverso(logo, pal, cliente):
     t.alpha_composite(placa_qr(cliente + "-r", 196), ((V_W - 240) // 2, 360))
     d.text((V_W // 2, 668), "Escanee para validar la credencial",
            font=fuente("semibold", 26), fill=(228, 228, 232), anchor="ma")
-    d.text((V_W // 2, 714), "www.suempresa.com", font=fuente("semibold", 25), fill=tinte_claro, anchor="ma")
+    d.text((V_W // 2, 714), web_cliente(cliente), font=fuente("semibold", 25), fill=tinte_claro, anchor="ma")
     d.text((V_W // 2, 850), "Esta credencial es personal e intransferible.",
            font=fuente("regular", 23), fill=(150, 152, 160), anchor="ma")
     d.rectangle([0, V_H - 10, V_W, V_H], fill=tuple(acento[:3]))
@@ -1101,7 +1109,7 @@ def lamina(cliente, piezas):
     POR_FILA = 3
     filas = [piezas[i:i + POR_FILA] for i in range(0, len(piezas), POR_FILA)]
     col_w = (ANCHO - (POR_FILA + 1) * 70) // POR_FILA
-    esc_h = 0.58       # escala tarjetas horizontales
+    ESC = 0.48         # escala ÚNICA: el cliente compara diseños, no tamaños
     y_top = 252
     zona_h = 840       # alto de la zona de tarjetas por fila
     sep_filas = 70
@@ -1128,20 +1136,18 @@ def lamina(cliente, piezas):
         for i, (titulo, frontal, reverso) in enumerate(fila):
             x0 = offset_x + i * (col_w + 70)
             d.text((x0 + col_w // 2, y_fila - 48), titulo, font=fuente("semibold", 32), fill=GRIS_DISECOD, anchor="ma")
+            fr = frontal.resize((int(frontal.width * ESC), int(frontal.height * ESC)), Image.LANCZOS)
+            rv = reverso.resize((int(reverso.width * ESC), int(reverso.height * ESC)), Image.LANCZOS)
             if frontal.width > frontal.height:  # horizontal: apiladas
-                fr = frontal.resize((int(frontal.width * esc_h), int(frontal.height * esc_h)), Image.LANCZOS)
-                rv = reverso.resize((int(reverso.width * esc_h), int(reverso.height * esc_h)), Image.LANCZOS)
                 alto_col = fr.height + rv.height + 60
                 y0 = y_fila + (zona_h - alto_col) // 2
                 con_sombra(canvas, fr, (x0 + (col_w - fr.width) // 2, y0), 14, 60)
                 con_sombra(canvas, rv, (x0 + (col_w - rv.width) // 2, y0 + fr.height + 60), 14, 60)
             else:  # vertical: lado a lado
-                esc = (col_w - 50) / (frontal.width * 2)
-                fr = frontal.resize((int(frontal.width * esc), int(frontal.height * esc)), Image.LANCZOS)
-                rv = reverso.resize((int(reverso.width * esc), int(reverso.height * esc)), Image.LANCZOS)
+                ancho_par = fr.width * 2 + 50
                 y0 = y_fila + (zona_h - fr.height) // 2
-                con_sombra(canvas, fr, (x0, y0), 14, 60)
-                con_sombra(canvas, rv, (x0 + fr.width + 50, y0), 14, 60)
+                con_sombra(canvas, fr, (x0 + (col_w - ancho_par) // 2, y0), 14, 60)
+                con_sombra(canvas, rv, (x0 + (col_w - ancho_par) // 2 + fr.width + 50, y0), 14, 60)
 
     # pie
     d.rectangle([0, ALTO - 120, ANCHO, ALTO - 116], fill=LILA)
