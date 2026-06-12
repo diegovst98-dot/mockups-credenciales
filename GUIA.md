@@ -12,6 +12,8 @@
 5. Se abre sola la carpeta con los resultados:
    - `lamina-presentacion.png` → **esta es la que mandas por WhatsApp** (las 5 propuestas juntas, con marca DISECOD).
    - `estilo-1` al `estilo-5` (.png) → cada propuesta en grande, por si el cliente quiere ver una en detalle.
+   - `para-diseno\` → cada cara limpia a tamaño real de imprenta (CR80, 300 dpi, sin sombras).
+     **Esta carpeta es para el diseñador** cuando el cliente apruebe un estilo — no se la mandes al cliente.
 
 ## Tips
 

@@ -1087,11 +1087,17 @@ def generar(ruta_logo, cliente, carpeta_salida=None):
     os.makedirs(carpeta_salida, exist_ok=True)
 
     rutas = []
+    # caras limpias a tamaño real de imprenta (CR80 300 dpi, full-bleed,
+    # sin sombras ni rótulos): base de trabajo para el diseñador / CardPresso
+    carpeta_diseno = os.path.join(carpeta_salida, "para-diseno")
+    os.makedirs(carpeta_diseno, exist_ok=True)
     for i, (titulo, fr, rv) in enumerate(piezas, 1):
         sufijo = slug(titulo.split("—")[-1]).lower()
         ruta = os.path.join(carpeta_salida, f"estilo-{i}-{sufijo}.png")
         png_estilo(titulo, fr, rv).save(ruta, optimize=True)
         rutas.append(ruta)
+        fr.convert("RGB").save(os.path.join(carpeta_diseno, f"estilo-{i}-{sufijo}-frontal.png"), optimize=True)
+        rv.convert("RGB").save(os.path.join(carpeta_diseno, f"estilo-{i}-{sufijo}-reverso.png"), optimize=True)
 
     ruta_lamina = os.path.join(carpeta_salida, "lamina-presentacion.png")
     lamina(cliente, piezas).save(ruta_lamina, optimize=True)

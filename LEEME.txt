@@ -49,6 +49,9 @@ COMO USAR
      DISECOD).
    - estilo-1 al estilo-5 (.png) <- cada propuesta en
      grande, por si el cliente quiere ver una en detalle.
+   - carpeta para-diseno  <- caras limpias a tamano real
+     de imprenta, PARA EL DISENADOR cuando el cliente
+     apruebe un estilo (no se la mandes al cliente).
 
 
 BUENO SABER
