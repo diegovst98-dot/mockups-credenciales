@@ -1,5 +1,16 @@
 # Mockups de credenciales DISECOD — Spec de diseño (v1 + v2 visual)
 
+> **v5 — Rediseño de dirección de arte (2026-06-12, "no me gustan para nada" de Diego):**
+> las 5 plantillas se reescribieron bajo reglas estrictas de diseño: UN gesto gráfico por
+> tarjeta + blanco generoso; estructura tipográfica de credencial (helper `campo()`:
+> ETIQUETA versalitas con tracking + valor en bold); colores PLANOS o degradado imperceptible
+> (se acabaron los degradados saturados "plástico"); oro SOLO como hairline de 2px; cero
+> contornos decorativos (QR directo sobre claro, placa blanca sólida sobre color); foto
+> regradada a estudio neutro (más luz, menos calidez) con encuadre ancho (cabeza con aire +
+> pecho). Gestos por estilo: 1=banda lateral sólida, 2=color pleno con logo en silueta
+> blanca + panel blanco curvo, 3=oscuridad plana con marco fino oro, 4=cabecera de arco
+> sólida, 5=diagonal derecha. Iconitos, puntos, rombos y barridos multicapa: eliminados.
+
 > **5 estilos (2026-06-12, pedido de Diego):** se suman **Estilo 4 — Institucional**
 > (vertical claro, cabecera en arco con filo dorado, foto circular solapando el arco,
 > reverso con caja dorada de valores) y **Estilo 5 — Moderno** (horizontal claro, cortes

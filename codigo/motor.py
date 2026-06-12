@@ -393,8 +393,9 @@ def foto_carnet(ancho, alto):
         if os.path.exists(FOTO_PERSONA):
             img = Image.open(FOTO_PERSONA).convert("RGB")
             W, H = img.size
-            img = img.crop((int(W * 0.16), int(H * 0.03), int(W * 0.84), H))
-            img = ImageOps.fit(img, (ancho, alto), Image.LANCZOS, centering=(0.5, 0.32))
+            # encuadre ancho: cabeza con aire + pecho visible (no pasaporte asfixiado)
+            img = img.crop((int(W * 0.10), 0, int(W * 0.90), H))
+            img = ImageOps.fit(img, (ancho, alto), Image.LANCZOS, centering=(0.5, 0.35))
         else:
             img = avatar_rect(ancho, alto)
         _foto_cache[clave] = img
@@ -579,13 +580,11 @@ def pseudo_qr(semilla, tam, fg=(20, 20, 20), bg=(255, 255, 255)):
     return img.resize((tam, tam), Image.NEAREST)
 
 
-def placa_qr(semilla, lado_qr, oro, relleno=22):
-    """QR sobre placa blanca redondeada con filo dorado."""
+def placa_qr(semilla, lado_qr, oro=None, relleno=22):
+    """QR sobre placa blanca redondeada sólida (sin contornos decorativos)."""
     lado = lado_qr + relleno * 2
     placa = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
-    d = ImageDraw.Draw(placa)
-    d.rounded_rectangle([0, 0, lado - 1, lado - 1], 18, fill=(255, 255, 255, 255),
-                        outline=tuple(oro[:3]) + (255,), width=2)
+    ImageDraw.Draw(placa).rounded_rectangle([0, 0, lado - 1, lado - 1], 18, fill=(255, 255, 255, 255))
     placa.paste(pseudo_qr(semilla, lado_qr), (relleno, relleno))
     return placa
 
@@ -629,252 +628,176 @@ def pegar_logo(canvas, logo, caja, fondo_claro=True, tinte=None, alinear="centro
 
 # ---------- Estilos ----------
 
+def campo(d, xy, etiqueta, valor, color_etq, color_val, centrado=False, tam_valor=30):
+    """Estructura tipográfica de credencial: ETIQUETA en versalitas + valor en bold."""
+    x, y = xy
+    f_e = fuente("semibold", 19)
+    f_v = fuente("semibold", tam_valor)
+    if centrado:
+        texto_tracking(d, (x, y), etiqueta, f_e, color_etq, tracking=4, centrado=True)
+        d.text((x, y + 32), valor, font=f_v, fill=color_val, anchor="ma")
+    else:
+        texto_tracking(d, (x, y), etiqueta, f_e, color_etq, tracking=4)
+        d.text((x, y + 32), valor, font=f_v, fill=color_val)
+
+
+GRIS_ETIQUETA = (152, 154, 160)
+
+
 def estilo1_frontal(logo, pal, cliente):
-    """Ejecutivo con banda lateral: columna en color de marca (foto + DNI) y
-    área marfil con logo flotante, nombre serif y datos con iconos dorados."""
+    """Corporativo: banda lateral sólida con la foto, área blanca con grilla limpia."""
     prim, sec, oro = pal
-    oro_l = ajustar(oro, 0.82)
-    BANDA = 348
-    t = gradiente_vertical(CARD_W, CARD_H, (255, 255, 255), MARFIL).convert("RGBA")
-    banda = gradiente_vertical(BANDA, CARD_H, ajustar(prim, 1.08), ajustar(prim, 0.58)).convert("RGBA")
-    t.paste(banda, (0, 0))
-    wm = marca_agua(logo, 430, (255, 255, 255), 16)
-    t.paste(wm, (-110, CARD_H - int(wm.height * 0.70)), wm)
+    prim_txt = marca_legible(prim)
+    banda_txt = texto_sobre(prim)
+    t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
     d = ImageDraw.Draw(t)
-    # doble filo dorado que separa la banda
-    d.rectangle([BANDA, 0, BANDA + 4, CARD_H], fill=tuple(oro[:3]))
-    d.rectangle([BANDA + 9, 0, BANDA + 11, CARD_H], fill=ORO_CLARO)
-    # foto con marco dorado, centrada en la banda
-    fx = (BANDA - 240) // 2
-    d.rounded_rectangle([fx - 11, 67, fx + 251, 393], 24, outline=tuple(oro[:3]), width=3)
-    t.alpha_composite(foto_redondeada(240, 302, 16), (fx, 79))
-    # DNI bajo la foto
-    f_id = fuente("semibold", 26)
-    ancho_id = d.textlength(DATOS["id"], font=f_id)
-    x0 = (BANDA - int(ancho_id) - 48) // 2
-    d.rounded_rectangle([x0, 436, x0 + ancho_id + 48, 490], 27, fill=(255, 255, 255))
-    d.text((BANDA // 2, 448), DATOS["id"], font=f_id, fill=marca_legible(prim), anchor="ma")
-    # área clara: logo flotante + datos
-    pegar_logo(t, logo, (404, 44, 380, 138), fondo_claro=True, tinte=marca_legible(prim), alinear="izquierda")
-    d.line([404, 212, 944, 212], fill=oro_l, width=2)
-    diamante(d, 404, 212, 6, oro_l)
-    grid_puntos(d, 886, 52, ORO_CLARO, filas=3, cols=3)
-    d.text((404, 242), DATOS["nombre"], font=fuente("display-bold", 54), fill=TINTA)
-    t.alpha_composite(icono("maletin", 26, oro_l, detalle=(255, 255, 255)), (406, 352))
-    d.text((446, 346), DATOS["cargo"], font=fuente("regular", 32), fill=(96, 100, 108))
-    t.alpha_composite(icono("credencial", 26, oro_l), (406, 408))
-    d.text((446, 402), cliente, font=fuente("semibold", 28), fill=marca_legible(prim))
-    # barrido de pie en capas (cinta dorada paralela + olas llenas de marca)
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, oro, 255, CARD_H - 92, 16, 1.15, 0.3, grosor=16))
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, ajustar(prim, 0.55), 255, CARD_H - 72, 16, 1.15, 0.3))
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, prim, 255, CARD_H - 40, 14, 1.15, 0.75))
+    BANDA = 332
+    d.rectangle([0, 0, BANDA, CARD_H], fill=tuple(prim[:3]))
+    d.rectangle([BANDA, 0, BANDA + 2, CARD_H], fill=tuple(oro[:3]))
+    # foto flotando en la banda, sin marcos
+    t.alpha_composite(foto_redondeada(232, 292, 14), ((BANDA - 232) // 2, 72))
+    texto_tracking(d, (BANDA // 2, 412), "DNI", fuente("semibold", 19),
+                   mezcla(banda_txt, prim, 0.4), tracking=5, centrado=True)
+    d.text((BANDA // 2, 442), DATOS["id"].split()[-1], font=fuente("semibold", 31), fill=banda_txt, anchor="ma")
+    # área blanca: logo flotante, nombre y campos
+    pegar_logo(t, logo, (396, 56, 340, 96), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    d.text((396, 206), DATOS["nombre"], font=fuente("display-bold", 56), fill=TINTA)
+    d.line([398, 298, 558, 298], fill=tuple(oro[:3]), width=2)
+    campo(d, (398, 344), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA)
+    campo(d, (398, 452), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
 
 def estilo1_reverso(logo, pal, cliente):
     prim, sec, oro = pal
-    oro_l = ajustar(oro, 0.82)
-    t = gradiente_vertical(CARD_W, CARD_H, (255, 255, 255), MARFIL).convert("RGBA")
-    # eco de la banda: franja delgada + filo dorado
-    franja = gradiente_vertical(62, CARD_H, ajustar(prim, 1.08), ajustar(prim, 0.58)).convert("RGBA")
-    t.paste(franja, (0, 0))
-    wm = marca_agua(logo, 480, prim, 11)
-    t.paste(wm, (CARD_W - int(wm.width * 0.62), CARD_H - int(wm.height * 0.55)), wm)
+    t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
     d = ImageDraw.Draw(t)
-    d.rectangle([62, 0, 66, CARD_H], fill=tuple(oro[:3]))
-    cx = 66 + (CARD_W - 66) // 2
-    pegar_logo(t, logo, (cx - 190, 40, 380, 116), fondo_claro=True, tinte=marca_legible(prim))
-    divisor_oro(d, cx, 196, 130, oro_l)
-    t.alpha_composite(placa_qr(cliente, 196, oro), (cx - 120, 222))
-    d.text((cx, 478), "Escanee para validar la credencial",
-           font=fuente("regular", 26), fill=(110, 115, 122), anchor="ma")
-    d.text((cx, 516), "www.suempresa.com  ·  (01) 000 0000",
-           font=fuente("semibold", 24), fill=(140, 144, 152), anchor="ma")
-    # barrido de pie en capas, eco del frontal
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, oro, 255, CARD_H - 66, 11, 1.2, 0.3, grosor=12))
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, ajustar(prim, 0.55), 255, CARD_H - 50, 11, 1.2, 0.3))
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, prim, 255, CARD_H - 26, 10, 1.2, 0.7))
+    d.rectangle([0, 0, 14, CARD_H], fill=tuple(prim[:3]))
+    cx = CARD_W // 2
+    pegar_logo(t, logo, (cx - 170, 64, 340, 96), fondo_claro=True, tinte=marca_legible(prim))
+    t.paste(pseudo_qr(cliente, 200), (cx - 100, 218))
+    d.text((cx, 452), "Escanee para validar la credencial",
+           font=fuente("semibold", 26), fill=TINTA, anchor="ma")
+    d.text((cx, 494), "www.suempresa.com  ·  (01) 000 0000",
+           font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
+    d.line([cx - 80, 562, cx + 80, 562], fill=tuple(oro[:3]), width=2)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
 
 def estilo2_frontal(logo, pal, cliente):
+    """Full color: color de marca pleno, logo en silueta blanca, panel blanco curvo al pie."""
     prim, sec, oro = pal
-    fondo_claro = luminancia(prim) >= 0.45
-    col_txt = (255, 255, 255) if not fondo_claro else TINTA
-    oro_txt = ORO_CLARO if not fondo_claro else ajustar(oro, 0.72)
-    t = gradiente_3(V_W, V_H, ajustar(prim, 1.16), prim, ajustar(prim, 0.5), 0.40).convert("RGBA")
-    # marca de agua en el cuerpo
-    wm = marca_agua(logo, 560, (255, 255, 255) if not fondo_claro else ajustar(prim, 0.5), 18)
-    t.paste(wm, ((V_W - wm.width) // 2, 300), wm)
-    # ondas doradas cruzando detrás de la foto
-    t.alpha_composite(capa_onda(V_W, V_H, oro, 255, 540, 22, 1.1, 0.2, grosor=64))
-    t.alpha_composite(capa_onda(V_W, V_H, (255, 255, 255), 70, 562, 26, 1.1, 0.45, grosor=10))
-    # base oscura al pie
-    t.alpha_composite(capa_onda(V_W, V_H, ajustar(prim, 0.34), 235, 872, 16, 1.2, 0.6))
-    # cabecera blanca con filo dorado: el logo va directo, sin placa
-    t.alpha_composite(capa_onda(V_W, V_H, (255, 255, 255), 255, 212, 14, 1.1, 0.3, invertida=True))
-    t.alpha_composite(capa_onda(V_W, V_H, oro, 220, 212, 14, 1.1, 0.3, grosor=4))
+    claro = luminancia(prim) >= 0.45
+    col_txt = (255, 255, 255) if not claro else TINTA
+    t = gradiente_vertical(V_W, V_H, ajustar(prim, 1.04), ajustar(prim, 0.86)).convert("RGBA")
     d = ImageDraw.Draw(t)
-    pegar_logo(t, logo, (139, 26, 360, 146), fondo_claro=True, tinte=marca_legible(prim))
-    grid_puntos(d, 44, 40, mezcla(prim, (255, 255, 255), 0.45), filas=3, cols=3, paso=15, r=2)
-    # foto circular con doble aro
-    t.alpha_composite(aro(318, oro, 7), ((V_W - 318) // 2, 226))
-    t.alpha_composite(aro(302, (255, 255, 255), 3, 210), ((V_W - 302) // 2, 234))
+    # logo en silueta (blanca sobre oscuro / tinta sobre claro), flotando
+    pieza = logo_tenido(logo, 320, 112, (255, 255, 255) if not claro else marca_legible(prim))
+    t.alpha_composite(pieza, ((V_W - pieza.width) // 2, 54 + (112 - pieza.height) // 2))
+    # foto circular con un solo aro blanco
+    t.alpha_composite(aro(306, (255, 255, 255), 8), ((V_W - 306) // 2, 232))
     t.alpha_composite(foto_circular(286), ((V_W - 286) // 2, 242))
-    # textos
-    d.text((V_W // 2, 656), DATOS["nombre"], font=fuente("display-bold", 50), fill=col_txt, anchor="ma")
-    d.text((V_W // 2, 730), DATOS["cargo"], font=fuente("regular", 31), fill=col_txt, anchor="ma")
-    divisor_oro(d, V_W // 2, 796, 52, oro_txt)
-    d.text((V_W // 2, 814), cliente, font=fuente("semibold", 27), fill=oro_txt, anchor="ma")
-    # chip ID dorado
-    f_id = fuente("semibold", 28)
-    ancho_id = d.textlength(DATOS["id"], font=f_id)
-    x0 = (V_W - ancho_id - 56) // 2
-    d.rounded_rectangle([x0, 884, x0 + ancho_id + 56, 942], 29, fill=tuple(oro[:3]))
-    d.text((V_W // 2, 896), DATOS["id"], font=f_id, fill=(51, 40, 20), anchor="ma")
-    d.text((V_W // 2, 960), "www.suempresa.com", font=fuente("regular", 24),
-           fill=mezcla(col_txt, prim, 0.25), anchor="ma")
+    d.text((V_W // 2, 606), DATOS["nombre"], font=fuente("display-bold", 52), fill=col_txt, anchor="ma")
+    d.text((V_W // 2, 686), DATOS["cargo"], font=fuente("regular", 30),
+           fill=mezcla(col_txt, prim, 0.18), anchor="ma")
+    d.line([V_W // 2 - 60, 748, V_W // 2 + 60, 748], fill=tuple(oro[:3]), width=2)
+    # panel blanco curvo con los datos
+    t.alpha_composite(capa_onda(V_W, V_H, (255, 255, 255), 255, 812, 18, 1.1, 0.3))
+    campo(d, (V_W // 2, 856), "EMPRESA", cliente, GRIS_ETIQUETA, marca_legible(prim), centrado=True)
+    d.text((V_W // 2, 944), DATOS["id"], font=fuente("semibold", 24), fill=GRIS_ETIQUETA, anchor="ma")
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
 
 def estilo2_reverso(logo, pal, cliente):
+    """Reverso full color: el logo como héroe en silueta gigante + lema."""
     prim, sec, oro = pal
-    base = ajustar(prim, 0.46)
-    col_txt = texto_sobre(base)
-    t = gradiente_vertical(V_W, V_H, ajustar(prim, 0.62), ajustar(prim, 0.34)).convert("RGBA")
-    wm = marca_agua(logo, 600, (255, 255, 255), 12)
-    t.paste(wm, ((V_W - wm.width) // 2, 290), wm)
-    # cabecera blanca con filo dorado: el logo va directo, sin placa
-    t.alpha_composite(capa_onda(V_W, V_H, (255, 255, 255), 255, 196, 13, 1.2, 0.55, invertida=True))
-    t.alpha_composite(capa_onda(V_W, V_H, oro, 220, 196, 13, 1.2, 0.55, grosor=4))
+    base = ajustar(prim, 0.68)
+    t = Image.new("RGBA", (V_W, V_H), tuple(base[:3]) + (255,))
     d = ImageDraw.Draw(t)
-    pegar_logo(t, logo, (149, 22, 340, 136), fondo_claro=True, tinte=marca_legible(prim))
-    # lema
-    d.multiline_text((V_W // 2, 318), "Comprometidos con la excelencia,\nla seguridad y el desarrollo.",
-                     font=fuente("display-italic", 31), fill=(245, 243, 238), anchor="ma",
+    # héroe: silueta del logo en tinte claro
+    heroe = logo_tenido(logo, 430, 300, ajustar(prim, 1.45) if saturacion(prim) > 0.12 else (255, 255, 255), alpha=60)
+    t.alpha_composite(heroe, ((V_W - heroe.width) // 2, 96 + (300 - heroe.height) // 2))
+    d.multiline_text((V_W // 2, 470), "Comprometidos con la excelencia,\nla seguridad y el desarrollo.",
+                     font=fuente("display-italic", 31), fill=(248, 247, 244), anchor="ma",
                      align="center", spacing=14)
-    # fila de valores
-    valores = [("escudo", "SEGURIDAD"), ("check", "COMPROMISO"), ("estrella", "EXCELENCIA")]
-    f_val = fuente("semibold", 18)
-    for i, (nombre_ic, etiqueta) in enumerate(valores):
-        cx = V_W // 6 + i * (V_W // 3)
-        ic = icono(nombre_ic, 54, ORO_CLARO, detalle=mezcla(base, (0, 0, 0), 0.25))
-        t.alpha_composite(ic, (cx - 27, 470))
-        texto_tracking(d, (cx, 542), etiqueta, f_val, (235, 233, 228), tracking=3, centrado=True)
-    t.alpha_composite(placa_qr(cliente + "-r", 190, oro), ((V_W - 234) // 2, 622))
-    d.text((V_W // 2, 898), "www.suempresa.com", font=fuente("semibold", 27), fill=(245, 243, 238), anchor="ma")
-    t.alpha_composite(capa_onda(V_W, V_H, oro, 170, 975, 10, 1.5, 0.7, grosor=3))
+    d.line([V_W // 2 - 60, 596, V_W // 2 + 60, 596], fill=tuple(oro[:3]), width=2)
+    t.alpha_composite(placa_qr(cliente + "-r", 192), ((V_W - 236) // 2, 648))
+    d.text((V_W // 2, 922), "www.suempresa.com", font=fuente("semibold", 26), fill=(248, 247, 244), anchor="ma")
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
 
-def _esquinas_deco(d, oro, margen=44, largo=46):
-    """Acentos en L (art déco) en esquinas opuestas."""
-    m, L = margen, largo
-    for desfase in (0, 9):
-        # superior izquierda
-        d.line([m + desfase, m + L, m + desfase, m + desfase, m + L, m + desfase],
-               fill=tuple(oro[:3]) + (255,), width=3, joint="curve")
-        # inferior derecha
-        d.line([CARD_W - m - desfase, CARD_H - m - L, CARD_W - m - desfase, CARD_H - m - desfase,
-                CARD_W - m - L, CARD_H - m - desfase],
-               fill=tuple(oro[:3]) + (255,), width=3, joint="curve")
-
-
 def estilo3_frontal(logo, pal, cliente):
+    """Premium: oscuridad plana, marco fino dorado y silencio. Nada más."""
     prim, sec, oro = pal
-    fondo_tinte = mezcla(FONDO_OSCURO, prim, 0.16)
-    t = gradiente_diagonal(CARD_W, CARD_H, (24, 24, 27), fondo_tinte).convert("RGBA")
-    wm = marca_agua(logo, 540, (255, 255, 255), 11)
-    t.paste(wm, (CARD_W - int(wm.width * 0.78), CARD_H - int(wm.height * 0.66)), wm)
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, oro, 150, 596, 12, 1.6, 0.25, grosor=3))
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, oro, 60, 610, 14, 1.6, 0.55, grosor=2))
+    fondo = mezcla((30, 30, 34), prim, 0.10)
+    t = Image.new("RGBA", (CARD_W, CARD_H), tuple(fondo[:3]) + (255,))
     d = ImageDraw.Draw(t, "RGBA")
-    d.rounded_rectangle([22, 22, CARD_W - 23, CARD_H - 23], RADIO - 12,
-                        outline=tuple(oro[:3]) + (150,), width=2)
-    _esquinas_deco(d, ORO_CLARO)
+    d.rounded_rectangle([26, 26, CARD_W - 27, CARD_H - 27], RADIO - 14,
+                        outline=tuple(oro[:3]) + (200,), width=2)
     tinte_claro = ajustar(prim, 1.75) if saturacion(prim) > 0.12 else ORO_CLARO
-    pegar_logo(t, logo, (72, 64, 330, 122), fondo_claro=False, tinte=tinte_claro)
-    d.line([74, 220, 320, 220], fill=tuple(oro[:3]) + (255,), width=2)
-    diamante(d, 74, 220, 6, oro)
-    d.text((72, 248), DATOS["nombre"], font=fuente("display-bold", 54), fill=(245, 244, 241))
-    t.alpha_composite(icono("maletin", 26, ORO_CLARO, detalle=fondo_tinte), (74, 352))
-    d.text((112, 346), DATOS["cargo"], font=fuente("regular", 32), fill=(178, 180, 188))
-    t.alpha_composite(icono("credencial", 26, ORO_CLARO), (74, 406))
-    d.text((112, 400), cliente, font=fuente("semibold", 27), fill=ORO_CLARO)
-    d.text((74, 478), DATOS["id"], font=fuente("light", 27), fill=(150, 152, 160))
-    # foto circular con aro dorado doble
-    t.alpha_composite(aro(330, ORO_CLARO, 2, 120), (644, 140))
-    t.alpha_composite(aro(306, oro, 6), (656, 152))
-    t.alpha_composite(foto_circular(274), (672, 168))
+    pegar_logo(t, logo, (76, 64, 300, 88), fondo_claro=False, tinte=tinte_claro, alinear="izquierda")
+    d.text((76, 198), DATOS["nombre"], font=fuente("display-bold", 56), fill=(246, 245, 242))
+    d.line([78, 290, 238, 290], fill=tuple(oro[:3]) + (255,), width=2)
+    campo(d, (78, 338), "CARGO", DATOS["cargo"], (140, 142, 150), (228, 228, 232))
+    campo(d, (78, 446), "EMPRESA", cliente, (140, 142, 150), ORO_CLARO)
+    d.text((78, 548), DATOS["id"], font=fuente("regular", 24), fill=(130, 132, 140))
+    # foto circular con un solo aro dorado fino
+    t.alpha_composite(aro(296, oro, 3), (646, 172))
+    t.alpha_composite(foto_circular(280), (654, 180))
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
 
 def estilo3_reverso(logo, pal, cliente):
     prim, sec, oro = pal
-    fondo_tinte = mezcla(FONDO_OSCURO, prim, 0.16)
-    t = gradiente_diagonal(CARD_W, CARD_H, fondo_tinte, (24, 24, 27)).convert("RGBA")
-    wm = marca_agua(logo, 500, (255, 255, 255), 9)
-    t.paste(wm, (-int(wm.width * 0.28), CARD_H - int(wm.height * 0.60)), wm)
+    fondo = mezcla((30, 30, 34), prim, 0.10)
+    t = Image.new("RGBA", (CARD_W, CARD_H), tuple(fondo[:3]) + (255,))
     d = ImageDraw.Draw(t, "RGBA")
-    d.rounded_rectangle([22, 22, CARD_W - 23, CARD_H - 23], RADIO - 12,
-                        outline=tuple(oro[:3]) + (150,), width=2)
-    _esquinas_deco(d, ORO_CLARO)
+    d.rounded_rectangle([26, 26, CARD_W - 27, CARD_H - 27], RADIO - 14,
+                        outline=tuple(oro[:3]) + (200,), width=2)
     tinte_claro = ajustar(prim, 1.75) if saturacion(prim) > 0.12 else ORO_CLARO
-    pegar_logo(t, logo, (CARD_W // 2 - 170, 96, 340, 136), fondo_claro=False, tinte=tinte_claro)
-    divisor_oro(d, CARD_W // 2, 286, 110, oro)
-    d.text((CARD_W // 2, 322), "Esta credencial es personal e intransferible.",
-           font=fuente("regular", 26), fill=(176, 178, 186), anchor="ma")
-    d.text((CARD_W // 2, 376), "www.suempresa.com", font=fuente("semibold", 28), fill=ORO_CLARO, anchor="ma")
-    # emblema de diamantes al pie
-    for dx, r in [(-34, 5), (0, 8), (34, 5)]:
-        diamante(d, CARD_W // 2 + dx, 470, r, oro)
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, oro, 120, 560, 10, 1.8, 0.4, grosor=2))
+    pegar_logo(t, logo, (CARD_W // 2 - 160, 120, 320, 130), fondo_claro=False, tinte=tinte_claro)
+    d.line([CARD_W // 2 - 60, 310, CARD_W // 2 + 60, 310], fill=tuple(oro[:3]) + (255,), width=2)
+    d.text((CARD_W // 2, 348), "Esta credencial es personal e intransferible.",
+           font=fuente("regular", 26), fill=(178, 180, 188), anchor="ma")
+    d.text((CARD_W // 2, 404), "www.suempresa.com", font=fuente("semibold", 28), fill=ORO_CLARO, anchor="ma")
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
 
+def _cabecera_arco(t, prim, alto_recto, alto_total):
+    """Cabecera sólida con borde de arco + filo dorado único."""
+    mascara_arco = Image.new("L", (V_W, alto_total), 0)
+    da = ImageDraw.Draw(mascara_arco)
+    da.rectangle([0, 0, V_W, alto_recto], fill=255)
+    da.ellipse([-200, alto_recto - (alto_total - alto_recto), V_W + 200, alto_total], fill=255)
+    t.paste(Image.new("RGB", (V_W, alto_total), tuple(prim[:3])), (0, 0), mascara_arco)
+    return [-200, alto_recto - (alto_total - alto_recto), V_W + 200, alto_total]
+
+
 def estilo4_frontal(logo, pal, cliente):
-    """Institucional: cabecera en arco con el logo, foto circular solapando el arco."""
+    """Institucional: cabecera de arco sólida, foto solapada, campos centrados."""
     prim, sec, oro = pal
     claro = luminancia(prim) >= 0.45
-    oro_l = ajustar(oro, 0.82)
-    t = gradiente_vertical(V_W, V_H, (255, 255, 255), MARFIL).convert("RGBA")
-    # cabecera con borde de arco
-    mascara_arco = Image.new("L", (V_W, 450), 0)
-    da = ImageDraw.Draw(mascara_arco)
-    da.rectangle([0, 0, V_W, 250], fill=255)
-    da.ellipse([-200, 110, V_W + 200, 450], fill=255)
-    grad = gradiente_vertical(V_W, 450, ajustar(prim, 1.06), ajustar(prim, 0.66))
-    t.paste(grad, (0, 0), mascara_arco)
+    t = Image.new("RGBA", (V_W, V_H), (255, 255, 255, 255))
+    caja_arco = _cabecera_arco(t, prim, 270, 440)
     d = ImageDraw.Draw(t)
-    d.arc([-200, 110, V_W + 200, 450], 8, 172, fill=tuple(oro[:3]), width=5)
-    d.arc([-200, 122, V_W + 200, 462], 8, 172, fill=ORO_CLARO, width=2)
-    wm = marca_agua(logo, 460, (255, 255, 255) if not claro else ajustar(prim, 0.5), 14)
-    t.paste(wm, ((V_W - wm.width) // 2, 12), wm)
-    pegar_logo(t, logo, (139, 40, 360, 136), fondo_claro=claro)
-    # foto circular solapando el arco
-    t.alpha_composite(aro(308, oro, 6), (165, 300))
-    t.alpha_composite(aro(290, (255, 255, 255), 4, 230), (174, 309))
-    t.alpha_composite(foto_circular(270), (184, 319))
-    # datos
-    d.text((V_W // 2, 640), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA, anchor="ma")
-    d.text((V_W // 2, 714), DATOS["cargo"], font=fuente("regular", 31), fill=(96, 100, 108), anchor="ma")
-    divisor_oro(d, V_W // 2, 782, 52, oro_l)
-    d.text((V_W // 2, 802), cliente, font=fuente("semibold", 27), fill=marca_legible(prim), anchor="ma")
-    f_id = fuente("semibold", 27)
-    ancho_id = d.textlength(DATOS["id"], font=f_id)
-    x0 = (V_W - int(ancho_id) - 56) // 2
-    d.rounded_rectangle([x0, 862, x0 + ancho_id + 56, 918], 28, outline=oro_l, width=2)
-    d.text((V_W // 2, 874), DATOS["id"], font=f_id, fill=oro_l, anchor="ma")
-    grid_puntos(d, 44, 580, ORO_CLARO, filas=3, cols=3, paso=15, r=2)
-    grid_puntos(d, 552, 580, ORO_CLARO, filas=3, cols=3, paso=15, r=2)
-    t.alpha_composite(capa_onda(V_W, V_H, prim, 255, V_H - 48, 13, 1.2, 0.3))
-    t.alpha_composite(capa_onda(V_W, V_H, oro, 220, V_H - 54, 13, 1.2, 0.3, grosor=4))
+    d.arc(caja_arco, 8, 172, fill=tuple(oro[:3]), width=3)
+    pieza = logo_tenido(logo, 320, 116, (255, 255, 255) if not claro else marca_legible(prim))
+    t.alpha_composite(pieza, ((V_W - pieza.width) // 2, 52 + (116 - pieza.height) // 2))
+    # foto circular solapando el arco, un solo aro blanco
+    t.alpha_composite(aro(296, (255, 255, 255), 10), ((V_W - 296) // 2, 256))
+    t.alpha_composite(foto_circular(272), ((V_W - 272) // 2, 268))
+    d.text((V_W // 2, 618), DATOS["nombre"], font=fuente("display-bold", 48), fill=TINTA, anchor="ma")
+    d.text((V_W // 2, 692), DATOS["cargo"], font=fuente("regular", 30), fill=(110, 113, 120), anchor="ma")
+    d.line([V_W // 2 - 60, 752, V_W // 2 + 60, 752], fill=tuple(oro[:3]), width=2)
+    campo(d, (V_W // 2, 796), "EMPRESA", cliente, GRIS_ETIQUETA, marca_legible(prim), centrado=True)
+    campo(d, (V_W // 2, 892), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, centrado=True)
+    d.rectangle([0, V_H - 14, V_W, V_H], fill=tuple(prim[:3]))
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
@@ -882,94 +805,60 @@ def estilo4_frontal(logo, pal, cliente):
 def estilo4_reverso(logo, pal, cliente):
     prim, sec, oro = pal
     claro = luminancia(prim) >= 0.45
-    oro_l = ajustar(oro, 0.82)
-    t = gradiente_vertical(V_W, V_H, (255, 255, 255), MARFIL).convert("RGBA")
-    mascara_arco = Image.new("L", (V_W, 310), 0)
-    da = ImageDraw.Draw(mascara_arco)
-    da.rectangle([0, 0, V_W, 150], fill=255)
-    da.ellipse([-200, 30, V_W + 200, 310], fill=255)
-    grad = gradiente_vertical(V_W, 310, ajustar(prim, 1.06), ajustar(prim, 0.66))
-    t.paste(grad, (0, 0), mascara_arco)
+    t = Image.new("RGBA", (V_W, V_H), (255, 255, 255, 255))
+    caja_arco = _cabecera_arco(t, prim, 150, 290)
     d = ImageDraw.Draw(t)
-    d.arc([-200, 30, V_W + 200, 310], 8, 172, fill=tuple(oro[:3]), width=5)
-    pegar_logo(t, logo, (139, 24, 360, 118), fondo_claro=claro)
-    # caja dorada de valores
-    d.rounded_rectangle([56, 380, V_W - 56, 580], 26, outline=oro_l, width=2)
-    valores = [("escudo", "SEGURIDAD"), ("check", "COMPROMISO"), ("estrella", "EXCELENCIA")]
-    f_val = fuente("semibold", 18)
-    for i, (nombre_ic, etiqueta) in enumerate(valores):
-        cx = V_W // 6 + i * (V_W // 3)
-        t.alpha_composite(icono(nombre_ic, 54, marca_legible(prim), detalle=(255, 255, 255)), (cx - 27, 416))
-        texto_tracking(d, (cx, 492), etiqueta, f_val, (96, 100, 108), tracking=3, centrado=True)
-        if i:
-            d.line([cx - V_W // 6, 412, cx - V_W // 6, 548], fill=ORO_CLARO, width=2)
-    t.alpha_composite(placa_qr(cliente + "-r", 196, oro), ((V_W - 240) // 2, 624))
-    d.text((V_W // 2, 892), "Escanee para validar la credencial",
-           font=fuente("regular", 25), fill=(110, 115, 122), anchor="ma")
-    d.text((V_W // 2, 930), "www.suempresa.com", font=fuente("semibold", 26), fill=marca_legible(prim), anchor="ma")
-    t.alpha_composite(capa_onda(V_W, V_H, oro, 200, V_H - 38, 11, 1.4, 0.6, grosor=4))
+    d.arc(caja_arco, 8, 172, fill=tuple(oro[:3]), width=3)
+    pieza = logo_tenido(logo, 300, 104, (255, 255, 255) if not claro else marca_legible(prim))
+    t.alpha_composite(pieza, ((V_W - pieza.width) // 2, 42 + (104 - pieza.height) // 2))
+    t.paste(pseudo_qr(cliente + "-r", 212), ((V_W - 212) // 2, 386))
+    d.text((V_W // 2, 648), "Escanee para validar la credencial",
+           font=fuente("semibold", 26), fill=TINTA, anchor="ma")
+    d.text((V_W // 2, 692), "www.suempresa.com  ·  (01) 000 0000",
+           font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
+    d.line([V_W // 2 - 60, 768, V_W // 2 + 60, 768], fill=tuple(oro[:3]), width=2)
+    d.rectangle([0, V_H - 14, V_W, V_H], fill=tuple(prim[:3]))
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
 
 def estilo5_frontal(logo, pal, cliente):
-    """Moderno: cortes diagonales en las esquinas y foto hexagonal."""
+    """Moderno: una sola diagonal de marca a la derecha con la foto; lo demás blanco."""
     prim, sec, oro = pal
-    prim_l = marca_legible(prim)
-    osc = mezcla(GRIS_DISECOD, prim, 0.3)
-    t = gradiente_vertical(CARD_W, CARD_H, (255, 255, 255), (250, 250, 252)).convert("RGBA")
+    prim_txt = marca_legible(prim)
+    t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
     d = ImageDraw.Draw(t)
-    # esquina superior izquierda: doble diagonal
-    d.polygon([(0, 0), (470, 0), (0, 272)], fill=tuple(ajustar(prim, 0.62)))
-    d.polygon([(0, 0), (400, 0), (0, 230)], fill=tuple(prim[:3]))
-    d.line([400, 0, 0, 230], fill=tuple(oro[:3]), width=4)
-    # esquina inferior derecha: oscura
-    d.polygon([(CARD_W, CARD_H), (CARD_W - 480, CARD_H), (CARD_W, CARD_H - 256)], fill=tuple(ajustar(prim, 0.62)))
-    d.polygon([(CARD_W, CARD_H), (CARD_W - 420, CARD_H), (CARD_W, CARD_H - 220)], fill=tuple(osc[:3]))
-    d.line([CARD_W - 420, CARD_H, CARD_W, CARD_H - 220], fill=tuple(oro[:3]), width=4)
-    grid_puntos(d, 880, 46, mezcla(prim, (255, 255, 255), 0.45), filas=3, cols=3)
-    grid_puntos(d, 60, 530, ORO_CLARO, filas=2, cols=4, paso=15, r=2)
-    # foto hexagonal sobre la diagonal
-    t.alpha_composite(contorno_hexagonal(312, oro, 5), (94, 158))
-    t.alpha_composite(foto_hexagonal(284), (108, 172))
-    # logo flotante arriba a la derecha
-    pegar_logo(t, logo, (520, 34, 420, 124), fondo_claro=True, tinte=prim_l)
-    d.line([470, 196, 950, 196], fill=tuple(oro[:3]), width=2)
-    diamante(d, 950, 196, 6, oro)
-    # datos
-    d.text((470, 226), DATOS["nombre"], font=fuente("display-bold", 48), fill=TINTA)
-    t.alpha_composite(icono("maletin", 26, prim_l, detalle=(255, 255, 255)), (472, 322))
-    d.text((512, 316), DATOS["cargo"], font=fuente("regular", 31), fill=(96, 100, 108))
-    t.alpha_composite(icono("credencial", 26, prim_l), (472, 376))
-    d.text((512, 370), cliente, font=fuente("semibold", 28), fill=prim_l)
-    f_id = fuente("semibold", 26)
-    ancho_id = d.textlength(DATOS["id"], font=f_id)
-    d.rounded_rectangle([472, 440, 472 + ancho_id + 52, 494], 27, outline=tuple(prim_l), width=2)
-    d.text((498, 451), DATOS["id"], font=f_id, fill=prim_l)
+    d.polygon([(704, 0), (CARD_W, 0), (CARD_W, CARD_H), (584, CARD_H)], fill=tuple(prim[:3]))
+    d.line([704, 0, 584, CARD_H], fill=tuple(oro[:3]), width=3)
+    # foto en el panel diagonal
+    banda_txt = texto_sobre(prim)
+    t.alpha_composite(foto_redondeada(232, 292, 14), (712, 72))
+    texto_tracking(d, (828, 412), "DNI", fuente("semibold", 19),
+                   mezcla(banda_txt, prim, 0.4), tracking=5, centrado=True)
+    d.text((828, 442), DATOS["id"].split()[-1], font=fuente("semibold", 31), fill=banda_txt, anchor="ma")
+    # área blanca
+    pegar_logo(t, logo, (64, 56, 340, 96), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    d.text((64, 206), DATOS["nombre"], font=fuente("display-bold", 52), fill=TINTA)
+    d.line([66, 292, 226, 292], fill=tuple(oro[:3]), width=2)
+    campo(d, (66, 340), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA)
+    campo(d, (66, 448), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
 
 def estilo5_reverso(logo, pal, cliente):
     prim, sec, oro = pal
-    prim_l = marca_legible(prim)
-    osc = mezcla(GRIS_DISECOD, prim, 0.3)
-    t = gradiente_vertical(CARD_W, CARD_H, (255, 255, 255), (250, 250, 252)).convert("RGBA")
+    t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
     d = ImageDraw.Draw(t)
-    d.polygon([(0, 0), (300, 0), (0, 170)], fill=tuple(prim[:3]))
-    d.line([300, 0, 0, 170], fill=tuple(oro[:3]), width=3)
-    d.polygon([(CARD_W, CARD_H), (CARD_W - 300, CARD_H), (CARD_W, CARD_H - 156)], fill=tuple(osc[:3]))
-    d.line([CARD_W - 300, CARD_H, CARD_W, CARD_H - 156], fill=tuple(oro[:3]), width=3)
-    wm = marca_agua(logo, 470, prim, 10)
-    t.paste(wm, (CARD_W - int(wm.width * 0.66), CARD_H - int(wm.height * 0.6)), wm)
-    pegar_logo(t, logo, (CARD_W // 2 - 190, 44, 380, 122), fondo_claro=True, tinte=prim_l)
-    divisor_oro(d, CARD_W // 2, 202, 130, ajustar(oro, 0.82))
-    t.alpha_composite(placa_qr(cliente, 192, oro), (CARD_W // 2 - 118, 228))
-    d.text((CARD_W // 2, 486), "Escanee para validar la credencial",
-           font=fuente("regular", 26), fill=(110, 115, 122), anchor="ma")
-    d.text((CARD_W // 2, 526), "www.suempresa.com  ·  (01) 000 0000",
-           font=fuente("semibold", 24), fill=(140, 144, 152), anchor="ma")
-    grid_puntos(d, 884, 60, mezcla(prim, (255, 255, 255), 0.45), filas=3, cols=3, paso=15, r=2)
+    d.polygon([(CARD_W - 36, 0), (CARD_W, 0), (CARD_W, CARD_H), (CARD_W - 86, CARD_H)], fill=tuple(prim[:3]))
+    cx = (CARD_W - 60) // 2
+    pegar_logo(t, logo, (cx - 170, 64, 340, 96), fondo_claro=True, tinte=marca_legible(prim))
+    t.paste(pseudo_qr(cliente, 200), (cx - 100, 218))
+    d.text((cx, 452), "Escanee para validar la credencial",
+           font=fuente("semibold", 26), fill=TINTA, anchor="ma")
+    d.text((cx, 494), "www.suempresa.com  ·  (01) 000 0000",
+           font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
+    d.line([cx - 80, 562, cx + 80, 562], fill=tuple(oro[:3]), width=2)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
