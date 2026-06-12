@@ -1,0 +1,4 @@
+{
+  "version": 1,
+  "archivos": ["app.py", "motor.py", "version.txt"]
+}

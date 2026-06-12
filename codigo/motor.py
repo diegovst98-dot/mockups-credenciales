@@ -27,13 +27,18 @@ FONDO_OSCURO = (27, 27, 29)
 
 DATOS = {"nombre": "María Fernández R.", "cargo": "Coordinadora de Operaciones", "id": "ID 00128"}
 
-# Dentro del .exe (PyInstaller): la salida va junto al .exe y los recursos van empaquetados.
+# Este archivo vive en codigo/ y se actualiza solo desde GitHub (ver launcher.py).
+# La salida va junto al .exe; los recursos van dentro del .exe, con override externo.
 if getattr(sys, "frozen", False):
     RUTA_BASE = os.path.dirname(sys.executable)
     RUTA_RECURSOS = os.path.join(getattr(sys, "_MEIPASS", RUTA_BASE), "recursos")
 else:
-    RUTA_BASE = os.path.dirname(os.path.abspath(__file__))
+    RUTA_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     RUTA_RECURSOS = os.path.join(RUTA_BASE, "recursos")
+# Si hay carpeta recursos/ al lado del exe, manda ella (se puede actualizar sin recompilar)
+_recursos_externos = os.path.join(RUTA_BASE, "recursos")
+if os.path.isdir(_recursos_externos):
+    RUTA_RECURSOS = _recursos_externos
 LOGO_DISECOD = os.path.join(RUTA_RECURSOS, "logo-disecod-oscuro.png")
 
 _FUENTES = {
