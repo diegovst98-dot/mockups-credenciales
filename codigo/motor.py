@@ -664,9 +664,10 @@ def estilo1_frontal(logo, pal, cliente):
     d.text((446, 346), DATOS["cargo"], font=fuente("regular", 32), fill=(96, 100, 108))
     t.alpha_composite(icono("credencial", 26, oro_l), (406, 408))
     d.text((446, 402), cliente, font=fuente("semibold", 28), fill=marca_legible(prim))
-    # onda dorada al pie cruzando toda la tarjeta
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, oro, 200, CARD_H - 46, 12, 1.3, 0.2, grosor=4))
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, ORO_CLARO, 110, CARD_H - 32, 14, 1.3, 0.55, grosor=3))
+    # barrido de pie en capas (cinta dorada paralela + olas llenas de marca)
+    t.alpha_composite(capa_onda(CARD_W, CARD_H, oro, 255, CARD_H - 92, 16, 1.15, 0.3, grosor=16))
+    t.alpha_composite(capa_onda(CARD_W, CARD_H, ajustar(prim, 0.55), 255, CARD_H - 72, 16, 1.15, 0.3))
+    t.alpha_composite(capa_onda(CARD_W, CARD_H, prim, 255, CARD_H - 40, 14, 1.15, 0.75))
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
@@ -683,14 +684,17 @@ def estilo1_reverso(logo, pal, cliente):
     d = ImageDraw.Draw(t)
     d.rectangle([62, 0, 66, CARD_H], fill=tuple(oro[:3]))
     cx = 66 + (CARD_W - 66) // 2
-    pegar_logo(t, logo, (cx - 190, 46, 380, 122), fondo_claro=True, tinte=marca_legible(prim))
-    divisor_oro(d, cx, 206, 130, oro_l)
-    t.alpha_composite(placa_qr(cliente, 196, oro), (cx - 120, 232))
-    d.text((cx, 494), "Escanee para validar la credencial",
+    pegar_logo(t, logo, (cx - 190, 40, 380, 116), fondo_claro=True, tinte=marca_legible(prim))
+    divisor_oro(d, cx, 196, 130, oro_l)
+    t.alpha_composite(placa_qr(cliente, 196, oro), (cx - 120, 222))
+    d.text((cx, 478), "Escanee para validar la credencial",
            font=fuente("regular", 26), fill=(110, 115, 122), anchor="ma")
-    d.text((cx, 534), "www.suempresa.com  ·  (01) 000 0000",
+    d.text((cx, 516), "www.suempresa.com  ·  (01) 000 0000",
            font=fuente("semibold", 24), fill=(140, 144, 152), anchor="ma")
-    t.alpha_composite(capa_onda(CARD_W, CARD_H, oro, 200, CARD_H - 40, 12, 1.4, 0.3, grosor=4))
+    # barrido de pie en capas, eco del frontal
+    t.alpha_composite(capa_onda(CARD_W, CARD_H, oro, 255, CARD_H - 66, 11, 1.2, 0.3, grosor=12))
+    t.alpha_composite(capa_onda(CARD_W, CARD_H, ajustar(prim, 0.55), 255, CARD_H - 50, 11, 1.2, 0.3))
+    t.alpha_composite(capa_onda(CARD_W, CARD_H, prim, 255, CARD_H - 26, 10, 1.2, 0.7))
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
