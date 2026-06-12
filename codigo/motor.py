@@ -628,11 +628,23 @@ def pegar_logo(canvas, logo, caja, fondo_claro=True, tinte=None, alinear="centro
 
 # ---------- Estilos ----------
 
-def campo(d, xy, etiqueta, valor, color_etq, color_val, centrado=False, tam_valor=30):
-    """Estructura tipográfica de credencial: ETIQUETA en versalitas + valor en bold."""
+def fuente_que_quepa(d, txt, peso, tam, max_ancho, tam_min=18):
+    """Baja el tamaño hasta que el texto entre en max_ancho (piso imprimible 18px)."""
+    f = fuente(peso, tam)
+    while tam > tam_min and d.textlength(txt, font=f) > max_ancho:
+        tam -= 1
+        f = fuente(peso, tam)
+    return f
+
+
+def campo(d, xy, etiqueta, valor, color_etq, color_val, centrado=False, tam_valor=30, max_ancho=None):
+    """Estructura tipográfica de credencial: ETIQUETA en versalitas + valor en bold.
+    max_ancho: auto-reduce el valor para razones sociales largas (no desbordar)."""
     x, y = xy
     f_e = fuente("semibold", 19)
     f_v = fuente("semibold", tam_valor)
+    if max_ancho:
+        f_v = fuente_que_quepa(d, valor, "semibold", tam_valor, max_ancho)
     if centrado:
         texto_tracking(d, (x, y), etiqueta, f_e, color_etq, tracking=4, centrado=True)
         d.text((x, y + 32), valor, font=f_v, fill=color_val, anchor="ma")
@@ -646,8 +658,10 @@ GRIS_ETIQUETA = (152, 154, 160)
 
 def web_cliente(cliente):
     """Dominio ficticio pero personalizado con el nombre del cliente:
-    'www.unileverandina.pe' vende la ilusión; 'www.suempresa.com' la mata."""
-    base = re.sub(r"[^a-z0-9]", "", slug(cliente).lower())[:22] or "suempresa"
+    'www.unileverandina.pe' vende la ilusión; 'www.suempresa.com' la mata.
+    Usa las 2 primeras palabras para que razones sociales largas no lo deformen."""
+    palabras = [p for p in re.split(r"\s+", cliente.strip()) if p]
+    base = re.sub(r"[^a-z0-9]", "", slug(" ".join(palabras[:2])).lower())[:20] or "suempresa"
     return f"www.{base}.pe"
 
 
@@ -669,7 +683,7 @@ def estilo2_frontal(logo, pal, cliente):
     d.text((V_W // 2, 618), DATOS["nombre"], font=fuente("display-bold", 52), fill=col_txt, anchor="ma")
     d.text((V_W // 2, 698), DATOS["cargo"], font=fuente("regular", 30), fill=col_suave, anchor="ma")
     d.line([V_W // 2 - 60, 762, V_W // 2 + 60, 762], fill=tuple(oro[:3]), width=2)
-    campo(d, (V_W // 2, 806), "EMPRESA", cliente, col_suave, col_txt, centrado=True)
+    campo(d, (V_W // 2, 806), "EMPRESA", cliente, col_suave, col_txt, centrado=True, max_ancho=530)
     campo(d, (V_W // 2, 902), "DNI", DATOS["id"].split()[-1], col_suave, col_txt, centrado=True, tam_valor=28)
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
@@ -707,7 +721,7 @@ def estilo3_frontal(logo, pal, cliente):
     d.text((76, 198), DATOS["nombre"], font=fuente("display-bold", 56), fill=(246, 245, 242))
     d.line([78, 290, 238, 290], fill=tuple(oro[:3]) + (255,), width=2)
     campo(d, (78, 338), "CARGO", DATOS["cargo"], (140, 142, 150), (228, 228, 232))
-    campo(d, (78, 446), "EMPRESA", cliente, (140, 142, 150), ORO_CLARO)
+    campo(d, (78, 446), "EMPRESA", cliente, (140, 142, 150), ORO_CLARO, max_ancho=278)
     campo(d, (380, 446), "DNI", DATOS["id"].split()[-1], (140, 142, 150), (228, 228, 232))
     # foto circular con aro neutro fino: el oro vive SOLO en el marco perimetral
     t.alpha_composite(aro(296, (206, 208, 214), 3), (646, 172))
@@ -761,7 +775,7 @@ def estilo4_frontal(logo, pal, cliente):
     d.text((V_W // 2, 630), DATOS["nombre"], font=fuente("display-bold", 48), fill=TINTA, anchor="ma")
     d.text((V_W // 2, 706), DATOS["cargo"], font=fuente("regular", 30), fill=(110, 113, 120), anchor="ma")
     d.line([V_W // 2 - 60, 768, V_W // 2 + 60, 768], fill=tuple(oro[:3]), width=2)
-    campo(d, (192, 820), "EMPRESA", cliente, GRIS_ETIQUETA, marca_legible(prim), centrado=True, tam_valor=28)
+    campo(d, (192, 820), "EMPRESA", cliente, GRIS_ETIQUETA, marca_legible(prim), centrado=True, tam_valor=28, max_ancho=265)
     campo(d, (462, 820), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, centrado=True, tam_valor=28)
     d.rectangle([0, V_H - 14, V_W, V_H], fill=tuple(prim[:3]))
     t.putalpha(mascara_redondeada(V_W, V_H))
@@ -809,7 +823,7 @@ def estilo5_frontal(logo, pal, cliente):
     d.text((64, 262), apellido, font=fuente("bold", 60), fill=TINTA)
     d.rectangle([66, 372, 114, 378], fill=tuple(prim_txt[:3]))
     campo(d, (66, 420), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA, tam_valor=28)
-    campo(d, (66, 518), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=28)
+    campo(d, (66, 518), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=28, max_ancho=258)
     campo(d, (348, 518), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=28)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
@@ -849,7 +863,7 @@ def estilo6_frontal(logo, pal, cliente):
     d.line([84, 198, CARD_W - 84, 198], fill=tuple(oro[:3]), width=2)
     d.text((84, 252), DATOS["nombre"], font=fuente("display-bold", 58), fill=TINTA)
     d.text((84, 344), DATOS["cargo"], font=fuente("display-italic", 31), fill=(120, 122, 128))
-    campo(d, (84, 478), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=29)
+    campo(d, (84, 478), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=29, max_ancho=360)
     campo(d, (470, 478), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=29)
     t.alpha_composite(foto_redondeada(204, 256, 12), (CARD_W - 84 - 204, 252))
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
@@ -896,8 +910,10 @@ def estilo7_frontal(logo, pal, cliente):
     texto_tracking(d, (V_W // 2, bloque_y + 70), "N° DE PASE", fuente("semibold", 20),
                    mezcla(col_blq, prim, 0.15), tracking=5, centrado=True)
     d.text((V_W // 2, bloque_y + 106), "0128", font=fuente("display-bold", 88), fill=col_blq, anchor="ma")
-    d.text((V_W // 2, bloque_y + 256), f"Autorizado por {cliente}",
-           font=fuente("semibold", 25), fill=mezcla(col_blq, prim, 0.2), anchor="ma")
+    txt_aut = f"Autorizado por {cliente}"
+    d.text((V_W // 2, bloque_y + 256), txt_aut,
+           font=fuente_que_quepa(d, txt_aut, "semibold", 25, V_W - 110),
+           fill=mezcla(col_blq, prim, 0.2), anchor="ma")
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
@@ -946,7 +962,9 @@ def estilo8_frontal(logo, pal, cliente):
     d.rectangle([0, ALTO_B, CARD_W, ALTO_B + 2], fill=tuple(oro[:3]))
     pieza = logo_tenido(logo, 300, 96, (255, 255, 255) if not claro else marca_legible(prim))
     t.alpha_composite(pieza, (64, 36 + (96 - pieza.height) // 2))
-    d.text((CARD_W - 64, 84), cliente, font=fuente("semibold", 30), fill=texto_sobre(prim), anchor="rm")
+    d.text((CARD_W - 76, 84), cliente,
+           font=fuente_que_quepa(d, cliente, "semibold", 32, 520),
+           fill=texto_sobre(prim), anchor="rm")
     t.alpha_composite(foto_redondeada(232, 290, 14), (64, 258))
     d.text((348, 260), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA)
     d.line([350, 348, 510, 348], fill=tuple(oro[:3]), width=2)
@@ -988,11 +1006,11 @@ def estilo9_frontal(logo, pal, cliente):
     t.paste(foto_carnet(V_W, ALTO_F), (0, 0))
     d = ImageDraw.Draw(t)
     d.rectangle([0, ALTO_F, V_W, ALTO_F + 6], fill=tuple(marca_legible(prim)[:3]))
-    pegar_logo(t, logo, (64, ALTO_F + 36, 320, 92), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
-    d.text((64, ALTO_F + 172), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA)
-    d.text((64, ALTO_F + 254), DATOS["cargo"], font=fuente("regular", 29), fill=GRIS_ETIQUETA)
-    campo(d, (64, ALTO_F + 330), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=27)
-    campo(d, (400, ALTO_F + 330), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=27)
+    pegar_logo(t, logo, (64, ALTO_F + 30, 320, 92), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    d.text((64, ALTO_F + 158), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA)
+    d.text((64, ALTO_F + 240), DATOS["cargo"], font=fuente("regular", 29), fill=GRIS_ETIQUETA)
+    campo(d, (64, ALTO_F + 314), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=27, max_ancho=312)
+    campo(d, (400, ALTO_F + 314), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=27)
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
@@ -1021,9 +1039,11 @@ def estilo9_reverso(logo, pal, cliente):
 
 def estilo10_frontal(logo, pal, cliente):
     """Nocturno: vertical oscuro, aro de la foto en color de marca,
-    fila de campos y filo de marca al pie (refs UCV / China Polo verticales)."""
+    fila de campos y filo de marca al pie (refs UCV / China Polo verticales).
+    Con paleta de respaldo (logo negro/monocromo) usa grafito medio para no
+    quedar gemelo del Premium."""
     prim, sec, oro = pal
-    fondo = mezcla((30, 30, 34), prim, 0.10)
+    fondo = mezcla((30, 30, 34), prim, 0.10) if saturacion(prim) > 0.12 else (72, 74, 80)
     acento = ajustar(prim, 1.45) if saturacion(prim) > 0.12 else ORO
     tinte_claro = ajustar(prim, 1.75) if saturacion(prim) > 0.12 else ORO_CLARO
     t = Image.new("RGBA", (V_W, V_H), tuple(fondo[:3]) + (255,))
@@ -1034,7 +1054,7 @@ def estilo10_frontal(logo, pal, cliente):
     d.text((V_W // 2, 642), DATOS["nombre"], font=fuente("display-bold", 50), fill=(246, 245, 242), anchor="ma")
     d.text((V_W // 2, 718), DATOS["cargo"], font=fuente("regular", 29), fill=(170, 172, 180), anchor="ma")
     d.line([V_W // 2 - 60, 780, V_W // 2 + 60, 780], fill=tuple(oro[:3]), width=2)
-    campo(d, (192, 830), "EMPRESA", cliente, (140, 142, 150), tinte_claro, centrado=True, tam_valor=28)
+    campo(d, (192, 830), "EMPRESA", cliente, (140, 142, 150), tinte_claro, centrado=True, tam_valor=28, max_ancho=265)
     campo(d, (462, 830), "DNI", DATOS["id"].split()[-1], (140, 142, 150), (228, 228, 232), centrado=True, tam_valor=28)
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
@@ -1043,7 +1063,7 @@ def estilo10_frontal(logo, pal, cliente):
 def estilo10_reverso(logo, pal, cliente):
     """Reverso nocturno: logo arriba, QR sobre placa y contacto en claro."""
     prim, sec, oro = pal
-    fondo = mezcla((30, 30, 34), prim, 0.10)
+    fondo = mezcla((30, 30, 34), prim, 0.10) if saturacion(prim) > 0.12 else (72, 74, 80)
     acento = ajustar(prim, 1.45) if saturacion(prim) > 0.12 else ORO
     tinte_claro = ajustar(prim, 1.75) if saturacion(prim) > 0.12 else ORO_CLARO
     t = Image.new("RGBA", (V_W, V_H), tuple(fondo[:3]) + (255,))

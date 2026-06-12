@@ -21,6 +21,9 @@ LOGOS = {
     "negro": (os.path.join(AQUI, "entrada", "logo-prueba-negro.png"), "Constructora Lima"),
     "blanco": (os.path.join(AQUI, "entrada", "logo-prueba-blanco.png"), "Clínica San Borja"),
     "acme": (os.path.join(AQUI, "entrada", "logo-prueba-acme.png"), "ACME Corp"),
+    # caso extremo: razón social larga (prueba de overflow de campos)
+    "largo": (os.path.join(AQUI, "entrada", "logo-prueba-frutos.png"),
+              "Corporación Andina de Seguridad Integral"),
 }
 SET_ESTANDAR = ["unilever", "anay", "gv", "interbank"]
 
