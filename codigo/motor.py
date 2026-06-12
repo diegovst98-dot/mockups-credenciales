@@ -670,18 +670,25 @@ def estilo1_frontal(logo, pal, cliente):
 
 
 def estilo1_reverso(logo, pal, cliente):
+    """Reverso corporativo: banda lateral eco del frontal cargando el QR,
+    área blanca con normas y contacto en la misma grilla del frontal."""
     prim, sec, oro = pal
+    prim_txt = marca_legible(prim)
+    banda_txt = texto_sobre(prim)
     t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
     d = ImageDraw.Draw(t)
-    d.rectangle([0, 0, 14, CARD_H], fill=tuple(prim[:3]))
-    cx = CARD_W // 2
-    pegar_logo(t, logo, (cx - 170, 64, 340, 96), fondo_claro=True, tinte=marca_legible(prim))
-    t.paste(pseudo_qr(cliente, 200), (cx - 100, 218))
-    d.text((cx, 452), "Escanee para validar la credencial",
-           font=fuente("semibold", 26), fill=TINTA, anchor="ma")
-    d.text((cx, 494), "www.suempresa.com  ·  (01) 000 0000",
-           font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
-    d.line([cx - 80, 562, cx + 80, 562], fill=tuple(oro[:3]), width=2)
+    BANDA = 332
+    d.rectangle([0, 0, BANDA, CARD_H], fill=tuple(prim[:3]))
+    d.rectangle([BANDA, 0, BANDA + 2, CARD_H], fill=tuple(oro[:3]))
+    placa = placa_qr(cliente, 176)
+    t.alpha_composite(placa, ((BANDA - placa.width) // 2, 172))
+    d.text((BANDA // 2, 426), "Escanee para validar", font=fuente("semibold", 23), fill=banda_txt, anchor="ma")
+    pegar_logo(t, logo, (396, 64, 340, 92), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    d.text((396, 224), "Esta credencial es personal", font=fuente("semibold", 28), fill=TINTA)
+    d.text((396, 264), "e intransferible.", font=fuente("semibold", 28), fill=TINTA)
+    d.line([398, 348, 558, 348], fill=tuple(oro[:3]), width=2)
+    campo(d, (398, 396), "SITIO WEB", "www.suempresa.com", GRIS_ETIQUETA, TINTA, tam_valor=27)
+    campo(d, (398, 496), "CENTRAL", "(01) 000 0000", GRIS_ETIQUETA, TINTA, tam_valor=27)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
@@ -823,7 +830,8 @@ def estilo4_reverso(logo, pal, cliente):
 
 
 def estilo5_frontal(logo, pal, cliente):
-    """Moderno: una sola diagonal de marca a la derecha con la foto; lo demás blanco."""
+    """Moderno: diagonal de marca a la derecha con la foto; nombre sans en dos
+    pesos (light + bold) y pleca de marca — tipografía propia, distinta del E1."""
     prim, sec, oro = pal
     prim_txt = marca_legible(prim)
     t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
@@ -836,30 +844,216 @@ def estilo5_frontal(logo, pal, cliente):
     texto_tracking(d, (832, 446), "DNI", fuente("semibold", 19),
                    mezcla(banda_txt, prim, 0.4), tracking=5, centrado=True)
     d.text((832, 476), DATOS["id"].split()[-1], font=fuente("semibold", 31), fill=banda_txt, anchor="ma")
-    # área blanca
-    pegar_logo(t, logo, (64, 56, 340, 96), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
-    d.text((64, 214), DATOS["nombre"], font=fuente("display-bold", 52), fill=TINTA)
-    d.line([66, 300, 226, 300], fill=tuple(oro[:3]), width=2)
-    campo(d, (66, 348), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA)
-    campo(d, (66, 456), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt)
+    # área blanca: nombre sans en dos pesos, pleca en color de marca
+    pegar_logo(t, logo, (64, 52, 300, 84), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    nombre, _, apellido = DATOS["nombre"].partition(" ")
+    d.text((64, 188), nombre, font=fuente("light", 60), fill=TINTA)
+    d.text((64, 262), apellido, font=fuente("bold", 60), fill=TINTA)
+    d.rectangle([66, 372, 114, 378], fill=tuple(prim_txt[:3]))
+    campo(d, (66, 420), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA, tam_valor=28)
+    campo(d, (66, 518), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=28)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
 
 def estilo5_reverso(logo, pal, cliente):
+    """Reverso moderno: la diagonal cambia de lado y carga el QR; área blanca
+    con normas y contacto."""
     prim, sec, oro = pal
+    prim_txt = marca_legible(prim)
+    banda_txt = texto_sobre(prim)
     t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
     d = ImageDraw.Draw(t)
-    d.polygon([(CARD_W - 36, 0), (CARD_W, 0), (CARD_W, CARD_H), (CARD_W - 86, CARD_H)], fill=tuple(prim[:3]))
-    cx = (CARD_W - 60) // 2
-    pegar_logo(t, logo, (cx - 170, 64, 340, 96), fondo_claro=True, tinte=marca_legible(prim))
-    t.paste(pseudo_qr(cliente, 200), (cx - 100, 218))
-    d.text((cx, 452), "Escanee para validar la credencial",
-           font=fuente("semibold", 26), fill=TINTA, anchor="ma")
-    d.text((cx, 494), "www.suempresa.com  ·  (01) 000 0000",
-           font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
-    d.line([cx - 80, 562, cx + 80, 562], fill=tuple(oro[:3]), width=2)
+    d.polygon([(0, 0), (424, 0), (304, CARD_H), (0, CARD_H)], fill=tuple(prim[:3]))
+    d.line([424, 0, 304, CARD_H], fill=tuple(oro[:3]), width=3)
+    placa = placa_qr(cliente, 168)
+    t.alpha_composite(placa, (66, 168))
+    d.text((172, 408), "Escanee para validar", font=fuente("semibold", 23), fill=banda_txt, anchor="ma")
+    pegar_logo(t, logo, (478, 70, 320, 90), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    d.text((478, 232), "Esta credencial es personal", font=fuente("semibold", 28), fill=TINTA)
+    d.text((478, 272), "e intransferible.", font=fuente("semibold", 28), fill=TINTA)
+    d.line([480, 356, 640, 356], fill=tuple(oro[:3]), width=2)
+    campo(d, (480, 404), "SITIO WEB", "www.suempresa.com", GRIS_ETIQUETA, TINTA, tam_valor=27)
+    campo(d, (480, 504), "CENTRAL", "(01) 000 0000", GRIS_ETIQUETA, TINTA, tam_valor=27)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
+    return t
+
+
+def estilo6_frontal(logo, pal, cliente):
+    """Ejecutivo: marfil minimal — tipografía, un hairline a todo lo ancho y
+    silencio. El gesto es la contención (refs reales: S. Abogados, NGR, K)."""
+    prim, sec, oro = pal
+    prim_txt = marca_legible(prim)
+    t = Image.new("RGBA", (CARD_W, CARD_H), tuple(MARFIL) + (255,))
+    d = ImageDraw.Draw(t)
+    pegar_logo(t, logo, (84, 64, 280, 86), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    d.line([84, 198, CARD_W - 84, 198], fill=tuple(oro[:3]), width=2)
+    d.text((84, 252), DATOS["nombre"], font=fuente("display-bold", 58), fill=TINTA)
+    d.text((84, 344), DATOS["cargo"], font=fuente("display-italic", 31), fill=(120, 122, 128))
+    campo(d, (84, 478), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=29)
+    campo(d, (470, 478), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=29)
+    t.alpha_composite(foto_redondeada(204, 256, 12), (CARD_W - 84 - 204, 252))
+    t.putalpha(mascara_redondeada(CARD_W, CARD_H))
+    return t
+
+
+def estilo6_reverso(logo, pal, cliente):
+    """Reverso ejecutivo: dos hairlines enmarcan logo, QR directo sobre marfil
+    y contacto. Quieto a propósito."""
+    prim, sec, oro = pal
+    prim_txt = marca_legible(prim)
+    t = Image.new("RGBA", (CARD_W, CARD_H), tuple(MARFIL) + (255,))
+    d = ImageDraw.Draw(t)
+    d.line([84, 92, CARD_W - 84, 92], fill=tuple(oro[:3]), width=2)
+    pegar_logo(t, logo, (CARD_W // 2 - 150, 136, 300, 86), fondo_claro=True, tinte=prim_txt)
+    t.paste(pseudo_qr(cliente, 184, bg=MARFIL), (CARD_W // 2 - 92, 268))
+    campo(d, (CARD_W // 2, 478), "SITIO WEB", "www.suempresa.com",
+          GRIS_ETIQUETA, TINTA, centrado=True, tam_valor=27)
+    d.line([84, 588, CARD_W - 84, 588], fill=tuple(oro[:3]), width=2)
+    t.putalpha(mascara_redondeada(CARD_W, CARD_H))
+    return t
+
+
+def estilo7_frontal(logo, pal, cliente):
+    """Pase de visita: rol protagonista en blanco + bloque de marca al pie con
+    número de pase (patrón Niubiz del inventario real — sin foto, es un pase)."""
+    prim, sec, oro = pal
+    prim_txt = marca_legible(prim)
+    claro = luminancia(prim) >= 0.45
+    t = Image.new("RGBA", (V_W, V_H), (255, 255, 255, 255))
+    d = ImageDraw.Draw(t)
+    pegar_logo(t, logo, ((V_W - 320) // 2, 88, 320, 112), fondo_claro=True, tinte=prim_txt)
+    texto_tracking(d, (V_W // 2, 304), "PASE DE ACCESO", fuente("semibold", 21),
+                   GRIS_ETIQUETA, tracking=6, centrado=True)
+    d.text((V_W // 2, 352), "VISITANTE", font=fuente("display-black", 84), fill=TINTA, anchor="ma")
+    d.line([V_W // 2 - 60, 496, V_W // 2 + 60, 496], fill=tuple(oro[:3]), width=2)
+    d.text((V_W // 2, 532), "Porte este pase en un lugar visible.",
+           font=fuente("regular", 26), fill=GRIS_ETIQUETA, anchor="ma")
+    bloque_y = 668
+    d.rectangle([0, bloque_y, V_W, V_H], fill=tuple(prim[:3]))
+    col_blq = (255, 255, 255) if not claro else TINTA
+    texto_tracking(d, (V_W // 2, bloque_y + 70), "N° DE PASE", fuente("semibold", 20),
+                   mezcla(col_blq, prim, 0.35), tracking=5, centrado=True)
+    d.text((V_W // 2, bloque_y + 106), "0128", font=fuente("display-bold", 88), fill=col_blq, anchor="ma")
+    d.text((V_W // 2, bloque_y + 256), f"Autorizado por {cliente}",
+           font=fuente("semibold", 25), fill=mezcla(col_blq, prim, 0.2), anchor="ma")
+    t.putalpha(mascara_redondeada(V_W, V_H))
+    return t
+
+
+def estilo7_reverso(logo, pal, cliente):
+    """Reverso del pase: normas de visita en lista con plecas + QR de registro."""
+    prim, sec, oro = pal
+    prim_txt = marca_legible(prim)
+    claro = luminancia(prim) >= 0.45
+    col_cab = (255, 255, 255) if not claro else TINTA
+    t = Image.new("RGBA", (V_W, V_H), (255, 255, 255, 255))
+    d = ImageDraw.Draw(t)
+    d.rectangle([0, 0, V_W, 150], fill=tuple(prim[:3]))
+    texto_tracking(d, (V_W // 2, 62), "NORMAS DE VISITA", fuente("semibold", 24),
+                   col_cab, tracking=6, centrado=True)
+    normas = [
+        "Porte el pase en un lugar visible",
+        "Circule solo por zonas autorizadas",
+        "Devuélvalo al concluir su visita",
+    ]
+    y = 226
+    for n in normas:
+        d.rectangle([84, y + 12, 108, y + 18], fill=tuple(prim_txt[:3]))
+        d.text((132, y), n, font=fuente("regular", 27), fill=TINTA)
+        y += 84
+    d.line([V_W // 2 - 60, y + 24, V_W // 2 + 60, y + 24], fill=tuple(oro[:3]), width=2)
+    t.paste(pseudo_qr(cliente + "-r", 190), ((V_W - 190) // 2, y + 80))
+    d.text((V_W // 2, y + 304), "Registre su ingreso y salida",
+           font=fuente("semibold", 26), fill=TINTA, anchor="ma")
+    d.text((V_W // 2, y + 348), "www.suempresa.com",
+           font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
+    d.rectangle([0, V_H - 14, V_W, V_H], fill=tuple(prim[:3]))
+    t.putalpha(mascara_redondeada(V_W, V_H))
+    return t
+
+
+def estilo8_frontal(logo, pal, cliente):
+    """Clásico: banda superior de marca con el logo y la empresa, cuerpo blanco
+    con foto izquierda y columna de datos (patrón Niubiz / Los Olivos)."""
+    prim, sec, oro = pal
+    claro = luminancia(prim) >= 0.45
+    t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
+    d = ImageDraw.Draw(t)
+    ALTO_B = 168
+    d.rectangle([0, 0, CARD_W, ALTO_B], fill=tuple(prim[:3]))
+    d.rectangle([0, ALTO_B, CARD_W, ALTO_B + 2], fill=tuple(oro[:3]))
+    pieza = logo_tenido(logo, 300, 96, (255, 255, 255) if not claro else marca_legible(prim))
+    t.alpha_composite(pieza, (64, 36 + (96 - pieza.height) // 2))
+    d.text((CARD_W - 64, 84), cliente, font=fuente("semibold", 30), fill=texto_sobre(prim), anchor="rm")
+    t.alpha_composite(foto_redondeada(232, 290, 14), (64, 258))
+    d.text((348, 260), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA)
+    d.line([350, 348, 510, 348], fill=tuple(oro[:3]), width=2)
+    campo(d, (350, 404), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA, tam_valor=28)
+    campo(d, (760, 404), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=28)
+    t.putalpha(mascara_redondeada(CARD_W, CARD_H))
+    return t
+
+
+def estilo8_reverso(logo, pal, cliente):
+    """Reverso clásico: banda superior eco, QR a la izquierda y contacto a la derecha."""
+    prim, sec, oro = pal
+    claro = luminancia(prim) >= 0.45
+    t = Image.new("RGBA", (CARD_W, CARD_H), (255, 255, 255, 255))
+    d = ImageDraw.Draw(t)
+    ALTO_B = 110
+    d.rectangle([0, 0, CARD_W, ALTO_B], fill=tuple(prim[:3]))
+    d.rectangle([0, ALTO_B, CARD_W, ALTO_B + 2], fill=tuple(oro[:3]))
+    pieza = logo_tenido(logo, 240, 70, (255, 255, 255) if not claro else marca_legible(prim))
+    t.alpha_composite(pieza, ((CARD_W - pieza.width) // 2, 20 + (70 - pieza.height) // 2))
+    t.paste(pseudo_qr(cliente, 196), (96, 196))
+    d.text((194, 416), "Escanee para validar", font=fuente("semibold", 23), fill=GRIS_ETIQUETA, anchor="ma")
+    d.text((360, 218), "Esta credencial es personal", font=fuente("semibold", 28), fill=TINTA)
+    d.text((360, 258), "e intransferible.", font=fuente("semibold", 28), fill=TINTA)
+    d.line([362, 342, 522, 342], fill=tuple(oro[:3]), width=2)
+    campo(d, (362, 390), "SITIO WEB", "www.suempresa.com", GRIS_ETIQUETA, TINTA, tam_valor=27)
+    campo(d, (362, 490), "CENTRAL", "(01) 000 0000", GRIS_ETIQUETA, TINTA, tam_valor=27)
+    t.putalpha(mascara_redondeada(CARD_W, CARD_H))
+    return t
+
+
+def estilo9_frontal(logo, pal, cliente):
+    """Retrato: foto a sangre completa en la mitad superior con costura de oro,
+    panel blanco de datos abajo (badge contemporáneo; ref. mitad-foto del inventario)."""
+    prim, sec, oro = pal
+    prim_txt = marca_legible(prim)
+    t = Image.new("RGBA", (V_W, V_H), (255, 255, 255, 255))
+    ALTO_F = 520
+    t.paste(foto_carnet(V_W, ALTO_F), (0, 0))
+    d = ImageDraw.Draw(t)
+    d.rectangle([0, ALTO_F, V_W, ALTO_F + 4], fill=tuple(oro[:3]))
+    pegar_logo(t, logo, (64, ALTO_F + 56, 300, 90), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    d.text((64, ALTO_F + 196), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA)
+    d.text((64, ALTO_F + 272), DATOS["cargo"], font=fuente("regular", 29), fill=GRIS_ETIQUETA)
+    campo(d, (64, ALTO_F + 360), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=27)
+    campo(d, (400, ALTO_F + 360), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=27)
+    t.putalpha(mascara_redondeada(V_W, V_H))
+    return t
+
+
+def estilo9_reverso(logo, pal, cliente):
+    """Reverso retrato: mitad superior en color de marca con la silueta del logo,
+    mitad blanca con QR y contacto — espejo del frontal."""
+    prim, sec, oro = pal
+    t = Image.new("RGBA", (V_W, V_H), (255, 255, 255, 255))
+    d = ImageDraw.Draw(t)
+    ALTO_F = 520
+    d.rectangle([0, 0, V_W, ALTO_F], fill=tuple(prim[:3]))
+    d.rectangle([0, ALTO_F, V_W, ALTO_F + 4], fill=tuple(oro[:3]))
+    tinte = ajustar(prim, 1.45) if saturacion(prim) > 0.12 else (255, 255, 255)
+    pieza = logo_tenido(logo, 380, 200, tinte)
+    t.alpha_composite(pieza, ((V_W - pieza.width) // 2, 160 + (200 - pieza.height) // 2))
+    t.paste(pseudo_qr(cliente + "-r", 190), ((V_W - 190) // 2, 566))
+    d.text((V_W // 2, 788), "Escanee para validar la credencial",
+           font=fuente("semibold", 26), fill=TINTA, anchor="ma")
+    d.text((V_W // 2, 832), "www.suempresa.com  ·  (01) 000 0000",
+           font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
+    t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
 
@@ -869,6 +1063,10 @@ ESTILOS = [
     ("Estilo 3 — Premium", estilo3_frontal, estilo3_reverso),
     ("Estilo 4 — Institucional", estilo4_frontal, estilo4_reverso),
     ("Estilo 5 — Moderno", estilo5_frontal, estilo5_reverso),
+    ("Estilo 6 — Ejecutivo", estilo6_frontal, estilo6_reverso),
+    ("Estilo 7 — Pase de visita", estilo7_frontal, estilo7_reverso),
+    ("Estilo 8 — Clásico", estilo8_frontal, estilo8_reverso),
+    ("Estilo 9 — Retrato", estilo9_frontal, estilo9_reverso),
 ]
 
 
