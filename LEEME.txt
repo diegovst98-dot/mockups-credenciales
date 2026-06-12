@@ -1,0 +1,67 @@
+==========================================================
+  MOCKUPS DISECOD - Generador de propuestas de fotochecks
+==========================================================
+
+QUE ES
+------
+El cliente te manda su logo y en menos de un minuto le
+devuelves 3 propuestas de fotocheck (frontal y reverso)
+listas para enviar por WhatsApp, con presentacion DISECOD.
+
+
+COMO INSTALAR (solo la primera vez, 1 minuto)
+---------------------------------------------
+1. Copia este zip a tu PC y descomprimelo
+   (clic derecho sobre el zip -> "Extraer todo...").
+
+2. Abre la carpeta extraida y haz DOBLE CLIC en:
+
+        instalar.bat
+
+3. Se copia el programa y aparece el icono
+   "Mockups DISECOD" en tu escritorio. Listo.
+
+   NOTA: si Windows muestra una ventana azul que dice
+   "Windows protegio tu PC", haz clic en "Mas informacion"
+   y luego en "Ejecutar de todas formas". Es normal:
+   sale porque el programa es nuestro (hecho en casa)
+   y no esta firmado por una empresa de software.
+
+
+COMO USAR
+---------
+1. Guarda el logo del cliente en tu PC
+   (PNG o JPG; mejor PNG con fondo transparente.
+   Si llega por WhatsApp, descargalo en calidad original,
+   no le tomes captura de pantalla).
+
+2. Abre "Mockups DISECOD" desde el escritorio.
+
+3. Escribe el nombre de la empresa cliente.
+
+4. Boton "Elegir logo..." -> busca el archivo del logo.
+
+5. Boton "Generar mockups". En unos segundos se abre sola
+   la carpeta con los resultados:
+
+   - lamina-presentacion.png  <- ESTA es la que mandas
+     por WhatsApp (las 3 propuestas juntas, con marca
+     DISECOD).
+   - estilo-1 / estilo-2 / estilo-3 (.png) <- cada
+     propuesta en grande, por si el cliente quiere ver
+     una en detalle.
+
+
+BUENO SABER
+-----------
+- Los datos del carnet (nombre, cargo, foto) son de
+  EJEMPLO a proposito. El diseno final se trabaja cuando
+  el cliente confirme.
+- El programa se actualiza solo cuando hay mejoras
+  (necesita internet al abrirse). No hay que reinstalar.
+- Si un logo sale mal o algo falla, avisale a Diego
+  mandandole el logo y la imagen que salio.
+
+==========================================================
+  DISECOD - www.fotochecks.pe - ventas@disecod.com
+==========================================================
