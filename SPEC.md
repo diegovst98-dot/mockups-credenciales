@@ -11,8 +11,16 @@
 > E4 con fila EMPRESA/DNI (aire al pie). **Desplazado: Corporativo de banda lateral**
 > (redundante con Clásico/Moderno; regla del tope de 9). Numeración final = orden de
 > `ESTILOS`: 1 Clásico · 2 Full color · 3 Premium · 4 Institucional · 5 Moderno ·
-> 6 Ejecutivo · 7 Retrato · 8 Nocturno · 9 Pase de visita. Puntajes del jurado:
-> todos ≥9.1 (Premium 9.4, Nocturno/E4/E7-pase 9.2). Herramienta: `render_pruebas.py`.
+> 6 Ejecutivo · 7 Retrato · 8 Nocturno · 9 Pase de visita. Herramienta: `render_pruebas.py`.
+> **Rondas con jurado externo (3 agentes frescos): portafolio 7.5 → 7.8 → 8.6/10.**
+> Correcciones que salieron de ahí: dominio web personalizado por cliente (mata el
+> "suempresa.com"); lámina a ESCALA ÚNICA 0.48; E2 a color plano (violaba la regla v5);
+> E5 con la foto cortada al ángulo de la diagonal; E7 con costura/marca en el frontal y
+> silueta blanca en reverso; Nocturno en grafito medio con paleta de respaldo (no gemelo
+> del Premium); E4 con eco de arco al pie (bookend); foto neutralizada (menos cálida,
+> backup en salida\_loop\); robustez de razones sociales largas (`campo(max_ancho=…)` +
+> `fuente_que_quepa`, piso 18px). Picos finales del jurado: Pase 9.0 · Premium 8.8 ·
+> Ejecutivo 8.6. **Pendiente: publicar.bat con OK de Diego** (vendedor aún no instala).
 
 > **v6 — Loop de calidad 3-roles (2026-06-12 PM):** ciclo DISEÑADOR→AJUSTADOR→INSPECTOR
 > hasta superar 9/10 en ambos jurados (2 ciclos). Cambios: estilo 2 sin franja blanca curva

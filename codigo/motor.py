@@ -777,7 +777,9 @@ def estilo4_frontal(logo, pal, cliente):
     d.line([V_W // 2 - 60, 768, V_W // 2 + 60, 768], fill=tuple(oro[:3]), width=2)
     campo(d, (192, 820), "EMPRESA", cliente, GRIS_ETIQUETA, marca_legible(prim), centrado=True, tam_valor=28, max_ancho=265)
     campo(d, (462, 820), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, centrado=True, tam_valor=28)
-    d.rectangle([0, V_H - 14, V_W, V_H], fill=tuple(prim[:3]))
+    # eco del arco al pie (bookend): el gesto institucional cierra la tarjeta
+    d.ellipse([-200, V_H - 86, V_W + 200, V_H + 150], fill=tuple(prim[:3]))
+    d.arc([-200, V_H - 86, V_W + 200, V_H + 150], 188, 352, fill=tuple(oro[:3]), width=3)
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
@@ -797,7 +799,8 @@ def estilo4_reverso(logo, pal, cliente):
     d.text((V_W // 2, 692), f"{web_cliente(cliente)}  ·  (01) 700 0000",
            font=fuente("regular", 24), fill=GRIS_ETIQUETA, anchor="ma")
     d.line([V_W // 2 - 60, 768, V_W // 2 + 60, 768], fill=tuple(oro[:3]), width=2)
-    d.rectangle([0, V_H - 14, V_W, V_H], fill=tuple(prim[:3]))
+    d.ellipse([-200, V_H - 86, V_W + 200, V_H + 150], fill=tuple(prim[:3]))
+    d.arc([-200, V_H - 86, V_W + 200, V_H + 150], 188, 352, fill=tuple(oro[:3]), width=3)
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
