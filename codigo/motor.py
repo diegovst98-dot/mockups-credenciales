@@ -656,8 +656,8 @@ def estilo2_frontal(logo, pal, cliente):
     prim, sec, oro = pal
     claro = luminancia(prim) >= 0.45
     col_txt = (255, 255, 255) if not claro else TINTA
-    col_suave = mezcla(col_txt, prim, 0.30)
-    t = gradiente_vertical(V_W, V_H, ajustar(prim, 1.04), ajustar(prim, 0.86)).convert("RGBA")
+    col_suave = mezcla(col_txt, prim, 0.18)
+    t = Image.new("RGBA", (V_W, V_H), tuple(prim[:3]) + (255,))  # color PLANO (regla v5)
     d = ImageDraw.Draw(t)
     # logo en silueta (blanca sobre oscuro / tinta sobre claro), flotando
     pieza = logo_tenido(logo, 320, 112, (255, 255, 255) if not claro else marca_legible(prim))
@@ -797,12 +797,11 @@ def estilo5_frontal(logo, pal, cliente):
     d = ImageDraw.Draw(t)
     d.polygon([(704, 0), (CARD_W, 0), (CARD_W, CARD_H), (584, CARD_H)], fill=tuple(prim[:3]))
     d.line([704, 0, 584, CARD_H], fill=tuple(oro[:3]), width=3)
-    # foto protagonista en el panel diagonal
-    banda_txt = texto_sobre(prim)
-    t.alpha_composite(foto_redondeada(252, 316, 14), (706, 88))
-    texto_tracking(d, (832, 446), "DNI", fuente("semibold", 19),
-                   mezcla(banda_txt, prim, 0.4), tracking=5, centrado=True)
-    d.text((832, 476), DATOS["id"].split()[-1], font=fuente("semibold", 31), fill=banda_txt, anchor="ma")
+    # foto cortada con el MISMO ángulo de la diagonal: pertenece al panel, no flota
+    foto = foto_carnet(315, 380).convert("RGBA")
+    foto.putalpha(_mascara_suave(315, 380, lambda d2, w, h: d2.polygon(
+        [(int(w * 71 / 315), 0), (w - 1, 0), (w - 1, h - 1), (0, h - 1)], fill=255)))
+    t.alpha_composite(foto, (642, 88))
     # área blanca: nombre sans en dos pesos, pleca en color de marca
     pegar_logo(t, logo, (64, 52, 300, 84), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
     nombre, _, apellido = DATOS["nombre"].partition(" ")
@@ -811,6 +810,7 @@ def estilo5_frontal(logo, pal, cliente):
     d.rectangle([66, 372, 114, 378], fill=tuple(prim_txt[:3]))
     campo(d, (66, 420), "CARGO", DATOS["cargo"], GRIS_ETIQUETA, TINTA, tam_valor=28)
     campo(d, (66, 518), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=28)
+    campo(d, (348, 518), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=28)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
     return t
 
@@ -866,7 +866,9 @@ def estilo6_reverso(logo, pal, cliente):
     d.line([84, 92, CARD_W - 84, 92], fill=tuple(oro[:3]), width=2)
     pegar_logo(t, logo, (CARD_W // 2 - 150, 136, 300, 86), fondo_claro=True, tinte=prim_txt)
     t.paste(pseudo_qr(cliente, 184, bg=MARFIL), (CARD_W // 2 - 92, 268))
-    campo(d, (CARD_W // 2, 478), "SITIO WEB", web_cliente(cliente),
+    campo(d, (CARD_W // 2 - 200, 478), "SITIO WEB", web_cliente(cliente),
+          GRIS_ETIQUETA, TINTA, centrado=True, tam_valor=27)
+    campo(d, (CARD_W // 2 + 200, 478), "VIGENCIA", "2026 — 2027",
           GRIS_ETIQUETA, TINTA, centrado=True, tam_valor=27)
     d.line([84, 588, CARD_W - 84, 588], fill=tuple(oro[:3]), width=2)
     t.putalpha(mascara_redondeada(CARD_W, CARD_H))
@@ -985,10 +987,10 @@ def estilo9_frontal(logo, pal, cliente):
     ALTO_F = 520
     t.paste(foto_carnet(V_W, ALTO_F), (0, 0))
     d = ImageDraw.Draw(t)
-    d.rectangle([0, ALTO_F, V_W, ALTO_F + 4], fill=tuple(oro[:3]))
-    pegar_logo(t, logo, (64, ALTO_F + 32, 260, 78), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
-    d.text((64, ALTO_F + 156), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA)
-    d.text((64, ALTO_F + 238), DATOS["cargo"], font=fuente("regular", 29), fill=GRIS_ETIQUETA)
+    d.rectangle([0, ALTO_F, V_W, ALTO_F + 6], fill=tuple(marca_legible(prim)[:3]))
+    pegar_logo(t, logo, (64, ALTO_F + 36, 320, 92), fondo_claro=True, tinte=prim_txt, alinear="izquierda")
+    d.text((64, ALTO_F + 172), DATOS["nombre"], font=fuente("display-bold", 50), fill=TINTA)
+    d.text((64, ALTO_F + 254), DATOS["cargo"], font=fuente("regular", 29), fill=GRIS_ETIQUETA)
     campo(d, (64, ALTO_F + 330), "EMPRESA", cliente, GRIS_ETIQUETA, prim_txt, tam_valor=27)
     campo(d, (400, ALTO_F + 330), "DNI", DATOS["id"].split()[-1], GRIS_ETIQUETA, TINTA, tam_valor=27)
     t.putalpha(mascara_redondeada(V_W, V_H))
@@ -1003,8 +1005,9 @@ def estilo9_reverso(logo, pal, cliente):
     d = ImageDraw.Draw(t)
     ALTO_F = 520
     d.rectangle([0, 0, V_W, ALTO_F], fill=tuple(prim[:3]))
-    d.rectangle([0, ALTO_F, V_W, ALTO_F + 4], fill=tuple(oro[:3]))
-    tinte = ajustar(prim, 1.45) if saturacion(prim) > 0.12 else (255, 255, 255)
+    d.rectangle([0, ALTO_F, V_W, ALTO_F + 6], fill=tuple(marca_legible(prim)[:3]))
+    # silueta SIEMPRE legible sobre el panel: blanca en color oscuro, tinta en claro
+    tinte = (255, 255, 255) if luminancia(prim) < 0.45 else mezcla(TINTA, prim, 0.2)
     pieza = logo_tenido(logo, 380, 200, tinte)
     t.alpha_composite(pieza, ((V_W - pieza.width) // 2, 160 + (200 - pieza.height) // 2))
     t.paste(pseudo_qr(cliente + "-r", 190), ((V_W - 190) // 2, 566))
@@ -1033,7 +1036,6 @@ def estilo10_frontal(logo, pal, cliente):
     d.line([V_W // 2 - 60, 780, V_W // 2 + 60, 780], fill=tuple(oro[:3]), width=2)
     campo(d, (192, 830), "EMPRESA", cliente, (140, 142, 150), tinte_claro, centrado=True, tam_valor=28)
     campo(d, (462, 830), "DNI", DATOS["id"].split()[-1], (140, 142, 150), (228, 228, 232), centrado=True, tam_valor=28)
-    d.rectangle([0, V_H - 10, V_W, V_H], fill=tuple(acento[:3]))
     t.putalpha(mascara_redondeada(V_W, V_H))
     return t
 
