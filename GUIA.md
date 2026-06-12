@@ -1,7 +1,7 @@
 # Mockups DISECOD — Guía rápida (vendedor)
 
 **Para qué sirve:** el cliente te manda su logo y en menos de un minuto le devuelves
-3 propuestas de fotocheck (frontal y reverso) listas para WhatsApp.
+5 propuestas de fotocheck (frontal y reverso) listas para WhatsApp.
 
 ## Cómo usarlo
 
@@ -10,8 +10,8 @@
 3. Escribe el nombre de la empresa cliente.
 4. **Elegir logo…** → busca el archivo → **Generar mockups**.
 5. Se abre sola la carpeta con los resultados:
-   - `lamina-presentacion.png` → **esta es la que mandas por WhatsApp** (las 3 propuestas juntas, con marca DISECOD).
-   - `estilo-1/2/3-*.png` → cada propuesta en grande, por si el cliente quiere ver una en detalle.
+   - `lamina-presentacion.png` → **esta es la que mandas por WhatsApp** (las 5 propuestas juntas, con marca DISECOD).
+   - `estilo-1` al `estilo-5` (.png) → cada propuesta en grande, por si el cliente quiere ver una en detalle.
 
 ## Tips
 

@@ -16,7 +16,10 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
 CODIGO = BASE / "codigo"
-ARCHIVOS = ["app.py", "motor.py", "version.txt"]
+# Los binarios (fuentes OFL + foto sintética) también viajan por auto-update:
+# el launcher descarga con write_bytes cualquier archivo del manifest.
+ARCHIVOS = ["app.py", "motor.py", "version.txt",
+            "fuente-display.ttf", "fuente-display-italic.ttf", "foto-persona.jpg"]
 
 
 def main():

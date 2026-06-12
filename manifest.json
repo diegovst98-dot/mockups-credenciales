@@ -1,4 +1,11 @@
 {
-  "version": 1,
-  "archivos": ["app.py", "motor.py", "version.txt"]
+  "version": 2,
+  "archivos": [
+    "app.py",
+    "motor.py",
+    "version.txt",
+    "fuente-display.ttf",
+    "fuente-display-italic.ttf",
+    "foto-persona.jpg"
+  ]
 }
