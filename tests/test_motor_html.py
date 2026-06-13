@@ -83,3 +83,40 @@ def test_robustez_nombre_largo():
     out = tempfile.mkdtemp(prefix="t_rob_")
     carpeta, rutas = generar(LOGO_DISECOD, "Corporación Andina de Seguridad Integral del Perú", out)
     assert len(rutas) >= 4
+
+
+# ---- Fase 2: variedad de fondos ----
+
+def test_variante_es_determinista_y_varia():
+    from plantillas import variante_de
+    assert variante_de("Interbank") == variante_de("Interbank")          # determinista
+    vals = {variante_de(n) for n in ["Interbank", "Frutos del Norte", "Constructora Lima"]}
+    assert len(vals) >= 2                                                 # nombres distintos varían
+    assert all(0 <= variante_de(n) <= 2 for n in ["a", "b", "c", "xyz"])  # en rango
+
+
+def test_mismo_color_distinto_cliente_cambia_fondo():
+    from plantillas import cara, construir_contexto
+    from motor import cargar_logo
+    logo = cargar_logo(LOGO_DISECOD)
+    a = construir_contexto(logo, (0, 120, 200), (0, 80, 140), "Constructora Lima")  # variante 0
+    b = construir_contexto(logo, (0, 120, 200), (0, 80, 140), "Frutos del Norte")   # variante 2
+    html_a, _, _ = cara("aurora", "frontal", a)
+    html_b, _, _ = cara("aurora", "frontal", b)
+    assert html_a != html_b   # mismo color, distinto fondo
+
+
+# ---- Fase 2: foto 1x1 (encuadre sin invocar el modelo pesado) ----
+
+def test_encuadre_foto_carnet():
+    from PIL import Image
+    from foto1x1 import _encuadrar_retrato, FORMATOS
+    persona = Image.new("RGBA", (400, 600), (0, 0, 0, 0))
+    for x in range(120, 280):          # zona opaca = "persona"
+        for y in range(80, 560):
+            persona.putpixel((x, y), (90, 90, 90, 255))
+    w, h = FORMATOS["3x4"]
+    out = _encuadrar_retrato(persona, w, h)
+    assert out.size == (w, h)
+    assert out.mode == "RGB"
+    assert out.getpixel((2, 2)) == (255, 255, 255)   # fondo blanco

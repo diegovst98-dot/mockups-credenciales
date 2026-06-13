@@ -5,6 +5,7 @@ y el tratamiento salen del logo real (varia segun la marca). Lo rasteriza render
 
 CSS de los frontales basado en el prototipo validado salida/_proto/proto_html.py."""
 import base64
+import hashlib
 import io
 import os
 
@@ -17,6 +18,40 @@ F_INTER_SB = os.path.join(RUTA, "fuentes", "inter-semibold.ttf")
 DATOS = {"nombre": "Carlos González M.", "cargo": "Supervisor de Operaciones", "id": "45678123"}
 ORO = "#c9a14a"
 H, V = (1011, 638), (638, 1011)
+
+# Variantes de fondo por dirección: mismo color de marca, distinta composición.
+# La variante se elige por el NOMBRE del cliente (determinista) -> dos empresas del
+# mismo color reciben fondos distintos. Sumarán las imágenes del banco (Fase 2b).
+_BG_AURORA = [
+    ("radial-gradient(120% 140% at 12% 8%, var(--medio) 0%, transparent 42%),"
+     "radial-gradient(120% 130% at 95% 95%, var(--prim) 0%, transparent 38%),"
+     "linear-gradient(135deg, var(--oscuro), #0c0e11 75%)"),
+    ("radial-gradient(100% 120% at 88% 6%, var(--prim) 0%, transparent 40%),"
+     "linear-gradient(160deg, #0b0d10 0%, var(--oscuro) 55%, var(--medio) 135%)"),
+    ("radial-gradient(150% 120% at 50% -12%, var(--medio) 0%, transparent 46%),"
+     "radial-gradient(90% 90% at 10% 100%, var(--prim) 0%, transparent 40%),"
+     "linear-gradient(180deg, var(--oscuro), #0b0d10 82%)"),
+]
+_BG_GLASS = [
+    ("radial-gradient(90% 120% at 85% 8%, rgba(255,255,255,.26), transparent 45%),"
+     "radial-gradient(120% 120% at 8% 96%, var(--oscuro), transparent 55%),"
+     "linear-gradient(150deg, var(--prim), var(--medio))"),
+    ("radial-gradient(100% 100% at 15% 8%, rgba(255,255,255,.22), transparent 42%),"
+     "linear-gradient(165deg, var(--medio), var(--prim) 68%, var(--oscuro))"),
+    ("radial-gradient(120% 130% at 92% 96%, rgba(255,255,255,.20), transparent 46%),"
+     "radial-gradient(80% 80% at 6% 8%, var(--claro), transparent 40%),"
+     "linear-gradient(200deg, var(--prim), var(--oscuro))"),
+]
+_BG_EDIT_BANDA = [
+    "linear-gradient(160deg,var(--prim),var(--medio))",
+    "linear-gradient(205deg,var(--medio),var(--prim) 70%,var(--oscuro))",
+    "linear-gradient(150deg,var(--prim),var(--oscuro))",
+]
+
+
+def variante_de(cliente, n=3):
+    """Índice de variante determinista por nombre de cliente (0..n-1)."""
+    return int(hashlib.md5((cliente or "x").encode("utf-8")).hexdigest(), 16) % n
 
 
 # ---------- utilidades ----------
@@ -56,6 +91,7 @@ def construir_contexto(logo, prim, sec, cliente):
         "prim_legible": _rgb(marca_legible(prim)),
         "txt_sobre_prim": "#ffffff" if oscuro else "#1d1f24",
         "logo_oscuro": oscuro,
+        "variante": variante_de(cliente),
         "cliente": cliente,
         "web": web_cliente(cliente),
         "datos": DATOS,
@@ -85,11 +121,12 @@ def _root(ctx):
             % (ctx["prim_css"], ctx["medio_css"], ctx["oscuro_css"], ctx["claro_css"], ORO))
 
 
-def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto):
+def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto, fondo=None):
+    style = (" style='background:%s'" % fondo) if fondo else ""
     return ("<!doctype html><html><head><meta charset='utf-8'><style>%s%s"
             ".card{width:%dpx;height:%dpx;position:relative;overflow:hidden}%s"
-            "</style></head><body><div class='card %s'>%s</div></body></html>"
-            % (css_base(), _root(ctx), ancho, alto, css_estilo, clase, cuerpo))
+            "</style></head><body><div class='card %s'%s>%s</div></body></html>"
+            % (css_base(), _root(ctx), ancho, alto, css_estilo, clase, style, cuerpo))
 
 
 def _qr(left, top, qr_uri, lado=190, bg="#fff"):
@@ -146,7 +183,8 @@ def _aurora(lado, ctx, d):
             "<div class='rev-mid'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
             % (ctx["logo_uri"], lf, _qr((H[0] - 190) // 2, 150, ctx["qr_uri"]), ctx["web"]))
-    return _shell(ctx, "aurora", _CSS_AURORA, cuerpo, *H), H[0], H[1]
+    fondo = _BG_AURORA[ctx["variante"]]
+    return _shell(ctx, "aurora", _CSS_AURORA, cuerpo, *H, fondo=fondo), H[0], H[1]
 
 
 # ---------- EDITORIAL (horizontal, claro/marfil) ----------
@@ -168,9 +206,10 @@ _CSS_EDITORIAL = """
 
 
 def _editorial(lado, ctx, d):
+    banda = _BG_EDIT_BANDA[ctx["variante"]]
     if lado == "frontal":
         cuerpo = (
-            "<div class='band'></div><img class='foto' src='%s'>"
+            "<div class='band' style='background:%s'></div><img class='foto' src='%s'>"
             "<img class='logo' src='%s'>"
             "<div class='nm clip'>%s</div>"
             "<div class='cargo'>%s</div><div class='hair'></div>"
@@ -178,15 +217,15 @@ def _editorial(lado, ctx, d):
             "<div><div class='lab'>Empresa</div><div class='val clip' style='max-width:360px'>%s</div></div>"
             "<div><div class='lab'>DNI</div><div class='val'>%s</div></div>"
             "</div>"
-            % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], d["cargo"], ctx["cliente"], d["id"]))
+            % (banda, ctx["foto_uri"], ctx["logo_uri"], d["nombre"], d["cargo"], ctx["cliente"], d["id"]))
     else:
         cuerpo = (
-            "<div class='band'></div>"
+            "<div class='band' style='background:%s'></div>"
             "<img class='rev-logo' src='%s'>"
             "%s"
             "<div class='rev-mid'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
-            % (ctx["logo_uri"], _qr((H[0] - 190) // 2 + 50, 150, ctx["qr_uri"]), ctx["web"]))
+            % (banda, ctx["logo_uri"], _qr((H[0] - 190) // 2 + 50, 150, ctx["qr_uri"]), ctx["web"]))
     return _shell(ctx, "editorial", _CSS_EDITORIAL, cuerpo, *H), H[0], H[1]
 
 
@@ -233,7 +272,8 @@ def _glass(lado, ctx, d):
             "<div class='rev-mid'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s</div><div class='t2'>Vigencia 2026 — 2027</div></div>"
             % (ctx["logo_uri"], _qr((V[0] - 190) // 2, 300, ctx["qr_uri"]), ctx["web"]))
-    return _shell(ctx, "glass", _CSS_GLASS, cuerpo, *V), V[0], V[1]
+    fondo = _BG_GLASS[ctx["variante"]]
+    return _shell(ctx, "glass", _CSS_GLASS, cuerpo, *V, fondo=fondo), V[0], V[1]
 
 
 # ---------- dispatcher ----------
