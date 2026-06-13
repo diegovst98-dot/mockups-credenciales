@@ -95,10 +95,14 @@ def buscar_actualizacion():
                 return False
             if nombre.endswith(".py"):
                 compile(data.decode("utf-8"), nombre, "exec")
-            (tmp / nombre).write_bytes(data)
+            destino_tmp = tmp / nombre
+            destino_tmp.parent.mkdir(parents=True, exist_ok=True)  # subcarpetas (fuentes/)
+            destino_tmp.write_bytes(data)
         CODIGO.mkdir(parents=True, exist_ok=True)
         for nombre in archivos:
-            shutil.copy(tmp / nombre, CODIGO / nombre)
+            destino = CODIGO / nombre
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(tmp / nombre, destino)
         _log("actualizado a version %s OK" % (remota,))
         return True
     except Exception as e:

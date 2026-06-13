@@ -18,8 +18,9 @@ BASE = Path(__file__).resolve().parent
 CODIGO = BASE / "codigo"
 # Los binarios (fuentes OFL + foto sintética) también viajan por auto-update:
 # el launcher descarga con write_bytes cualquier archivo del manifest.
-ARCHIVOS = ["app.py", "motor.py", "version.txt",
-            "fuente-display.ttf", "fuente-display-italic.ttf", "foto-persona.jpg"]
+ARCHIVOS = ["app.py", "motor.py", "plantillas.py", "render.py", "version.txt",
+            "fuente-display.ttf", "fuente-display-italic.ttf", "foto-persona.jpg",
+            "fuentes/playfair.ttf", "fuentes/inter.ttf", "fuentes/inter-semibold.ttf"]
 
 
 def main():

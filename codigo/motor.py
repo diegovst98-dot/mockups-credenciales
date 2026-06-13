@@ -1198,30 +1198,55 @@ def generar(ruta_logo, cliente, carpeta_salida=None):
     prim, sec = paleta_del_logo(logo)
     pal = (prim, sec, oro_del_logo(logo))
 
-    piezas = []
-    for titulo, fn_frontal, fn_reverso in ESTILOS:
-        piezas.append((titulo, fn_frontal(logo, pal, cliente), fn_reverso(logo, pal, cliente)))
+    # --- caras maquetadas en HTML/CSS y rasterizadas con Playwright ---
+    from plantillas import cara, construir_contexto
+    from render import render_caras
+    ctx = construir_contexto(logo, prim, sec, cliente)
+    DIRECCIONES = [("aurora", "Dirección 1 — Aurora"),
+                   ("editorial", "Dirección 2 — Editorial"),
+                   ("glass", "Dirección 3 — Glass")]
+    items = []
+    for clave, _ in DIRECCIONES:
+        for lado in ("frontal", "reverso"):
+            items.append(cara(clave, lado, ctx))
+    caras = render_caras(items)  # 6 PIL.Image a escala 2x
+
+    def a_cr80(img):
+        # baja del render 2x al tamaño real de imprenta (CR80 300 dpi) con LANCZOS
+        destino = (CARD_W, CARD_H) if img.width > img.height else (V_W, V_H)
+        return img.resize(destino, Image.LANCZOS)
+
+    piezas, caras_diseno = [], []
+    for i, (_, titulo) in enumerate(DIRECCIONES):
+        fr = a_cr80(caras[i * 2])
+        rv = a_cr80(caras[i * 2 + 1])
+        caras_diseno.append((titulo, fr, rv))
+        # versión de presentación con esquinas redondeadas (el brief se ve como tarjeta)
+        fr_p, rv_p = fr.copy(), rv.copy()
+        fr_p.putalpha(mascara_redondeada(fr.width, fr.height))
+        rv_p.putalpha(mascara_redondeada(rv.width, rv.height))
+        piezas.append((titulo, fr_p, rv_p))
 
     if carpeta_salida is None:
         carpeta_salida = os.path.join(RUTA_BASE, "salida", f"{slug(cliente)}-{date.today():%Y-%m-%d}")
     os.makedirs(carpeta_salida, exist_ok=True)
 
     rutas = []
-    # caras limpias a tamaño real de imprenta (CR80 300 dpi, full-bleed,
+    # caras limpias a tamaño real de imprenta (CR80 300 dpi, full-bleed rectangular,
     # sin sombras ni rótulos): base de trabajo para el diseñador / CardPresso
     carpeta_diseno = os.path.join(carpeta_salida, "para-diseno")
     os.makedirs(carpeta_diseno, exist_ok=True)
-    for i, (titulo, fr, rv) in enumerate(piezas, 1):
+    for i, (titulo, fr, rv) in enumerate(caras_diseno, 1):
         sufijo = slug(titulo.split("—")[-1]).lower()
-        ruta = os.path.join(carpeta_salida, f"estilo-{i}-{sufijo}.png")
-        png_estilo(titulo, fr, rv).save(ruta, optimize=True)
+        ruta = os.path.join(carpeta_salida, f"direccion-{i}-{sufijo}.png")
+        png_estilo(titulo, piezas[i - 1][1], piezas[i - 1][2]).save(ruta, optimize=True)
         rutas.append(ruta)
-        fr.convert("RGB").save(os.path.join(carpeta_diseno, f"estilo-{i}-{sufijo}-frontal.png"), optimize=True)
-        rv.convert("RGB").save(os.path.join(carpeta_diseno, f"estilo-{i}-{sufijo}-reverso.png"), optimize=True)
+        fr.convert("RGB").save(os.path.join(carpeta_diseno, f"direccion-{i}-{sufijo}-frontal.png"), optimize=True)
+        rv.convert("RGB").save(os.path.join(carpeta_diseno, f"direccion-{i}-{sufijo}-reverso.png"), optimize=True)
 
-    ruta_lamina = os.path.join(carpeta_salida, "lamina-presentacion.png")
-    lamina(cliente, piezas).save(ruta_lamina, optimize=True)
-    rutas.insert(0, ruta_lamina)
+    ruta_brief = os.path.join(carpeta_salida, "brief-presentacion.png")
+    lamina(cliente, piezas).save(ruta_brief, optimize=True)
+    rutas.insert(0, ruta_brief)
     return carpeta_salida, rutas
 
 

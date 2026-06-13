@@ -1,8 +1,8 @@
 # Mockups DISECOD — Guía rápida (vendedor)
 
 **Para qué sirve:** el cliente te manda su logo y en menos de un minuto le devuelves
-9 propuestas de fotocheck (frontal y reverso) listas para WhatsApp — incluye un
-pase de visita como propuesta adicional.
+3 propuestas de fotocheck (frontal y reverso) listas para WhatsApp, en 3 direcciones
+de arte distintas (Aurora, Editorial, Glass) que se adaptan al color del logo.
 
 ## Cómo usarlo
 
@@ -11,8 +11,8 @@ pase de visita como propuesta adicional.
 3. Escribe el nombre de la empresa cliente.
 4. **Elegir logo…** → busca el archivo → **Generar mockups**.
 5. Se abre sola la carpeta con los resultados:
-   - `lamina-presentacion.png` → **esta es la que mandas por WhatsApp** (las 9 propuestas juntas, con marca DISECOD).
-   - `estilo-1` al `estilo-9` (.png) → cada propuesta en grande, por si el cliente quiere ver una en detalle.
+   - `brief-presentacion.png` → **esta es la que mandas por WhatsApp** (las 3 propuestas juntas, con marca DISECOD).
+   - `direccion-1` al `direccion-3` (.png) → cada propuesta en grande, por si el cliente quiere ver una en detalle.
    - `para-diseno\` → cada cara limpia a tamaño real de imprenta (CR80, 300 dpi, sin sombras).
      **Esta carpeta es para el diseñador** cuando el cliente apruebe un estilo — no se la mandes al cliente.
 
