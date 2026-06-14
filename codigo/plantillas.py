@@ -5,15 +5,20 @@ y el tratamiento salen del logo real (varia segun la marca). Lo rasteriza render
 
 CSS de los frontales basado en el prototipo validado salida/_proto/proto_html.py."""
 import base64
+import glob as _glob
 import hashlib
 import io
 import os
 
+from PIL import Image
+
 RUTA = os.path.dirname(os.path.abspath(__file__))
 FOTO_PERSONA = os.path.join(RUTA, "foto-persona.jpg")
-F_PLAYFAIR = os.path.join(RUTA, "fuentes", "playfair.ttf")
-F_INTER = os.path.join(RUTA, "fuentes", "inter.ttf")
-F_INTER_SB = os.path.join(RUTA, "fuentes", "inter-semibold.ttf")
+# Assets en nombres PLANOS (sin subcarpeta) para que el auto-update del launcher
+# los reparta sin recompilar el exe. Fondos: fondo-<estilo>-N.jpg
+F_PLAYFAIR = os.path.join(RUTA, "fuente-display.ttf")   # ya es Playfair Display (OFL)
+F_INTER = os.path.join(RUTA, "inter.ttf")
+F_INTER_SB = os.path.join(RUTA, "inter-semibold.ttf")
 
 DATOS = {"nombre": "Carlos González M.", "cargo": "Supervisor de Operaciones", "id": "45678123"}
 ORO = "#c9a14a"
@@ -54,6 +59,40 @@ def variante_de(cliente, n=3):
     return int(hashlib.md5((cliente or "x").encode("utf-8")).hexdigest(), 16) % n
 
 
+# ---------- banco de fondos (Fase 2b): imágenes neutras recoloreadas a la marca ----------
+
+def _duotono(gray, sombra, luz):
+    """Mapea una imagen en gris a un duotono [sombra..luz] (un LUT por canal).
+    Preserva la textura del fondo y le aplica el color de la marca."""
+    lut = []
+    for ch in range(3):
+        a, b = sombra[ch], luz[ch]
+        lut.extend(int(a + (b - a) * i / 255) for i in range(256))
+    return gray.convert("RGB").point(lut)
+
+
+def _recolorear_fondo(ruta, prim, estilo):
+    img = Image.open(ruta).convert("L")
+    if estilo == "aurora":            # oscuro premium
+        sombra, luz = _ajustar(prim, 0.10), _ajustar(prim, 0.80)
+    elif estilo == "glass":           # color medio con brillos
+        sombra, luz = _ajustar(prim, 0.60), _ajustar(prim, 1.45)
+    else:                             # editorial: marfil neutro (texto oscuro encima)
+        sombra, luz = (236, 234, 230), (252, 250, 247)
+    return _duotono(img, sombra, luz)
+
+
+def fondo_imagen(estilo, ctx):
+    """Data URI de un fondo del banco (recoloreado a la marca), elegido por cliente.
+    None si no hay fondos en codigo/fondos/ (se usa el gradiente CSS de respaldo)."""
+    archivos = sorted(_glob.glob(os.path.join(RUTA, "fondo-%s-*.jpg" % estilo)))
+    if not archivos:
+        return None
+    idx = variante_de(ctx["cliente"], len(archivos))
+    img = _recolorear_fondo(archivos[idx], ctx["_prim"], estilo)
+    return _b64_img(img, "JPEG")
+
+
 # ---------- utilidades ----------
 
 def _b64_img(img, fmt="PNG"):
@@ -81,6 +120,7 @@ def construir_contexto(logo, prim, sec, cliente):
     from motor import web_cliente, luminancia, marca_legible, pseudo_qr
     oscuro = luminancia(prim) < 0.45
     return {
+        "_prim": tuple(int(x) for x in prim[:3]),
         "logo_uri": _b64_img(logo),
         "foto_uri": _b64_file(FOTO_PERSONA, "image/jpeg"),
         "qr_uri": _b64_img(pseudo_qr(cliente, 360)),
@@ -183,7 +223,8 @@ def _aurora(lado, ctx, d):
             "<div class='rev-mid'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
             % (ctx["logo_uri"], lf, _qr((H[0] - 190) // 2, 150, ctx["qr_uri"]), ctx["web"]))
-    fondo = _BG_AURORA[ctx["variante"]]
+    fimg = fondo_imagen("aurora", ctx)
+    fondo = ('url("%s") center/cover' % fimg) if fimg else _BG_AURORA[ctx["variante"]]
     return _shell(ctx, "aurora", _CSS_AURORA, cuerpo, *H, fondo=fondo), H[0], H[1]
 
 
@@ -226,7 +267,9 @@ def _editorial(lado, ctx, d):
             "<div class='rev-mid'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
             % (banda, ctx["logo_uri"], _qr((H[0] - 190) // 2 + 50, 150, ctx["qr_uri"]), ctx["web"]))
-    return _shell(ctx, "editorial", _CSS_EDITORIAL, cuerpo, *H), H[0], H[1]
+    fimg = fondo_imagen("editorial", ctx)
+    fondo = ('url("%s") center/cover' % fimg) if fimg else None
+    return _shell(ctx, "editorial", _CSS_EDITORIAL, cuerpo, *H, fondo=fondo), H[0], H[1]
 
 
 # ---------- GLASS (vertical, color pleno + glassmorphism) ----------
@@ -272,7 +315,8 @@ def _glass(lado, ctx, d):
             "<div class='rev-mid'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s</div><div class='t2'>Vigencia 2026 — 2027</div></div>"
             % (ctx["logo_uri"], _qr((V[0] - 190) // 2, 300, ctx["qr_uri"]), ctx["web"]))
-    fondo = _BG_GLASS[ctx["variante"]]
+    fimg = fondo_imagen("glass", ctx)
+    fondo = ('url("%s") center/cover' % fimg) if fimg else _BG_GLASS[ctx["variante"]]
     return _shell(ctx, "glass", _CSS_GLASS, cuerpo, *V, fondo=fondo), V[0], V[1]
 
 

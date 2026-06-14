@@ -18,8 +18,12 @@ def test_playwright_disponible():
 
 
 def test_fuentes_horneadas_existen():
-    for f in ("playfair.ttf", "inter.ttf", "inter-semibold.ttf"):
-        assert os.path.exists(os.path.join(CODIGO, "fuentes", f)), f
+    for f in ("fuente-display.ttf", "inter.ttf", "inter-semibold.ttf"):
+        assert os.path.exists(os.path.join(CODIGO, f)), f
+
+
+def test_fondos_disponibles():
+    assert len(glob.glob(os.path.join(CODIGO, "fondo-*.jpg"))) >= 3
 
 
 # ---- Task 2: render ----
