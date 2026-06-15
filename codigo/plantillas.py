@@ -243,7 +243,13 @@ def _qr(cx, top, qr_uri, lado=240, bg="#fff"):
             % (left, top, lado, lado, bg, qr_uri, lado - pad * 2, lado - pad * 2))
 
 
-_LOGO_BLANCO = "filter:brightness(0) invert(1)"
+# ⛔ REGLA FIJA — EL LOGO DEL CLIENTE NUNCA SE RECOLOREA (decisión Diego 2026-06-15).
+# Se respeta SIEMPRE su tinta original; solo se permite ajustar tamaño/posición.
+# Prohibido brightness(0)/invert/duotono/teñido y placas-caja detrás del logo. En
+# fondos oscuros (Aurora/Glass) la legibilidad se da con un halo suave (drop-shadow)
+# que NO toca el color del logo.
+_LOGO_GLOW = ("filter:drop-shadow(0 1px 1px rgba(0,0,0,.35)) "
+              "drop-shadow(0 0 9px rgba(255,255,255,.45))")
 
 
 # ============================ AURORA (horizontal, oscuro premium) ============================
@@ -277,7 +283,7 @@ def _aurora(lado, ctx, d):
             "<div class='divisor'></div>"
             "<div class='cell' style='flex:0 0 230px'>%s<div><div class='lab'>DNI</div><div class='val'>%s</div></div></div>"
             "</div>"
-            % (ctx["logo_uri"], _LOGO_BLANCO, n1, n2, d["cargo"], ctx["foto_uri"],
+            % (ctx["logo_uri"], _LOGO_GLOW, n1, n2, d["cargo"], ctx["foto_uri"],
                _icono("edificio", ORO, 30), ctx["cliente"], _icono("persona", ORO, 30), d["id"]))
     else:
         cuerpo = (
@@ -286,7 +292,7 @@ def _aurora(lado, ctx, d):
             "%s"
             "<div class='rfoot'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
-            % (ctx["logo_uri"], _LOGO_BLANCO, _qr(H[0] / 2, 192, ctx["qr_uri"], 240), ctx["web"]))
+            % (ctx["logo_uri"], _LOGO_GLOW, _qr(H[0] / 2, 192, ctx["qr_uri"], 240), ctx["web"]))
     fimg = fondo_imagen("aurora", ctx)
     fondo = ('url("%s") center/cover' % fimg) if fimg else _BG_AURORA[ctx["variante"]]
     return _shell(ctx, "aurora", _CSS_AURORA, cuerpo, *H, fondo=fondo), H[0], H[1]
@@ -345,7 +351,7 @@ def _editorial(lado, ctx, d):
 # ============================ GLASS (vertical color, paneles de vidrio) ============================
 
 _CSS_GLASS = """
-.glass .logo{position:absolute;top:60px;left:50%;transform:translateX(-50%);height:66px;max-width:420px;object-fit:contain;filter:brightness(0) invert(1)}
+.glass .logo{position:absolute;top:60px;left:50%;transform:translateX(-50%);height:66px;max-width:420px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35)) drop-shadow(0 0 9px rgba(255,255,255,.45))}
 .glass .card2{position:absolute;left:50%;transform:translateX(-50%);top:176px;width:486px;padding:38px 0 32px;border-radius:26px;background:rgba(255,255,255,.15);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.28);display:flex;flex-direction:column;align-items:center;gap:22px;box-shadow:0 20px 50px -20px rgba(0,0,0,.4)}
 .glass .foto{width:252px;height:252px;border-radius:50%;object-fit:cover;object-position:center 30%;border:5px solid rgba(255,255,255,.8);box-shadow:0 14px 32px -12px rgba(0,0,0,.5)}
 .glass .nm{font-size:50px;color:#fff;text-align:center;line-height:1.02}
