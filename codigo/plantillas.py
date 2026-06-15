@@ -12,7 +12,7 @@ import hashlib
 import io
 import os
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFilter
 
 RUTA = os.path.dirname(os.path.abspath(__file__))
 FOTO_PERSONA = os.path.join(RUTA, "foto-persona.jpg")
@@ -133,6 +133,50 @@ def fondo_imagen(estilo, ctx):
     return _b64_img(img, "JPEG")
 
 
+# ---------- foto del demo: 3 estrategias (color / silueta / duotono) ----------
+
+def _silueta_uri(prim):
+    """Placeholder estilo FOTO CARNET (DNI/pasaporte): fondo claro uniforme y
+    busto centrado con aire arriba — cabeza completa, hombros en la base, sin
+    cortes ni descuadre. Intencional para un demo, sin el uncanny de una cara IA."""
+    W, Hh = 660, 880           # proporción carnet (≈3:4)
+    SS = 2                      # supersample para bordes suaves
+    w, h = W * SS, Hh * SS
+    base = Image.new("RGB", (w, h), (233, 236, 240))   # fondo carnet gris-celeste claro
+    capa = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(capa)
+    col = (156, 163, 173, 255)
+    cx = w // 2
+    rcab = int(150 * SS)
+    cy = int(312 * SS)                                  # cabeza con ~17% de aire arriba
+    d.ellipse([cx - rcab, cy - rcab, cx + rcab, cy + rcab], fill=col)        # cabeza
+    d.ellipse([cx - int(308 * SS), cy + rcab - int(6 * SS),                  # hombros amplios
+               cx + int(308 * SS), h + int(250 * SS)], fill=col)
+    capa = capa.filter(ImageFilter.GaussianBlur(2.4 * SS))
+    base = Image.alpha_composite(base.convert("RGBA"), capa).convert("RGB")
+    base = base.resize((W, Hh), Image.LANCZOS)
+    return _b64_img(base, "JPEG")
+
+
+def _foto_duotono_uri(prim):
+    """Foto IA tratada en duotono del color de marca: se ve editorial/intencional
+    y disimula el 'realismo fallido' de la cara IA."""
+    img = Image.open(FOTO_PERSONA).convert("L")
+    duo = _duotono(img, _ajustar(prim, 0.30), (244, 244, 246))
+    return _b64_img(duo, "JPEG")
+
+
+def _foto_uri(prim):
+    # Default: silueta carnet (decisión Diego 2026-06-15: la cara IA se veía "off").
+    # MOCKUPS_FOTO=duotono|color para las otras estrategias.
+    modo = os.environ.get("MOCKUPS_FOTO", "silueta").lower()
+    if modo == "duotono":
+        return _foto_duotono_uri(prim)
+    if modo == "color":
+        return _b64_file(FOTO_PERSONA, "image/jpeg")
+    return _silueta_uri(prim)
+
+
 # ---------- contexto ----------
 
 def construir_contexto(logo, prim, sec, cliente):
@@ -141,7 +185,7 @@ def construir_contexto(logo, prim, sec, cliente):
     return {
         "_prim": tuple(int(x) for x in prim[:3]),
         "logo_uri": _b64_img(logo),
-        "foto_uri": _b64_file(FOTO_PERSONA, "image/jpeg"),
+        "foto_uri": _foto_uri(prim),
         "qr_uri": _b64_img(pseudo_qr(cliente, 360)),
         "prim_css": _rgb(prim),
         "medio_css": _rgb(_ajustar(prim, 0.58)),
@@ -252,19 +296,19 @@ def _aurora(lado, ctx, d):
 
 _CSS_EDITORIAL = """
 .editorial{background:#faf8f4}
-.editorial .foto{position:absolute;left:0;top:0;height:638px;width:452px;object-fit:cover;object-position:center 26%}
-.editorial .curva{position:absolute;left:0;top:0;width:520px;height:638px;pointer-events:none}
-.editorial .logo{position:absolute;top:62px;right:60px;height:60px;max-width:300px;object-fit:contain;object-position:right}
-.editorial .nm{position:absolute;top:168px;left:514px;font-size:54px;color:#1d1f24;line-height:1.04;max-width:440px}
-.editorial .cargo{position:absolute;top:308px;left:516px;font-style:italic;font-size:28px;color:#6c6f78;font-family:'Playfair'}
-.editorial .hair{position:absolute;top:362px;left:516px;width:90px;height:3px;background:var(--oro)}
-.editorial .campos{position:absolute;left:514px;bottom:74px;display:flex;gap:54px}
+.editorial .band{position:absolute;left:0;top:0;bottom:0;width:362px}
+.editorial .foto{position:absolute;left:52px;top:50%;transform:translateY(-50%);width:282px;height:376px;border-radius:16px;object-fit:cover;object-position:center 30%;box-shadow:0 22px 46px -18px rgba(0,0,0,.5);border:3px solid rgba(255,255,255,.85)}
+.editorial .logo{position:absolute;top:62px;right:60px;height:60px;max-width:280px;object-fit:contain;object-position:right}
+.editorial .nm{position:absolute;top:172px;left:424px;font-size:52px;color:#1d1f24;line-height:1.05;max-width:430px}
+.editorial .cargo{position:absolute;top:308px;left:426px;font-style:italic;font-size:27px;color:#6c6f78;font-family:'Playfair'}
+.editorial .hair{position:absolute;top:360px;left:426px;width:88px;height:3px;background:var(--oro)}
+.editorial .campos{position:absolute;left:424px;bottom:78px;display:flex;gap:48px}
 .editorial .lab{color:#a6a8b0}.editorial .val{color:#1d1f24}
 .editorial .icon-c{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--prim);display:flex;align-items:center;justify-content:center}
-.editorial .rband{position:absolute;left:0;top:0;bottom:0;width:150px}
-.editorial .rlogo{position:absolute;top:64px;right:60px;height:58px;max-width:300px;object-fit:contain;object-position:right}
-.editorial .rtit{position:absolute;top:150px;left:150px;right:0;text-align:center;color:#9a9ca4;font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
-.editorial .rfoot{position:absolute;left:150px;right:0;bottom:74px;text-align:center;color:#1d1f24}
+.editorial .rband{position:absolute;left:0;top:0;bottom:0;width:362px}
+.editorial .rlogo{position:absolute;top:64px;right:60px;height:58px;max-width:280px;object-fit:contain;object-position:right}
+.editorial .rtit{position:absolute;top:150px;left:362px;right:0;text-align:center;color:#9a9ca4;font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
+.editorial .rfoot{position:absolute;left:362px;right:0;bottom:74px;text-align:center;color:#1d1f24}
 .editorial .rfoot .t1{font-size:25px;font-weight:600}.editorial .rfoot .t2{font-size:21px;color:#6c6f78;margin-top:8px}
 """
 
@@ -273,20 +317,17 @@ def _editorial(lado, ctx, d):
     banda = _BG_EDIT_BANDA[ctx["variante"]]
     if lado == "frontal":
         n1, n2 = _nombre2(d["nombre"])
-        curva = ("<svg class='curva' viewBox='0 0 520 638' preserveAspectRatio='none'>"
-                 "<path d='M452 0 C 452 0 452 638 452 638' stroke='%s' stroke-width='3' fill='none'/>"
-                 "<path d='M452 0 C 410 200 410 440 452 638' stroke='%s' stroke-width='3' fill='none' opacity='.9'/>"
-                 "</svg>" % (ORO, ORO))
         cuerpo = (
-            "<img class='foto' src='%s'>%s"
+            "<div class='band' style='background:%s'></div>"
+            "<img class='foto' src='%s'>"
             "<img class='logo' src='%s'>"
             "<div class='nm'>%s<br>%s</div>"
             "<div class='cargo'>%s</div><div class='hair'></div>"
             "<div class='campos'>"
-            "<div class='item'><div class='icon-c'>%s</div><div><div class='lab'>Empresa</div><div class='val clip' style='max-width:230px'>%s</div></div></div>"
+            "<div class='item'><div class='icon-c'>%s</div><div><div class='lab'>Empresa</div><div class='val clip' style='max-width:220px'>%s</div></div></div>"
             "<div class='item'><div class='icon-c'>%s</div><div><div class='lab'>DNI</div><div class='val'>%s</div></div></div>"
             "</div>"
-            % (ctx["foto_uri"], curva, ctx["logo_uri"], n1, n2, d["cargo"],
+            % (banda, ctx["foto_uri"], ctx["logo_uri"], n1, n2, d["cargo"],
                _icono("edificio", ctx["prim_legible"], 22), ctx["cliente"],
                _icono("persona", ctx["prim_legible"], 22), d["id"]))
     else:
@@ -297,7 +338,7 @@ def _editorial(lado, ctx, d):
             "%s"
             "<div class='rfoot'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
-            % (banda, ctx["logo_uri"], _qr(150 + (H[0] - 150) / 2, 196, ctx["qr_uri"], 230), ctx["web"]))
+            % (banda, ctx["logo_uri"], _qr(362 + (H[0] - 362) / 2, 196, ctx["qr_uri"], 230), ctx["web"]))
     return _shell(ctx, "editorial", _CSS_EDITORIAL, cuerpo, *H), H[0], H[1]
 
 
