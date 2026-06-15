@@ -59,7 +59,7 @@ def test_cara_devuelve_html_dimensionado():
     from motor import cargar_logo
     logo = cargar_logo(LOGO_DISECOD)
     ctx = construir_contexto(logo, (0, 164, 80), (0, 90, 44), "Interbank")
-    for estilo in ("aurora", "editorial", "glass"):
+    for estilo in ("aurora", "editorial", "glass", "corporativo", "vertical", "minimal"):
         for lado in ("frontal", "reverso"):
             html, w, h = cara(estilo, lado, ctx)
             assert "class='card" in html
@@ -78,7 +78,7 @@ def test_logo_cliente_no_se_recolorea():
     ctx = construir_contexto(logo, (0, 164, 80), (0, 90, 44), "Interbank")
     # brightness(0)/invert solo se usaban para blanquear el logo: no deben aparecer
     # en ninguna cara (ni inline en el <img> ni en el <style> de la clase .logo).
-    for estilo in ("aurora", "editorial", "glass"):
+    for estilo in ("aurora", "editorial", "glass", "corporativo", "vertical", "minimal"):
         for lado in ("frontal", "reverso"):
             html, _, _ = cara(estilo, lado, ctx)
             assert ctx["logo_uri"] in html, (estilo, lado, "logo ausente")
@@ -88,15 +88,15 @@ def test_logo_cliente_no_se_recolorea():
 
 # ---- Task 5: generar end to end ----
 
-def test_generar_produce_brief_y_3_direcciones():
+def test_generar_produce_brief_y_6_direcciones():
     from motor import generar
     out = tempfile.mkdtemp(prefix="t_gen_")
     carpeta, rutas = generar(LOGO_DISECOD, "Interbank", out)
     base = [os.path.basename(r) for r in rutas]
     assert any("brief" in b for b in base), base
-    assert sum(b.startswith("direccion-") for b in base) == 3, base
+    assert sum(b.startswith("direccion-") for b in base) == 6, base
     diseno = glob.glob(os.path.join(carpeta, "para-diseno", "*.png"))
-    assert len(diseno) == 6, diseno
+    assert len(diseno) == 12, diseno
 
 
 # ---- Task 6: robustez ----

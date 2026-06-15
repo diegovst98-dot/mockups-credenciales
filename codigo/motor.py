@@ -1204,7 +1204,10 @@ def generar(ruta_logo, cliente, carpeta_salida=None):
     ctx = construir_contexto(logo, prim, sec, cliente)
     DIRECCIONES = [("aurora", "Dirección 1 — Aurora"),
                    ("editorial", "Dirección 2 — Editorial"),
-                   ("glass", "Dirección 3 — Glass")]
+                   ("glass", "Dirección 3 — Glass"),
+                   ("corporativo", "Dirección 4 — Corporativo"),
+                   ("vertical", "Dirección 5 — Vertical"),
+                   ("minimal", "Dirección 6 — Minimal")]
     items = []
     for clave, _ in DIRECCIONES:
         for lado in ("frontal", "reverso"):
