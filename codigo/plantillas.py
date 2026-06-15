@@ -3,8 +3,9 @@
 Autocontenido: logo y foto en base64, fuentes horneadas via @font-face. El color
 y el tratamiento salen del logo real (varia segun la marca). Lo rasteriza render.py.
 
-v9: grilla consistente (margen de seguridad), foto frontal mas grande e integrada,
-nombre en dos lineas intencionales, QR grande y centrado, reversos rebalanceados."""
+v10: remates de acabado (íconos, panel de datos con borde + divisor, marco fino en
+la foto, editorial con foto a sangre + curva, glass con paneles de vidrio). Sobre la
+grilla consistente de v9 (margen de seguridad, foto frontal, nombre en 2 líneas)."""
 import base64
 import glob as _glob
 import hashlib
@@ -15,18 +16,15 @@ from PIL import Image
 
 RUTA = os.path.dirname(os.path.abspath(__file__))
 FOTO_PERSONA = os.path.join(RUTA, "foto-persona.jpg")
-# Assets en nombres PLANOS (sin subcarpeta) para que el auto-update del launcher
-# los reparta sin recompilar el exe. Fondos: fondo-<estilo>-N.jpg
-F_PLAYFAIR = os.path.join(RUTA, "fuente-display.ttf")   # ya es Playfair Display (OFL)
+F_PLAYFAIR = os.path.join(RUTA, "fuente-display.ttf")   # Playfair Display (OFL)
 F_INTER = os.path.join(RUTA, "inter.ttf")
 F_INTER_SB = os.path.join(RUTA, "inter-semibold.ttf")
 
 DATOS = {"nombre": "Carlos González M.", "cargo": "Supervisor de Operaciones", "id": "45678123"}
 ORO = "#c9a14a"
 H, V = (1011, 638), (638, 1011)
-MG = 60  # margen de seguridad de impresion (zona segura, ~5mm)
+MG = 60  # margen de seguridad de impresion (~5mm)
 
-# Variantes de fondo por dirección: mismo color de marca, distinta composición.
 _BG_AURORA = [
     ("radial-gradient(120% 140% at 12% 8%, var(--medio) 0%, transparent 42%),"
      "radial-gradient(120% 130% at 95% 95%, var(--prim) 0%, transparent 38%),"
@@ -55,7 +53,6 @@ _BG_EDIT_BANDA = [
 
 
 def variante_de(cliente, n=3):
-    """Índice de variante determinista por nombre de cliente (0..n-1)."""
     return int(hashlib.md5((cliente or "x").encode("utf-8")).hexdigest(), 16) % n
 
 
@@ -83,15 +80,30 @@ def _ajustar(c, f):
 
 
 def _nombre2(nombre):
-    """Parte el nombre en (primera palabra, resto) para dos líneas equilibradas,
-    evitando la inicial huérfana. 'Carlos González M.' -> ('Carlos','González M.')."""
     p = nombre.split()
     if len(p) <= 1:
         return nombre, ""
     return p[0], " ".join(p[1:])
 
 
-# ---------- banco de fondos (Fase 2b): imágenes neutras recoloreadas a la marca ----------
+# ---------- iconos line-art (SVG inline, color configurable) ----------
+
+_ICON_PATHS = {
+    "maletin": "<rect x='3' y='7.5' width='18' height='12.5' rx='2'/><path d='M8 7.5V5.5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/><path d='M3 12h18'/>",
+    "persona": "<circle cx='12' cy='8' r='3.6'/><path d='M5.5 20a6.5 6.5 0 0 1 13 0'/>",
+    "edificio": "<rect x='5' y='3' width='14' height='18' rx='1.2'/><path d='M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01'/><path d='M11 21v-3h2v3'/>",
+    "escudo": "<path d='M12 3l7 3v5c0 4.6-3 7.9-7 9.6-4-1.7-7-5-7-9.6V6z'/><path d='M9 12l2 2 4-4'/>",
+    "globo": "<circle cx='12' cy='12' r='9'/><path d='M3 12h18'/><path d='M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18'/>",
+}
+
+
+def _icono(nombre, color, tam=26, sw=1.8):
+    return ("<svg width='%d' height='%d' viewBox='0 0 24 24' fill='none' stroke='%s' "
+            "stroke-width='%s' stroke-linecap='round' stroke-linejoin='round'>%s</svg>"
+            % (tam, tam, color, sw, _ICON_PATHS[nombre]))
+
+
+# ---------- banco de fondos (recoloreados a la marca) ----------
 
 def _duotono(gray, sombra, luz):
     lut = []
@@ -155,18 +167,18 @@ def css_base():
         "@font-face{font-family:'Inter';src:url(%s) format('truetype');font-weight:600 800;}"
         "*{margin:0;padding:0;box-sizing:border-box}"
         "body{margin:0;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}"
-        ".lab{font-size:17px;letter-spacing:2.5px;text-transform:uppercase;font-weight:600}"
-        ".val{font-size:28px;font-weight:600;margin-top:3px}"
+        ".lab{font-size:16px;letter-spacing:2.5px;text-transform:uppercase;font-weight:600}"
+        ".val{font-size:27px;font-weight:600;margin-top:2px}"
         ".nm{font-family:'Playfair';font-weight:800;line-height:1.0}"
         ".clip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
+        ".item{display:flex;align-items:center;gap:15px}"
         % (pf, inter, inter_sb)
     )
 
 
 def _root(ctx):
-    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;--acc:%s;}"
-            % (ctx["prim_css"], ctx["medio_css"], ctx["oscuro_css"], ctx["claro_css"],
-               ORO, ctx["claro_css"]))
+    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;}"
+            % (ctx["prim_css"], ctx["medio_css"], ctx["oscuro_css"], ctx["claro_css"], ORO))
 
 
 def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto, fondo=None):
@@ -178,7 +190,6 @@ def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto, fondo=None):
 
 
 def _qr(cx, top, qr_uri, lado=240, bg="#fff"):
-    """Placa blanca redondeada con el QR, CENTRADA en cx (centro horizontal)."""
     left = int(cx - lado / 2)
     pad = 22
     return ("<div style='position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;"
@@ -194,16 +205,17 @@ _LOGO_BLANCO = "filter:brightness(0) invert(1)"
 # ============================ AURORA (horizontal, oscuro premium) ============================
 
 _CSS_AURORA = """
-.aurora .logo{position:absolute;top:60px;left:60px;height:74px;max-width:330px;object-fit:contain;object-position:left}
-.aurora .foto{position:absolute;top:115px;right:60px;width:300px;height:408px;border-radius:18px;object-fit:cover;object-position:center 28%;box-shadow:0 20px 44px -16px rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.14)}
-.aurora .nm{position:absolute;top:176px;left:60px;font-size:60px;color:#fff;max-width:560px}
-.aurora .hair{position:absolute;top:322px;left:62px;width:88px;height:3px;background:var(--oro)}
-.aurora .campos{position:absolute;left:60px;top:372px;right:400px}
-.aurora .campo{margin-bottom:30px}
-.aurora .row{display:flex;gap:60px}
-.aurora .lab{color:rgba(255,255,255,.52)}.aurora .val{color:#fff}
-.aurora .rtit{position:absolute;top:154px;left:0;right:0;text-align:center;color:rgba(255,255,255,.55);font-size:19px;letter-spacing:4px;text-transform:uppercase;font-weight:600}
-.aurora .rfoot{position:absolute;left:0;right:0;bottom:66px;text-align:center;color:#fff}
+.aurora .logo{position:absolute;top:58px;left:60px;height:76px;max-width:330px;object-fit:contain;object-position:left}
+.aurora .foto{position:absolute;top:110px;right:60px;width:298px;height:392px;border-radius:18px;object-fit:cover;object-position:center 28%;box-shadow:0 20px 44px -16px rgba(0,0,0,.7);border:2px solid var(--oro)}
+.aurora .nm{position:absolute;top:168px;left:60px;font-size:62px;color:#fff;max-width:560px}
+.aurora .hair{position:absolute;top:330px;left:62px;width:90px;height:3px;background:var(--oro)}
+.aurora .cargo{position:absolute;top:360px;left:62px;font-size:27px;color:rgba(255,255,255,.78)}
+.aurora .panel{position:absolute;left:60px;right:60px;bottom:52px;display:flex;align-items:center;padding:24px 30px;border:1px solid rgba(255,255,255,.18);border-radius:18px;background:rgba(255,255,255,.045)}
+.aurora .cell{flex:1;display:flex;align-items:center;gap:16px}
+.aurora .divisor{width:1px;align-self:stretch;background:rgba(255,255,255,.18);margin:2px 14px}
+.aurora .lab{color:rgba(255,255,255,.55)}.aurora .val{color:#fff}
+.aurora .rtit{position:absolute;top:150px;left:0;right:0;text-align:center;color:rgba(255,255,255,.55);font-size:19px;letter-spacing:4px;text-transform:uppercase;font-weight:600}
+.aurora .rfoot{position:absolute;left:0;right:0;bottom:64px;text-align:center;color:#fff}
 .aurora .rfoot .t1{font-size:26px;font-weight:600}.aurora .rfoot .t2{font-size:22px;color:rgba(255,255,255,.7);margin-top:8px}
 """
 
@@ -214,42 +226,45 @@ def _aurora(lado, ctx, d):
         cuerpo = (
             "<img class='logo' src='%s' style='%s'>"
             "<div class='nm'>%s<br>%s</div><div class='hair'></div>"
+            "<div class='cargo'>%s</div>"
             "<img class='foto' src='%s'>"
-            "<div class='campos'>"
-            "<div class='campo'><div class='lab'>Cargo</div><div class='val'>%s</div></div>"
-            "<div class='row'>"
-            "<div><div class='lab'>Empresa</div><div class='val clip' style='max-width:230px'>%s</div></div>"
-            "<div><div class='lab'>DNI</div><div class='val'>%s</div></div>"
-            "</div></div>"
-            % (ctx["logo_uri"], _LOGO_BLANCO, n1, n2, ctx["foto_uri"], d["cargo"], ctx["cliente"], d["id"]))
+            "<div class='panel'>"
+            "<div class='cell'>%s<div><div class='lab'>Empresa</div><div class='val clip' style='max-width:280px'>%s</div></div></div>"
+            "<div class='divisor'></div>"
+            "<div class='cell' style='flex:0 0 230px'>%s<div><div class='lab'>DNI</div><div class='val'>%s</div></div></div>"
+            "</div>"
+            % (ctx["logo_uri"], _LOGO_BLANCO, n1, n2, d["cargo"], ctx["foto_uri"],
+               _icono("edificio", ORO, 30), ctx["cliente"], _icono("persona", ORO, 30), d["id"]))
     else:
         cuerpo = (
-            "<img class='logo' src='%s' style='%s;left:50%%;transform:translateX(-50%%);top:70px;height:64px'>"
+            "<img class='logo' src='%s' style='%s;left:50%%;transform:translateX(-50%%);top:66px;height:62px'>"
             "<div class='rtit'>Escanea para validar</div>"
             "%s"
             "<div class='rfoot'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
-            % (ctx["logo_uri"], _LOGO_BLANCO, _qr(H[0] / 2, 196, ctx["qr_uri"], 244), ctx["web"]))
+            % (ctx["logo_uri"], _LOGO_BLANCO, _qr(H[0] / 2, 192, ctx["qr_uri"], 240), ctx["web"]))
     fimg = fondo_imagen("aurora", ctx)
     fondo = ('url("%s") center/cover' % fimg) if fimg else _BG_AURORA[ctx["variante"]]
     return _shell(ctx, "aurora", _CSS_AURORA, cuerpo, *H, fondo=fondo), H[0], H[1]
 
 
-# ============================ EDITORIAL (horizontal, claro/marfil) ============================
+# ============================ EDITORIAL (horizontal claro, foto a sangre) ============================
 
 _CSS_EDITORIAL = """
 .editorial{background:#faf8f4}
-.editorial .band{position:absolute;left:0;top:0;bottom:0;width:362px}
-.editorial .foto{position:absolute;left:52px;top:50%;transform:translateY(-50%);width:280px;height:380px;border-radius:16px;object-fit:cover;object-position:center 28%;box-shadow:0 20px 44px -16px rgba(0,0,0,.5)}
+.editorial .foto{position:absolute;left:0;top:0;height:638px;width:452px;object-fit:cover;object-position:center 26%}
+.editorial .curva{position:absolute;left:0;top:0;width:520px;height:638px;pointer-events:none}
 .editorial .logo{position:absolute;top:62px;right:60px;height:60px;max-width:300px;object-fit:contain;object-position:right}
-.editorial .nm{position:absolute;top:150px;left:420px;font-size:56px;color:#1d1f24;max-width:540px}
-.editorial .cargo{position:absolute;top:268px;left:422px;font-style:italic;font-size:29px;color:#6c6f78;font-family:'Playfair'}
-.editorial .hair{position:absolute;top:330px;left:422px;width:88px;height:3px;background:var(--oro)}
-.editorial .campos{position:absolute;left:422px;bottom:84px;display:flex;gap:64px}
+.editorial .nm{position:absolute;top:168px;left:514px;font-size:54px;color:#1d1f24;line-height:1.04;max-width:440px}
+.editorial .cargo{position:absolute;top:308px;left:516px;font-style:italic;font-size:28px;color:#6c6f78;font-family:'Playfair'}
+.editorial .hair{position:absolute;top:362px;left:516px;width:90px;height:3px;background:var(--oro)}
+.editorial .campos{position:absolute;left:514px;bottom:74px;display:flex;gap:54px}
 .editorial .lab{color:#a6a8b0}.editorial .val{color:#1d1f24}
+.editorial .icon-c{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--prim);display:flex;align-items:center;justify-content:center}
+.editorial .rband{position:absolute;left:0;top:0;bottom:0;width:150px}
 .editorial .rlogo{position:absolute;top:64px;right:60px;height:58px;max-width:300px;object-fit:contain;object-position:right}
-.editorial .rtit{position:absolute;top:150px;left:362px;right:0;text-align:center;color:#9a9ca4;font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
-.editorial .rfoot{position:absolute;left:362px;right:0;bottom:74px;text-align:center;color:#1d1f24}
+.editorial .rtit{position:absolute;top:150px;left:150px;right:0;text-align:center;color:#9a9ca4;font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
+.editorial .rfoot{position:absolute;left:150px;right:0;bottom:74px;text-align:center;color:#1d1f24}
 .editorial .rfoot .t1{font-size:25px;font-weight:600}.editorial .rfoot .t2{font-size:21px;color:#6c6f78;margin-top:8px}
 """
 
@@ -258,43 +273,53 @@ def _editorial(lado, ctx, d):
     banda = _BG_EDIT_BANDA[ctx["variante"]]
     if lado == "frontal":
         n1, n2 = _nombre2(d["nombre"])
+        curva = ("<svg class='curva' viewBox='0 0 520 638' preserveAspectRatio='none'>"
+                 "<path d='M452 0 C 452 0 452 638 452 638' stroke='%s' stroke-width='3' fill='none'/>"
+                 "<path d='M452 0 C 410 200 410 440 452 638' stroke='%s' stroke-width='3' fill='none' opacity='.9'/>"
+                 "</svg>" % (ORO, ORO))
         cuerpo = (
-            "<div class='band' style='background:%s'></div>"
-            "<img class='foto' src='%s'>"
+            "<img class='foto' src='%s'>%s"
             "<img class='logo' src='%s'>"
-            "<div class='nm'>%s %s</div>"
+            "<div class='nm'>%s<br>%s</div>"
             "<div class='cargo'>%s</div><div class='hair'></div>"
             "<div class='campos'>"
-            "<div><div class='lab'>Empresa</div><div class='val clip' style='max-width:330px'>%s</div></div>"
-            "<div><div class='lab'>DNI</div><div class='val'>%s</div></div>"
+            "<div class='item'><div class='icon-c'>%s</div><div><div class='lab'>Empresa</div><div class='val clip' style='max-width:230px'>%s</div></div></div>"
+            "<div class='item'><div class='icon-c'>%s</div><div><div class='lab'>DNI</div><div class='val'>%s</div></div></div>"
             "</div>"
-            % (banda, ctx["foto_uri"], ctx["logo_uri"], n1, n2, d["cargo"], ctx["cliente"], d["id"]))
+            % (ctx["foto_uri"], curva, ctx["logo_uri"], n1, n2, d["cargo"],
+               _icono("edificio", ctx["prim_legible"], 22), ctx["cliente"],
+               _icono("persona", ctx["prim_legible"], 22), d["id"]))
     else:
         cuerpo = (
-            "<div class='band' style='background:%s'></div>"
+            "<div class='rband' style='background:%s'></div>"
             "<img class='rlogo' src='%s'>"
             "<div class='rtit'>Escanea para validar</div>"
             "%s"
             "<div class='rfoot'><div class='t1'>Credencial personal e intransferible</div>"
             "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
-            % (banda, ctx["logo_uri"], _qr(362 + (H[0] - 362) / 2, 198, ctx["qr_uri"], 238), ctx["web"]))
+            % (banda, ctx["logo_uri"], _qr(150 + (H[0] - 150) / 2, 196, ctx["qr_uri"], 230), ctx["web"]))
     return _shell(ctx, "editorial", _CSS_EDITORIAL, cuerpo, *H), H[0], H[1]
 
 
-# ============================ GLASS (vertical, color pleno + glassmorphism) ============================
+# ============================ GLASS (vertical color, paneles de vidrio) ============================
 
 _CSS_GLASS = """
-.glass .logo{position:absolute;top:62px;left:50%;transform:translateX(-50%);height:66px;max-width:420px;object-fit:contain;filter:brightness(0) invert(1)}
-.glass .card2{position:absolute;left:50%;transform:translateX(-50%);top:182px;width:474px;padding:40px 0 34px;border-radius:26px;background:rgba(255,255,255,.15);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.28);display:flex;flex-direction:column;align-items:center;gap:24px;box-shadow:0 20px 50px -20px rgba(0,0,0,.4)}
-.glass .foto{width:250px;height:250px;border-radius:50%;object-fit:cover;object-position:center 30%;border:5px solid rgba(255,255,255,.75);box-shadow:0 14px 32px -12px rgba(0,0,0,.5)}
+.glass .logo{position:absolute;top:60px;left:50%;transform:translateX(-50%);height:66px;max-width:420px;object-fit:contain;filter:brightness(0) invert(1)}
+.glass .card2{position:absolute;left:50%;transform:translateX(-50%);top:176px;width:486px;padding:38px 0 32px;border-radius:26px;background:rgba(255,255,255,.15);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.28);display:flex;flex-direction:column;align-items:center;gap:22px;box-shadow:0 20px 50px -20px rgba(0,0,0,.4)}
+.glass .foto{width:252px;height:252px;border-radius:50%;object-fit:cover;object-position:center 30%;border:5px solid rgba(255,255,255,.8);box-shadow:0 14px 32px -12px rgba(0,0,0,.5)}
 .glass .nm{font-size:50px;color:#fff;text-align:center;line-height:1.02}
-.glass .cargo{color:rgba(255,255,255,.9);font-size:25px;margin-top:-8px}
-.glass .hair{width:96px;height:3px;background:rgba(255,255,255,.9);margin:4px auto 0}
-.glass .campos{position:absolute;left:0;right:0;bottom:88px;display:flex;justify-content:center;gap:70px;color:#fff;text-align:center}
-.glass .lab{color:rgba(255,255,255,.72)}.glass .val{color:#fff}
+.glass .cargo{color:rgba(255,255,255,.92);font-size:25px;margin-top:-6px}
+.glass .hair{width:96px;height:3px;background:rgba(255,255,255,.9);margin:2px auto 0}
+.glass .panel{position:absolute;left:50%;transform:translateX(-50%);bottom:64px;width:486px;padding:24px 0;border-radius:20px;background:rgba(255,255,255,.13);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.24);display:flex;justify-content:center;align-items:center;color:#fff}
+.glass .cell{flex:1;text-align:center}
+.glass .divisor{width:1px;align-self:stretch;background:rgba(255,255,255,.26);margin:4px 0}
+.glass .lab{color:rgba(255,255,255,.75)}.glass .val{color:#fff}
+.glass .rpanel{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;width:486px;padding:34px 30px;border-radius:22px;background:rgba(255,255,255,.13);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.24);text-align:center;color:#fff}
+.glass .rpanel .esc{display:flex;justify-content:center;margin-bottom:14px}
+.glass .rpanel .t1{font-size:24px;font-weight:600}
+.glass .rpanel .web{display:flex;align-items:center;justify-content:center;gap:10px;font-size:22px;color:rgba(255,255,255,.9);margin-top:14px}
+.glass .rpanel .t2{font-size:20px;color:rgba(255,255,255,.8);margin-top:6px}
 .glass .rtit{position:absolute;top:300px;left:0;right:0;text-align:center;color:rgba(255,255,255,.7);font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
-.glass .rfoot{position:absolute;left:0;right:0;bottom:130px;text-align:center;color:#fff}
-.glass .rfoot .t1{font-size:25px;font-weight:600}.glass .rfoot .t2{font-size:21px;color:rgba(255,255,255,.82);margin-top:8px}
 """
 
 
@@ -306,9 +331,10 @@ def _glass(lado, ctx, d):
             "<div class='card2'><img class='foto' src='%s'>"
             "<div class='nm'>%s<br>%s</div>"
             "<div class='cargo'>%s</div><div class='hair'></div></div>"
-            "<div class='campos'>"
-            "<div><div class='lab'>Empresa</div><div class='val clip' style='max-width:240px'>%s</div></div>"
-            "<div><div class='lab'>DNI</div><div class='val'>%s</div></div>"
+            "<div class='panel'>"
+            "<div class='cell'><div class='lab'>Empresa</div><div class='val clip' style='max-width:200px;margin:0 auto'>%s</div></div>"
+            "<div class='divisor'></div>"
+            "<div class='cell'><div class='lab'>DNI</div><div class='val'>%s</div></div>"
             "</div>"
             % (ctx["logo_uri"], ctx["foto_uri"], n1, n2, d["cargo"], ctx["cliente"], d["id"]))
     else:
@@ -316,9 +342,14 @@ def _glass(lado, ctx, d):
             "<img class='logo' src='%s'>"
             "<div class='rtit'>Escanea para validar</div>"
             "%s"
-            "<div class='rfoot'><div class='t1'>Personal e intransferible</div>"
-            "<div class='t2'>%s</div><div class='t2'>Vigencia 2026 — 2027</div></div>"
-            % (ctx["logo_uri"], _qr(V[0] / 2, 388, ctx["qr_uri"], 240), ctx["web"]))
+            "<div class='rpanel'>"
+            "<div class='esc'>%s</div>"
+            "<div class='t1'>Credencial personal e intransferible</div>"
+            "<div class='web'>%s %s</div>"
+            "<div class='t2'>Vigencia 2026 — 2027</div>"
+            "</div>"
+            % (ctx["logo_uri"], _qr(V[0] / 2, 360, ctx["qr_uri"], 230),
+               _icono("escudo", ORO, 34), _icono("globo", "rgba(255,255,255,.9)", 22), ctx["web"]))
     fimg = fondo_imagen("glass", ctx)
     fondo = ('url("%s") center/cover' % fimg) if fimg else _BG_GLASS[ctx["variante"]]
     return _shell(ctx, "glass", _CSS_GLASS, cuerpo, *V, fondo=fondo), V[0], V[1]
