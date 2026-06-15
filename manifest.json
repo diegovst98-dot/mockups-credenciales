@@ -1,11 +1,33 @@
 {
-  "version": 7,
+  "version": 8,
   "archivos": [
     "app.py",
     "motor.py",
+    "plantillas.py",
+    "render.py",
     "version.txt",
     "fuente-display.ttf",
     "fuente-display-italic.ttf",
-    "foto-persona.jpg"
+    "foto-persona.jpg",
+    "inter.ttf",
+    "inter-semibold.ttf",
+    "fondo-aurora-1.jpg",
+    "fondo-aurora-2.jpg",
+    "fondo-aurora-3.jpg",
+    "fondo-aurora-4.jpg",
+    "fondo-aurora-5.jpg",
+    "fondo-aurora-6.jpg",
+    "fondo-editorial-1.jpg",
+    "fondo-editorial-2.jpg",
+    "fondo-editorial-3.jpg",
+    "fondo-editorial-4.jpg",
+    "fondo-editorial-5.jpg",
+    "fondo-editorial-6.jpg",
+    "fondo-glass-1.jpg",
+    "fondo-glass-2.jpg",
+    "fondo-glass-3.jpg",
+    "fondo-glass-4.jpg",
+    "fondo-glass-5.jpg",
+    "fondo-glass-6.jpg"
   ]
 }
