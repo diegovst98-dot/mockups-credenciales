@@ -16,6 +16,7 @@ import math
 import os
 import random
 import re
+import shutil
 import sys
 import unicodedata
 from datetime import date
@@ -1229,6 +1230,11 @@ def generar(ruta_logo, cliente, carpeta_salida=None):
 
     if carpeta_salida is None:
         carpeta_salida = os.path.join(RUTA_BASE, "salida", f"{slug(cliente)}-{date.today():%Y-%m-%d}")
+        # Limpiar corridas anteriores del mismo cliente/día: si no, los archivos de una
+        # versión vieja (otros estilos) quedan apilados junto a los nuevos y confunden.
+        # La carpeta queda SOLO con la salida actual (brief + 3 direcciones + para-diseno).
+        if os.path.isdir(carpeta_salida):
+            shutil.rmtree(carpeta_salida, ignore_errors=True)
     os.makedirs(carpeta_salida, exist_ok=True)
 
     rutas = []
