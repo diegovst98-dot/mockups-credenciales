@@ -21,7 +21,7 @@ F_PLAYFAIR = os.path.join(RUTA, "fuente-display.ttf")   # Playfair Display (OFL)
 F_INTER = os.path.join(RUTA, "inter.ttf")
 F_INTER_SB = os.path.join(RUTA, "inter-semibold.ttf")
 
-DATOS = {"nombre": "Carlos González M.", "cargo": "Supervisor de Operaciones", "id": "45678123"}
+DATOS = {"nombre": "María Fernández G.", "cargo": "Supervisora de Operaciones", "id": "45678123"}
 ORO = "#c9a14a"
 H, V = (1011, 638), (638, 1011)
 MG = 60  # margen de seguridad de impresion (~5mm)
