@@ -18,11 +18,22 @@ GRIS = "#383838"
 FONDO = "#FFFFFF"
 
 
+def _version():
+    """Lee version.txt (se actualiza solo por auto-update) para mostrarla en la
+    interfaz: así el vendedor confirma de un vistazo si el programa ya se actualizó."""
+    try:
+        ruta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "version.txt")
+        with open(ruta, encoding="utf-8") as f:
+            return "v" + f.read().strip()
+    except Exception:
+        return "v?"
+
+
 class App:
     def __init__(self, raiz):
         self.raiz = raiz
         self.ruta_logo = None
-        raiz.title("Mockups DISECOD")
+        raiz.title("Mockups DISECOD — %s" % _version())
         raiz.configure(bg=FONDO)
         raiz.geometry("560x420")
         raiz.resizable(False, False)
@@ -63,7 +74,8 @@ class App:
         self.estado = tk.Label(raiz, text="", font=f_normal, bg=FONDO, fg=GRIS)
         self.estado.pack()
 
-        tk.Label(raiz, text="DISECOD · www.fotochecks.pe", font=f_normal, bg=FONDO, fg="#BBB").pack(side="bottom", pady=10)
+        tk.Label(raiz, text="DISECOD · www.fotochecks.pe · %s" % _version(),
+                 font=f_normal, bg=FONDO, fg="#BBB").pack(side="bottom", pady=10)
 
     def elegir_logo(self):
         ruta = filedialog.askopenfilename(
