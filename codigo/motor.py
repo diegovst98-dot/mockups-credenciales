@@ -1202,12 +1202,9 @@ def generar(ruta_logo, cliente, carpeta_salida=None):
     from plantillas import cara, construir_contexto
     from render import render_caras
     ctx = construir_contexto(logo, prim, sec, cliente)
-    DIRECCIONES = [("aurora", "Dirección 1 — Aurora"),
-                   ("editorial", "Dirección 2 — Editorial"),
-                   ("glass", "Dirección 3 — Glass"),
-                   ("corporativo", "Dirección 4 — Corporativo"),
-                   ("vertical", "Dirección 5 — Vertical"),
-                   ("minimal", "Dirección 6 — Minimal")]
+    DIRECCIONES = [("clasica", "Dirección 1 — Clásica"),
+                   ("gafete", "Dirección 2 — Gafete"),
+                   ("premium", "Dirección 3 — Premium")]
     items = []
     for clave, _ in DIRECCIONES:
         for lado in ("frontal", "reverso"):

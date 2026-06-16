@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-"""HTML/CSS de cada cara de credencial (3 direcciones: Aurora/Editorial/Glass).
-Autocontenido: logo y foto en base64, fuentes horneadas via @font-face. El color
-y el tratamiento salen del logo real (varia segun la marca). Lo rasteriza render.py.
+"""HTML/CSS de cada cara de credencial (3 direcciones: Clásica/Gafete/Premium).
+Autocontenido: logo y foto en base64, fuentes horneadas via @font-face.
 
-v10: remates de acabado (íconos, panel de datos con borde + divisor, marco fino en
-la foto, editorial con foto a sangre + curva, glass con paneles de vidrio). Sobre la
-grilla consistente de v9 (margen de seguridad, foto frontal, nombre en 2 líneas)."""
+Diseños reproducidos de las referencias profesionales aprobadas por Diego (2026-06-15):
+P1 horizontal limpia, P4 vertical gafete moderno, P3 vertical premium. El LAYOUT es fijo;
+el COLOR DE ACENTO sale del logo del cliente (--acc = marca legible, --oscuro = banda con
+texto blanco), así la misma plantilla se ve on-brand para cualquier logo. El logo del
+cliente va en su tinta real, NUNCA se recolorea. Lo rasteriza render.py (Edge/Playwright)."""
 import base64
 import glob as _glob
 import hashlib
@@ -24,32 +25,6 @@ DATOS = {"nombre": "Carlos González M.", "cargo": "Supervisor de Operaciones", 
 ORO = "#c9a14a"
 H, V = (1011, 638), (638, 1011)
 MG = 60  # margen de seguridad de impresion (~5mm)
-
-_BG_AURORA = [
-    ("radial-gradient(120% 140% at 12% 8%, var(--medio) 0%, transparent 42%),"
-     "radial-gradient(120% 130% at 95% 95%, var(--prim) 0%, transparent 38%),"
-     "linear-gradient(135deg, var(--oscuro), #0c0e11 75%)"),
-    ("radial-gradient(100% 120% at 88% 6%, var(--prim) 0%, transparent 40%),"
-     "linear-gradient(160deg, #0b0d10 0%, var(--oscuro) 55%, var(--medio) 135%)"),
-    ("radial-gradient(150% 120% at 50% -12%, var(--medio) 0%, transparent 46%),"
-     "radial-gradient(90% 90% at 10% 100%, var(--prim) 0%, transparent 40%),"
-     "linear-gradient(180deg, var(--oscuro), #0b0d10 82%)"),
-]
-_BG_GLASS = [
-    ("radial-gradient(90% 120% at 85% 8%, rgba(255,255,255,.26), transparent 45%),"
-     "radial-gradient(120% 120% at 8% 96%, var(--oscuro), transparent 55%),"
-     "linear-gradient(150deg, var(--prim), var(--medio))"),
-    ("radial-gradient(100% 100% at 15% 8%, rgba(255,255,255,.22), transparent 42%),"
-     "linear-gradient(165deg, var(--medio), var(--prim) 68%, var(--oscuro))"),
-    ("radial-gradient(120% 130% at 92% 96%, rgba(255,255,255,.20), transparent 46%),"
-     "radial-gradient(80% 80% at 6% 8%, var(--claro), transparent 40%),"
-     "linear-gradient(200deg, var(--prim), var(--oscuro))"),
-]
-_BG_EDIT_BANDA = [
-    "linear-gradient(160deg,var(--prim),var(--medio))",
-    "linear-gradient(205deg,var(--medio),var(--prim) 70%,var(--oscuro))",
-    "linear-gradient(150deg,var(--prim),var(--oscuro))",
-]
 
 
 def variante_de(cliente, n=3):
@@ -103,54 +78,22 @@ def _icono(nombre, color, tam=26, sw=1.8):
             % (tam, tam, color, sw, _ICON_PATHS[nombre]))
 
 
-# ---------- banco de fondos (recoloreados a la marca) ----------
-
-def _duotono(gray, sombra, luz):
-    lut = []
-    for ch in range(3):
-        a, b = sombra[ch], luz[ch]
-        lut.extend(int(a + (b - a) * i / 255) for i in range(256))
-    return gray.convert("RGB").point(lut)
-
-
-def _recolorear_fondo(ruta, prim, estilo):
-    img = Image.open(ruta).convert("L")
-    if estilo == "aurora":
-        sombra, luz = _ajustar(prim, 0.10), _ajustar(prim, 0.80)
-    elif estilo == "glass":
-        sombra, luz = _ajustar(prim, 0.60), _ajustar(prim, 1.45)
-    else:
-        sombra, luz = (236, 234, 230), (252, 250, 247)
-    return _duotono(img, sombra, luz)
-
-
-def fondo_imagen(estilo, ctx):
-    archivos = sorted(_glob.glob(os.path.join(RUTA, "fondo-%s-*.jpg" % estilo)))
-    if not archivos:
-        return None
-    idx = variante_de(ctx["cliente"], len(archivos))
-    img = _recolorear_fondo(archivos[idx], ctx["_prim"], estilo)
-    return _b64_img(img, "JPEG")
-
-
-# ---------- foto del demo: 3 estrategias (color / silueta / duotono) ----------
+# ---------- foto del demo ----------
 
 def _silueta_uri(prim):
-    """Placeholder estilo FOTO CARNET (DNI/pasaporte): fondo claro uniforme y
-    busto centrado con aire arriba — cabeza completa, hombros en la base, sin
-    cortes ni descuadre. Intencional para un demo, sin el uncanny de una cara IA."""
-    W, Hh = 660, 880           # proporción carnet (≈3:4)
-    SS = 2                      # supersample para bordes suaves
+    """Placeholder estilo FOTO CARNET (fondo claro uniforme + busto centrado)."""
+    W, Hh = 660, 825           # proporción carnet 4:5
+    SS = 2
     w, h = W * SS, Hh * SS
-    base = Image.new("RGB", (w, h), (233, 236, 240))   # fondo carnet gris-celeste claro
+    base = Image.new("RGB", (w, h), (233, 236, 240))
     capa = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(capa)
     col = (156, 163, 173, 255)
     cx = w // 2
     rcab = int(150 * SS)
-    cy = int(312 * SS)                                  # cabeza con ~17% de aire arriba
-    d.ellipse([cx - rcab, cy - rcab, cx + rcab, cy + rcab], fill=col)        # cabeza
-    d.ellipse([cx - int(308 * SS), cy + rcab - int(6 * SS),                  # hombros amplios
+    cy = int(300 * SS)
+    d.ellipse([cx - rcab, cy - rcab, cx + rcab, cy + rcab], fill=col)
+    d.ellipse([cx - int(308 * SS), cy + rcab - int(6 * SS),
                cx + int(308 * SS), h + int(250 * SS)], fill=col)
     capa = capa.filter(ImageFilter.GaussianBlur(2.4 * SS))
     base = Image.alpha_composite(base.convert("RGBA"), capa).convert("RGB")
@@ -158,23 +101,13 @@ def _silueta_uri(prim):
     return _b64_img(base, "JPEG")
 
 
-def _foto_duotono_uri(prim):
-    """Foto IA tratada en duotono del color de marca: se ve editorial/intencional
-    y disimula el 'realismo fallido' de la cara IA."""
-    img = Image.open(FOTO_PERSONA).convert("L")
-    duo = _duotono(img, _ajustar(prim, 0.30), (244, 244, 246))
-    return _b64_img(duo, "JPEG")
-
-
 def _foto_uri(prim):
-    # Default: silueta carnet (decisión Diego 2026-06-15: la cara IA se veía "off").
-    # MOCKUPS_FOTO=duotono|color para las otras estrategias.
-    modo = os.environ.get("MOCKUPS_FOTO", "silueta").lower()
-    if modo == "duotono":
-        return _foto_duotono_uri(prim)
-    if modo == "color":
-        return _b64_file(FOTO_PERSONA, "image/jpeg")
-    return _silueta_uri(prim)
+    # Default: foto profesional real (decisión Diego 2026-06-15: se ve terminado).
+    # MOCKUPS_FOTO=silueta para el placeholder gris neutro.
+    modo = os.environ.get("MOCKUPS_FOTO", "color").lower()
+    if modo == "silueta":
+        return _silueta_uri(prim)
+    return _b64_file(FOTO_PERSONA, "image/jpeg")
 
 
 # ---------- contexto ----------
@@ -189,7 +122,7 @@ def construir_contexto(logo, prim, sec, cliente):
         "qr_uri": _b64_img(pseudo_qr(cliente, 360)),
         "prim_css": _rgb(prim),
         "medio_css": _rgb(_ajustar(prim, 0.58)),
-        "oscuro_css": _rgb(_ajustar(prim, 0.20)),
+        "oscuro_css": _rgb(_ajustar(prim, 0.22)),
         "claro_css": _rgb(_ajustar(prim, 1.7)),
         "prim_legible": _rgb(marca_legible(prim)),
         "txt_sobre_prim": "#ffffff" if oscuro else "#1d1f24",
@@ -211,355 +144,207 @@ def css_base():
         "@font-face{font-family:'Inter';src:url(%s) format('truetype');font-weight:600 800;}"
         "*{margin:0;padding:0;box-sizing:border-box}"
         "body{margin:0;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}"
-        ".lab{font-size:16px;letter-spacing:2.5px;text-transform:uppercase;font-weight:600}"
-        ".val{font-size:27px;font-weight:600;margin-top:2px}"
-        ".nm{font-family:'Playfair';font-weight:800;line-height:1.0}"
-        ".clip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
-        ".item{display:flex;align-items:center;gap:15px}"
         % (pf, inter, inter_sb)
     )
 
 
 def _root(ctx):
-    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;}"
-            % (ctx["prim_css"], ctx["medio_css"], ctx["oscuro_css"], ctx["claro_css"], ORO))
+    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;--acc:%s;}"
+            % (ctx["prim_css"], ctx["medio_css"], ctx["oscuro_css"],
+               ctx["claro_css"], ORO, ctx["prim_legible"]))
 
 
-def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto, fondo=None):
-    style = (" style='background:%s'" % fondo) if fondo else ""
+def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto):
     return ("<!doctype html><html><head><meta charset='utf-8'><style>%s%s"
             ".card{width:%dpx;height:%dpx;position:relative;overflow:hidden}%s"
-            "</style></head><body><div class='card %s'%s>%s</div></body></html>"
-            % (css_base(), _root(ctx), ancho, alto, css_estilo, clase, style, cuerpo))
-
-
-def _qr(cx, top, qr_uri, lado=240, bg="#fff"):
-    left = int(cx - lado / 2)
-    pad = 22
-    return ("<div style='position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;"
-            "background:%s;border-radius:18px;box-shadow:0 12px 30px -12px rgba(0,0,0,.5);"
-            "display:flex;align-items:center;justify-content:center'>"
-            "<img src='%s' style='width:%dpx;height:%dpx;border-radius:6px'></div>"
-            % (left, top, lado, lado, bg, qr_uri, lado - pad * 2, lado - pad * 2))
+            "</style></head><body><div class='card %s'>%s</div></body></html>"
+            % (css_base(), _root(ctx), ancho, alto, css_estilo, clase, cuerpo))
 
 
 # ⛔ REGLA FIJA — EL LOGO DEL CLIENTE NUNCA SE RECOLOREA (decisión Diego 2026-06-15).
-# Se respeta SIEMPRE su tinta original; solo se permite ajustar tamaño/posición.
-# Prohibido brightness(0)/invert/duotono/teñido y placas-caja detrás del logo. En
-# fondos oscuros (Aurora/Glass) la legibilidad se da con un halo suave (drop-shadow)
-# que NO toca el color del logo.
-_LOGO_GLOW = ("filter:drop-shadow(0 1px 1px rgba(0,0,0,.35)) "
-              "drop-shadow(0 0 9px rgba(255,255,255,.45))")
+# Se respeta SIEMPRE su tinta original; solo se ajusta tamaño/posición. Prohibido
+# brightness(0)/invert/duotono/teñido. Todos los fondos son claros (blanco/crema), así
+# el logo en color real siempre se lee. El color de marca tiñe el DISEÑO, no el logo.
 
 
-# ============================ AURORA (horizontal, oscuro premium) ============================
+# ============================ DIRECCIÓN 1 — CLÁSICA (horizontal limpia) ============================
 
-_CSS_AURORA = """
-.aurora .logo{position:absolute;top:56px;left:60px;height:72px;max-width:320px;object-fit:contain;object-position:left}
-.aurora .foto{position:absolute;top:131px;right:60px;width:300px;height:376px;border-radius:18px;object-fit:cover;object-position:center 26%;box-shadow:0 20px 44px -16px rgba(0,0,0,.7);border:2px solid var(--oro)}
-.aurora .nm{position:absolute;top:210px;left:60px;font-size:60px;color:#fff;max-width:540px}
-.aurora .hair{position:absolute;top:342px;left:62px;width:90px;height:3px;background:var(--oro)}
-.aurora .cargo{position:absolute;top:372px;left:62px;font-size:26px;color:rgba(255,255,255,.78)}
-.aurora .panel{position:absolute;left:60px;right:60px;bottom:52px;display:flex;align-items:center;padding:24px 30px;border:1px solid rgba(255,255,255,.18);border-radius:18px;background:rgba(255,255,255,.045)}
-.aurora .cell{flex:1;display:flex;align-items:center;gap:16px}
-.aurora .divisor{width:1px;align-self:stretch;background:rgba(255,255,255,.18);margin:2px 14px}
-.aurora .lab{color:rgba(255,255,255,.55)}.aurora .val{color:#fff}
-.aurora .rtit{position:absolute;top:150px;left:0;right:0;text-align:center;color:rgba(255,255,255,.55);font-size:19px;letter-spacing:4px;text-transform:uppercase;font-weight:600}
-.aurora .rfoot{position:absolute;left:0;right:0;bottom:64px;text-align:center;color:#fff}
-.aurora .rfoot .t1{font-size:26px;font-weight:600}.aurora .rfoot .t2{font-size:22px;color:rgba(255,255,255,.7);margin-top:8px}
+_CSS_CLASICA = """
+.clas{background:#fff}
+.clas .safe{position:absolute;inset:50px;display:grid;grid-template-columns:286px 1fr;grid-template-rows:118px 1fr;column-gap:48px;row-gap:16px}
+.clas .logohdr{grid-column:1/3;display:flex;align-items:center;justify-content:center}
+.clas .logohdr img{height:104px;max-width:780px;object-fit:contain}
+.clas .foto{grid-column:1;grid-row:2;align-self:center;width:286px;aspect-ratio:4/5;border:3px solid var(--acc);border-radius:10px;object-fit:cover;object-position:center 22%}
+.clas .info{grid-column:2;grid-row:2;align-self:center}
+.clas .name{font-family:'Inter';font-weight:800;font-size:58px;line-height:1.0;color:var(--acc);letter-spacing:-.01em;margin-bottom:14px;max-width:560px}
+.clas .role{font-size:30px;font-weight:700;color:var(--acc);margin-bottom:30px}
+.clas .rows{display:grid;gap:16px;font-size:26px}
+.clas .row{display:flex;align-items:center;gap:16px;border-top:2px solid #e4e6e2;padding-top:14px}
+.clas .row .lb{color:var(--acc);font-weight:700}
+.clas .ic{width:46px;height:46px;border-radius:50%;background:var(--oscuro);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.clas .bsafe{position:absolute;inset:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px}
+.clas .oline{width:520px;height:2px;background:var(--acc);opacity:.85}
+.clas .scan{font-size:29px;color:var(--acc);font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
+.clas .qrbox{width:232px;height:232px;background:#fff;border:10px solid #fff;outline:3px solid var(--acc);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.clas .qrbox img{width:100%;height:100%;object-fit:contain}
+.clas .ptxt{font-size:25px;color:#333}
+.clas .web,.clas .vig{font-size:28px;font-weight:800;color:var(--acc)}
 """
 
 
-def _aurora(lado, ctx, d):
+def _clasica(lado, ctx, d):
     if lado == "frontal":
-        n1, n2 = _nombre2(d["nombre"])
         cuerpo = (
-            "<img class='logo' src='%s' style='%s'>"
-            "<div class='nm'>%s<br>%s</div><div class='hair'></div>"
-            "<div class='cargo'>%s</div>"
+            "<div class='safe'>"
+            "<div class='logohdr'><img src='%s'></div>"
             "<img class='foto' src='%s'>"
-            "<div class='panel'>"
-            "<div class='cell'>%s<div><div class='lab'>Empresa</div><div class='val clip' style='max-width:280px'>%s</div></div></div>"
-            "<div class='divisor'></div>"
-            "<div class='cell' style='flex:0 0 230px'>%s<div><div class='lab'>DNI</div><div class='val'>%s</div></div></div>"
-            "</div>"
-            % (ctx["logo_uri"], _LOGO_GLOW, n1, n2, d["cargo"], ctx["foto_uri"],
-               _icono("edificio", ORO, 30), ctx["cliente"], _icono("persona", ORO, 30), d["id"]))
+            "<div class='info'>"
+            "<div class='name'>%s</div>"
+            "<div class='role'>%s</div>"
+            "<div class='rows'>"
+            "<div class='row'><span class='ic'>%s</span><span><span class='lb'>Empresa:</span> %s</span></div>"
+            "<div class='row'><span class='ic'>%s</span><span><span class='lb'>DNI:</span> %s</span></div>"
+            "</div></div></div>"
+            % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["cargo"],
+               _icono("edificio", "#fff", 24), ctx["cliente"], _icono("persona", "#fff", 24), d["id"]))
     else:
         cuerpo = (
-            "<img class='logo' src='%s' style='%s;left:50%%;transform:translateX(-50%%);top:66px;height:62px'>"
-            "<div class='rtit'>Escanea para validar</div>"
-            "%s"
-            "<div class='rfoot'><div class='t1'>Credencial personal e intransferible</div>"
-            "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
-            % (ctx["logo_uri"], _LOGO_GLOW, _qr(H[0] / 2, 192, ctx["qr_uri"], 240), ctx["web"]))
-    fimg = fondo_imagen("aurora", ctx)
-    fondo = ('url("%s") center/cover' % fimg) if fimg else _BG_AURORA[ctx["variante"]]
-    return _shell(ctx, "aurora", _CSS_AURORA, cuerpo, *H, fondo=fondo), H[0], H[1]
+            "<div class='bsafe'>"
+            "<div class='oline'></div>"
+            "<div class='scan'>Escanea para validar</div>"
+            "<div class='qrbox'><img src='%s'></div>"
+            "<div class='oline'></div>"
+            "<div class='ptxt'>Credencial personal e intransferible</div>"
+            "<div class='web'>%s</div>"
+            "<div class='vig'>Vigencia 2026 — 2027</div>"
+            "</div>"
+            % (ctx["qr_uri"], ctx["web"]))
+    return _shell(ctx, "clas", _CSS_CLASICA, cuerpo, *H), H[0], H[1]
 
 
-# ============================ EDITORIAL (horizontal claro, foto a sangre) ============================
+# ============================ DIRECCIÓN 2 — GAFETE (vertical moderno) ============================
 
-_CSS_EDITORIAL = """
-.editorial{background:#faf8f4}
-.editorial .band{position:absolute;left:0;top:0;bottom:0;width:362px}
-.editorial .foto{position:absolute;left:52px;top:50%;transform:translateY(-50%);width:282px;height:376px;border-radius:16px;object-fit:cover;object-position:center 30%;box-shadow:0 22px 46px -18px rgba(0,0,0,.5);border:3px solid rgba(255,255,255,.85)}
-.editorial .logo{position:absolute;top:62px;right:60px;height:60px;max-width:280px;object-fit:contain;object-position:right}
-.editorial .nm{position:absolute;top:172px;left:424px;font-size:52px;color:#1d1f24;line-height:1.05;max-width:430px}
-.editorial .cargo{position:absolute;top:308px;left:426px;font-style:italic;font-size:27px;color:#6c6f78;font-family:'Playfair'}
-.editorial .hair{position:absolute;top:360px;left:426px;width:88px;height:3px;background:var(--oro)}
-.editorial .campos{position:absolute;left:424px;bottom:78px;display:flex;gap:48px}
-.editorial .lab{color:#a6a8b0}.editorial .val{color:#1d1f24}
-.editorial .icon-c{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--prim);display:flex;align-items:center;justify-content:center}
-.editorial .rband{position:absolute;left:0;top:0;bottom:0;width:362px}
-.editorial .rlogo{position:absolute;top:64px;right:60px;height:58px;max-width:280px;object-fit:contain;object-position:right}
-.editorial .rtit{position:absolute;top:150px;left:362px;right:0;text-align:center;color:#9a9ca4;font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
-.editorial .rfoot{position:absolute;left:362px;right:0;bottom:74px;text-align:center;color:#1d1f24}
-.editorial .rfoot .t1{font-size:25px;font-weight:600}.editorial .rfoot .t2{font-size:21px;color:#6c6f78;margin-top:8px}
+_CSS_GAFETE = """
+.gaf{background:#fff}
+.gaf .wave{position:absolute;left:-40px;right:-40px;bottom:-34px;height:150px;background:linear-gradient(135deg,var(--oscuro),var(--acc));border-radius:55% 55% 0 0}
+.gaf .safe{position:absolute;inset:46px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.gaf .logohdr{height:94px;display:flex;align-items:center}
+.gaf .logohdr img{max-height:94px;max-width:440px;object-fit:contain}
+.gaf .foto{margin-top:26px;width:300px;aspect-ratio:4/5;border:3px solid #fff;border-radius:10px;object-fit:cover;object-position:center 22%;box-shadow:0 12px 30px -12px rgba(0,0,0,.35),0 0 0 1px #e3e3df}
+.gaf .nameband{margin:28px -46px 18px;width:calc(100% + 92px);background:var(--oscuro);color:#fff;font-family:'Inter';font-weight:800;font-size:44px;line-height:1.1;padding:20px 14px;letter-spacing:-.01em}
+.gaf .role{font-size:27px;color:var(--acc);font-weight:800;border-bottom:4px solid var(--acc);padding-bottom:9px;margin-bottom:30px}
+.gaf .data{width:436px;display:grid;gap:16px;text-align:left}
+.gaf .row{display:grid;grid-template-columns:58px 1fr;gap:16px;align-items:center;border-bottom:2px solid #d8e0d6;padding-bottom:13px}
+.gaf .ic{width:50px;height:50px;border-radius:50%;background:#fff;border:3px solid var(--acc);display:flex;align-items:center;justify-content:center}
+.gaf .lb{color:var(--acc);font-weight:700;font-size:22px}
+.gaf .vl{font-size:27px;color:#1a1a1a;font-weight:700}
+.gaf .bsafe{position:absolute;inset:46px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px}
+.gaf .qrbox{width:280px;height:280px;background:#fff;border:10px solid #fff;outline:3px solid var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-top:6px}
+.gaf .qrbox img{width:100%;height:100%;object-fit:contain}
+.gaf .pill{display:flex;align-items:center;gap:12px;border:3px solid var(--acc);border-radius:999px;padding:10px 24px;color:var(--acc);font-size:22px;font-weight:800}
+.gaf .transfer{font-size:23px;color:var(--acc);font-weight:700}
+.gaf .web{font-size:27px;font-weight:800;color:var(--acc)}
+.gaf .vig{position:absolute;left:0;right:0;bottom:30px;color:#fff;font-size:25px;font-weight:800;text-align:center}
 """
 
 
-def _editorial(lado, ctx, d):
-    banda = _BG_EDIT_BANDA[ctx["variante"]]
+def _gafete(lado, ctx, d):
     if lado == "frontal":
-        n1, n2 = _nombre2(d["nombre"])
         cuerpo = (
-            "<div class='band' style='background:%s'></div>"
+            "<div class='wave'></div>"
+            "<div class='safe'>"
+            "<div class='logohdr'><img src='%s'></div>"
             "<img class='foto' src='%s'>"
-            "<img class='logo' src='%s'>"
-            "<div class='nm'>%s<br>%s</div>"
-            "<div class='cargo'>%s</div><div class='hair'></div>"
-            "<div class='campos'>"
-            "<div class='item'><div class='icon-c'>%s</div><div><div class='lab'>Empresa</div><div class='val clip' style='max-width:220px'>%s</div></div></div>"
-            "<div class='item'><div class='icon-c'>%s</div><div><div class='lab'>DNI</div><div class='val'>%s</div></div></div>"
-            "</div>"
-            % (banda, ctx["foto_uri"], ctx["logo_uri"], n1, n2, d["cargo"],
-               _icono("edificio", ctx["prim_legible"], 22), ctx["cliente"],
-               _icono("persona", ctx["prim_legible"], 22), d["id"]))
+            "<div class='nameband'>%s</div>"
+            "<div class='role'>%s</div>"
+            "<div class='data'>"
+            "<div class='row'><span class='ic'>%s</span><span><div class='lb'>Empresa</div><div class='vl'>%s</div></span></div>"
+            "<div class='row'><span class='ic'>%s</span><span><div class='lb'>DNI</div><div class='vl'>%s</div></span></div>"
+            "</div></div>"
+            % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["cargo"],
+               _icono("edificio", ctx["prim_legible"], 24), ctx["cliente"],
+               _icono("persona", ctx["prim_legible"], 24), d["id"]))
     else:
         cuerpo = (
-            "<div class='rband' style='background:%s'></div>"
-            "<img class='rlogo' src='%s'>"
-            "<div class='rtit'>Escanea para validar</div>"
-            "%s"
-            "<div class='rfoot'><div class='t1'>Credencial personal e intransferible</div>"
-            "<div class='t2'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div></div>"
-            % (banda, ctx["logo_uri"], _qr(362 + (H[0] - 362) / 2, 196, ctx["qr_uri"], 230), ctx["web"]))
-    return _shell(ctx, "editorial", _CSS_EDITORIAL, cuerpo, *H), H[0], H[1]
+            "<div class='wave'></div>"
+            "<div class='bsafe'>"
+            "<div class='logohdr'><img src='%s'></div>"
+            "<div class='qrbox'><img src='%s'></div>"
+            "<div class='pill'>%s Escanea para validar</div>"
+            "<div class='transfer'>Credencial personal e intransferible</div>"
+            "<div class='web'>%s</div>"
+            "</div>"
+            "<div class='vig'>Vigencia 2026 — 2027</div>"
+            % (ctx["logo_uri"], ctx["qr_uri"], _icono("globo", ctx["prim_legible"], 20), ctx["web"]))
+    return _shell(ctx, "gaf", _CSS_GAFETE, cuerpo, *V), V[0], V[1]
 
 
-# ============================ GLASS (vertical color, paneles de vidrio) ============================
+# ============================ DIRECCIÓN 3 — PREMIUM (vertical elegante) ============================
 
-_CSS_GLASS = """
-.glass .logo{position:absolute;top:60px;left:50%;transform:translateX(-50%);height:66px;max-width:420px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35)) drop-shadow(0 0 9px rgba(255,255,255,.45))}
-.glass .card2{position:absolute;left:50%;transform:translateX(-50%);top:176px;width:486px;padding:38px 0 32px;border-radius:26px;background:rgba(255,255,255,.15);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.28);display:flex;flex-direction:column;align-items:center;gap:22px;box-shadow:0 20px 50px -20px rgba(0,0,0,.4)}
-.glass .foto{width:248px;height:310px;border-radius:18px;object-fit:cover;object-position:center 28%;border:4px solid rgba(255,255,255,.85);box-shadow:0 16px 34px -12px rgba(0,0,0,.5)}
-.glass .nm{font-size:50px;color:#fff;text-align:center;line-height:1.02}
-.glass .cargo{color:rgba(255,255,255,.92);font-size:25px;margin-top:-6px}
-.glass .hair{width:96px;height:3px;background:rgba(255,255,255,.9);margin:2px auto 0}
-.glass .panel{position:absolute;left:50%;transform:translateX(-50%);bottom:64px;width:486px;padding:24px 0;border-radius:20px;background:rgba(255,255,255,.13);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.24);display:flex;justify-content:center;align-items:center;color:#fff}
-.glass .cell{flex:1;text-align:center}
-.glass .divisor{width:1px;align-self:stretch;background:rgba(255,255,255,.26);margin:4px 0}
-.glass .lab{color:rgba(255,255,255,.75)}.glass .val{color:#fff}
-.glass .rpanel{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;width:486px;padding:34px 30px;border-radius:22px;background:rgba(255,255,255,.13);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.24);text-align:center;color:#fff}
-.glass .rpanel .esc{display:flex;justify-content:center;margin-bottom:14px}
-.glass .rpanel .t1{font-size:24px;font-weight:600}
-.glass .rpanel .web{display:flex;align-items:center;justify-content:center;gap:10px;font-size:22px;color:rgba(255,255,255,.9);margin-top:14px}
-.glass .rpanel .t2{font-size:20px;color:rgba(255,255,255,.8);margin-top:6px}
-.glass .rtit{position:absolute;top:300px;left:0;right:0;text-align:center;color:rgba(255,255,255,.7);font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
+_CSS_PREMIUM = """
+.prem{background:#fbf8ef}
+.prem .frame{position:absolute;inset:30px;border:3px solid var(--acc);border-radius:26px;opacity:.85}
+.prem .botbar{position:absolute;left:0;right:0;bottom:0;height:46px;background:var(--oscuro);border-top:4px solid var(--oro)}
+.prem .safe{position:absolute;left:56px;right:56px;top:60px;bottom:60px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.prem .logohdr{height:92px;display:flex;align-items:center;margin-top:4px}
+.prem .logohdr img{max-height:92px;max-width:380px;object-fit:contain}
+.prem .foto{margin-top:28px;width:252px;aspect-ratio:4/5;border:3px solid var(--acc);object-fit:cover;object-position:center 22%}
+.prem .name{font-family:'Playfair';font-weight:600;font-size:50px;line-height:1.05;color:var(--acc);margin-top:28px}
+.prem .goldline{width:330px;height:3px;background:var(--oro);margin:14px auto;position:relative}
+.prem .goldline::after{content:'';position:absolute;left:50%;top:50%;width:13px;height:13px;background:var(--oro);transform:translate(-50%,-50%) rotate(45deg)}
+.prem .role{font-size:28px;color:#2a2a2a;margin-bottom:32px}
+.prem .data{width:344px;display:grid;gap:18px;text-align:left}
+.prem .row{display:grid;grid-template-columns:54px 1px 1fr;gap:16px;align-items:center}
+.prem .ic{width:54px;height:54px;border-radius:50%;background:var(--oscuro);display:flex;align-items:center;justify-content:center}
+.prem .vline{height:54px;background:var(--acc);opacity:.6}
+.prem .lb{color:var(--acc);font-weight:700;font-size:22px}
+.prem .vl{font-size:26px;color:#222}
+.prem .bsafe{position:absolute;left:56px;right:56px;top:74px;bottom:74px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.prem .scan{font-size:26px;color:var(--acc);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-top:12px;margin-bottom:26px}
+.prem .qrbox{width:286px;height:286px;background:#fff;border:10px solid #fff;outline:3px solid var(--acc);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:28px}
+.prem .qrbox img{width:100%;height:100%;object-fit:contain}
+.prem .transfer{font-size:26px;line-height:1.3;color:#222;margin-bottom:26px}
+.prem .web{border:2px solid var(--acc);border-radius:10px;padding:13px 30px;font-size:26px;color:var(--acc);font-weight:800;margin-bottom:36px}
+.prem .vig{font-size:27px;font-weight:800;color:var(--acc)}
 """
 
 
-def _glass(lado, ctx, d):
+def _premium(lado, ctx, d):
     if lado == "frontal":
-        n1, n2 = _nombre2(d["nombre"])
         cuerpo = (
-            "<img class='logo' src='%s'>"
-            "<div class='card2'><img class='foto' src='%s'>"
-            "<div class='nm'>%s<br>%s</div>"
-            "<div class='cargo'>%s</div><div class='hair'></div></div>"
-            "<div class='panel'>"
-            "<div class='cell'><div class='lab'>Empresa</div><div class='val clip' style='max-width:240px;margin:0 auto'>%s</div></div>"
-            "<div class='divisor'></div>"
-            "<div class='cell'><div class='lab'>DNI</div><div class='val'>%s</div></div>"
-            "</div>"
-            % (ctx["logo_uri"], ctx["foto_uri"], n1, n2, d["cargo"], ctx["cliente"], d["id"]))
-    else:
-        cuerpo = (
-            "<img class='logo' src='%s'>"
-            "<div class='rtit'>Escanea para validar</div>"
-            "%s"
-            "<div class='rpanel'>"
-            "<div class='esc'>%s</div>"
-            "<div class='t1'>Credencial personal e intransferible</div>"
-            "<div class='web'>%s %s</div>"
-            "<div class='t2'>Vigencia 2026 — 2027</div>"
-            "</div>"
-            % (ctx["logo_uri"], _qr(V[0] / 2, 360, ctx["qr_uri"], 230),
-               _icono("escudo", ORO, 34), _icono("globo", "rgba(255,255,255,.9)", 22), ctx["web"]))
-    fimg = fondo_imagen("glass", ctx)
-    fondo = ('url("%s") center/cover' % fimg) if fimg else _BG_GLASS[ctx["variante"]]
-    return _shell(ctx, "glass", _CSS_GLASS, cuerpo, *V, fondo=fondo), V[0], V[1]
-
-
-# ============================ CORPORATIVO (horizontal, institucional) ============================
-# El "se ve como credencial de verdad": cabecera de marca, foto rectangular 4:5 a la
-# izquierda, datos a la derecha, pie de banda. Logo SIEMPRE sobre blanco (color real legible).
-
-_CSS_CORP = """
-.corp{background:#f7f6f3}
-.corp .stripe{position:absolute;left:0;top:0;width:100%;height:10px;background:var(--prim)}
-.corp .head{position:absolute;left:0;top:10px;width:100%;height:110px;background:#fff;border-bottom:1px solid #e6e4df}
-.corp .logo{position:absolute;top:32px;left:56px;height:64px;max-width:300px;object-fit:contain;object-position:left}
-.corp .htxt{position:absolute;top:40px;right:56px;text-align:right}
-.corp .htxt .a{font-size:22px;letter-spacing:3px;text-transform:uppercase;font-weight:700;color:var(--oscuro)}
-.corp .htxt .b{font-size:16px;letter-spacing:.5px;color:#8a8c93;margin-top:6px}
-.corp .foto{position:absolute;left:56px;top:158px;width:252px;height:315px;border-radius:10px;object-fit:cover;object-position:center 26%;border:1px solid #d9d7d1;box-shadow:0 14px 30px -14px rgba(0,0,0,.35)}
-.corp .nm{position:absolute;left:344px;top:172px;font-size:50px;color:#1d1f24;line-height:1.04;max-width:560px}
-.corp .cargo{position:absolute;left:346px;top:302px;font-size:26px;color:#6c6f78;font-family:'Playfair';font-style:italic}
-.corp .hair{position:absolute;left:346px;top:352px;width:84px;height:3px;background:var(--prim)}
-.corp .campos{position:absolute;left:344px;top:394px;display:flex;gap:56px}
-.corp .lab{color:#a6a8b0}.corp .val{color:#1d1f24}
-.corp .foot{position:absolute;left:0;bottom:0;width:100%;height:74px;background:var(--oscuro);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 56px}
-.corp .foot .l{font-size:21px;font-weight:600}.corp .foot .r{font-size:20px;opacity:.82}
-.corp .rtit{position:absolute;top:206px;left:0;width:100%;text-align:center;color:#9a9ca4;font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
-.corp .rfoot{position:absolute;left:0;bottom:120px;width:100%;text-align:center;color:#1d1f24}
-.corp .rfoot .t1{font-size:24px;font-weight:600}.corp .rfoot .t2{font-size:20px;color:#6c6f78;margin-top:8px}
-"""
-
-
-def _corporativo(lado, ctx, d):
-    if lado == "frontal":
-        n1, n2 = _nombre2(d["nombre"])
-        cuerpo = (
-            "<div class='stripe'></div>"
-            "<div class='head'><img class='logo' src='%s'>"
-            "<div class='htxt'><div class='a'>Credencial</div>"
-            "<div class='b'>Identificación de personal</div></div></div>"
+            "<div class='frame'></div><div class='botbar'></div>"
+            "<div class='safe'>"
+            "<div class='logohdr'><img src='%s'></div>"
             "<img class='foto' src='%s'>"
-            "<div class='nm'>%s<br>%s</div>"
-            "<div class='cargo'>%s</div><div class='hair'></div>"
-            "<div class='campos'>"
-            "<div><div class='lab'>Empresa</div><div class='val clip' style='max-width:240px'>%s</div></div>"
-            "<div><div class='lab'>DNI</div><div class='val'>%s</div></div>"
-            "</div>"
-            "<div class='foot'><div class='l'>%s</div><div class='r'>Vigencia 2026 — 2027</div></div>"
-            % (ctx["logo_uri"], ctx["foto_uri"], n1, n2, d["cargo"], ctx["cliente"], d["id"], ctx["web"]))
+            "<div class='name'>%s</div>"
+            "<div class='goldline'></div>"
+            "<div class='role'>%s</div>"
+            "<div class='data'>"
+            "<div class='row'><span class='ic'>%s</span><span class='vline'></span><span><div class='lb'>Empresa</div><div class='vl'>%s</div></span></div>"
+            "<div class='row'><span class='ic'>%s</span><span class='vline'></span><span><div class='lb'>DNI</div><div class='vl'>%s</div></span></div>"
+            "</div></div>"
+            % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["cargo"],
+               _icono("edificio", "#fff", 24), ctx["cliente"], _icono("persona", "#fff", 24), d["id"]))
     else:
         cuerpo = (
-            "<div class='stripe'></div>"
-            "<div class='head'><img class='logo' src='%s'>"
-            "<div class='htxt'><div class='a'>Validación</div>"
-            "<div class='b'>Verificación del titular</div></div></div>"
-            "<div class='rtit'>Escanea para validar</div>"
-            "%s"
-            "<div class='rfoot'><div class='t1'>Credencial personal e intransferible</div>"
-            "<div class='t2'>%s</div></div>"
-            "<div class='foot'><div class='l'>%s</div><div class='r'>2026 — 2027</div></div>"
-            % (ctx["logo_uri"], _qr(H[0] / 2, 232, ctx["qr_uri"], 226), ctx["web"], ctx["web"]))
-    return _shell(ctx, "corp", _CSS_CORP, cuerpo, *H), H[0], H[1]
-
-
-# ============================ VERTICAL (gafete clásico de lanyard) ============================
-# El formato más reconocible: logo arriba, foto rectangular grande centrada, nombre/cargo,
-# datos y banda de pie. Logo SIEMPRE sobre blanco.
-
-_CSS_VERT = """
-.vert{background:#f7f6f3}
-.vert .logo{position:absolute;top:54px;left:50%;transform:translateX(-50%);height:76px;max-width:430px;object-fit:contain}
-.vert .hair{position:absolute;top:152px;left:50%;transform:translateX(-50%);width:120px;height:3px;background:var(--prim)}
-.vert .foto{position:absolute;top:192px;left:50%;transform:translateX(-50%);width:336px;height:420px;border-radius:14px;object-fit:cover;object-position:center 26%;border:3px solid #fff;box-shadow:0 18px 40px -16px rgba(0,0,0,.4),0 0 0 1px #e0ded8}
-.vert .nm{position:absolute;top:652px;left:0;width:100%;text-align:center;font-size:48px;color:#1d1f24;line-height:1.02}
-.vert .cargo{position:absolute;top:756px;left:0;width:100%;text-align:center;font-size:25px;color:#6c6f78}
-.vert .vbar{position:absolute;top:804px;left:50%;transform:translateX(-50%);width:92px;height:3px;background:var(--prim)}
-.vert .campos{position:absolute;top:842px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:30px;text-align:center}
-.vert .campos .divisor{width:1px;height:46px;background:#d9d7d1}
-.vert .lab{color:#a6a8b0}.vert .val{color:#1d1f24}
-.vert .foot{position:absolute;left:0;bottom:0;width:100%;height:84px;background:var(--oscuro);color:#fff;display:flex;align-items:center;justify-content:center;font-size:21px;letter-spacing:.3px}
-.vert .rtit{position:absolute;top:300px;left:0;width:100%;text-align:center;color:#9a9ca4;font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
-.vert .rfoot{position:absolute;left:0;bottom:150px;width:100%;text-align:center;color:#1d1f24}
-.vert .rfoot .t1{font-size:24px;font-weight:600}.vert .rfoot .t2{font-size:20px;color:#6c6f78;margin-top:8px}
-"""
-
-
-def _vertical(lado, ctx, d):
-    if lado == "frontal":
-        n1, n2 = _nombre2(d["nombre"])
-        cuerpo = (
-            "<img class='logo' src='%s'><div class='hair'></div>"
-            "<img class='foto' src='%s'>"
-            "<div class='nm'>%s<br>%s</div>"
-            "<div class='cargo'>%s</div><div class='vbar'></div>"
-            "<div class='campos'>"
-            "<div><div class='lab'>Empresa</div><div class='val clip' style='max-width:230px'>%s</div></div>"
-            "<div class='divisor'></div>"
-            "<div><div class='lab'>DNI</div><div class='val'>%s</div></div>"
+            "<div class='frame'></div><div class='botbar'></div>"
+            "<div class='bsafe'>"
+            "<div class='scan'>Escanea para validar</div>"
+            "<div class='qrbox'><img src='%s'></div>"
+            "<div class='goldline'></div>"
+            "<div class='transfer'>Credencial personal<br>e intransferible</div>"
+            "<div class='web'>%s</div>"
+            "<div class='vig'>Vigencia 2026 — 2027</div>"
             "</div>"
-            "<div class='foot'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div>"
-            % (ctx["logo_uri"], ctx["foto_uri"], n1, n2, d["cargo"], ctx["cliente"], d["id"], ctx["web"]))
-    else:
-        cuerpo = (
-            "<img class='logo' src='%s'><div class='hair'></div>"
-            "<div class='rtit'>Escanea para validar</div>"
-            "%s"
-            "<div class='rfoot'><div class='t1'>Credencial personal e intransferible</div>"
-            "<div class='t2'>%s</div></div>"
-            "<div class='foot'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div>"
-            % (ctx["logo_uri"], _qr(V[0] / 2, 372, ctx["qr_uri"], 240), ctx["web"], ctx["web"]))
-    return _shell(ctx, "vert", _CSS_VERT, cuerpo, *V), V[0], V[1]
-
-
-# ============================ MINIMAL (vertical, editorial/aire) ============================
-# Tipográfico, asimétrico, un solo acento de marca (filo izquierdo). Logo sobre marfil.
-
-_CSS_MIN = """
-.min{background:#faf9f6}
-.min .edge{position:absolute;left:0;top:0;width:6px;height:100%;background:var(--prim)}
-.min .logo{position:absolute;top:74px;left:60px;height:58px;max-width:300px;object-fit:contain;object-position:left}
-.min .foto{position:absolute;top:228px;left:60px;width:304px;height:380px;border-radius:10px;object-fit:cover;object-position:center 26%;border:1px solid #e2e0da;box-shadow:0 16px 36px -18px rgba(0,0,0,.3)}
-.min .nm{position:absolute;top:664px;left:60px;font-size:54px;color:#20222a;line-height:1.02;max-width:520px}
-.min .hair{position:absolute;top:800px;left:62px;width:70px;height:3px;background:var(--prim)}
-.min .cargo{position:absolute;top:822px;left:62px;font-size:19px;letter-spacing:2.5px;text-transform:uppercase;color:#8a8c93;font-weight:600}
-.min .campos{position:absolute;left:60px;bottom:80px;display:flex;gap:64px}
-.min .lab{color:#aeb0b6}.min .val{color:#20222a}
-.min .rtit{position:absolute;top:300px;left:60px;color:#9a9ca4;font-size:18px;letter-spacing:3.5px;text-transform:uppercase;font-weight:600}
-.min .rweb{position:absolute;left:60px;bottom:80px;font-size:22px;color:#6c6f78}
-.min .rfoot{position:absolute;left:60px;bottom:130px;right:60px;font-size:24px;font-weight:600;color:#20222a}
-"""
-
-
-def _minimal(lado, ctx, d):
-    if lado == "frontal":
-        n1, n2 = _nombre2(d["nombre"])
-        cuerpo = (
-            "<div class='edge'></div>"
-            "<img class='logo' src='%s'>"
-            "<img class='foto' src='%s'>"
-            "<div class='nm'>%s<br>%s</div><div class='hair'></div>"
-            "<div class='cargo'>%s</div>"
-            "<div class='campos'>"
-            "<div><div class='lab'>Empresa</div><div class='val clip' style='max-width:300px'>%s</div></div>"
-            "<div><div class='lab'>DNI</div><div class='val'>%s</div></div>"
-            "</div>"
-            % (ctx["logo_uri"], ctx["foto_uri"], n1, n2, d["cargo"], ctx["cliente"], d["id"]))
-    else:
-        cuerpo = (
-            "<div class='edge'></div>"
-            "<img class='logo' src='%s'>"
-            "<div class='rtit'>Escanea para validar</div>"
-            "%s"
-            "<div class='rfoot'>Credencial personal e intransferible</div>"
-            "<div class='rweb'>%s &nbsp;·&nbsp; Vigencia 2026 — 2027</div>"
-            % (ctx["logo_uri"], _qr(V[0] / 2, 430, ctx["qr_uri"], 220), ctx["web"]))
-    return _shell(ctx, "min", _CSS_MIN, cuerpo, *V), V[0], V[1]
+            % (ctx["qr_uri"], ctx["web"]))
+    return _shell(ctx, "prem", _CSS_PREMIUM, cuerpo, *V), V[0], V[1]
 
 
 # ---------- dispatcher ----------
 
-_FNS = {"aurora": _aurora, "editorial": _editorial, "glass": _glass,
-        "corporativo": _corporativo, "vertical": _vertical, "minimal": _minimal}
+_FNS = {"clasica": _clasica, "gafete": _gafete, "premium": _premium}
 
 
 def cara(estilo, lado, ctx):
-    """Devuelve (html, ancho, alto). estilo in {aurora,editorial,glass}; lado in {frontal,reverso}."""
+    """Devuelve (html, ancho, alto). estilo in {clasica,gafete,premium}; lado in {frontal,reverso}."""
     return _FNS[estilo](lado, ctx, ctx["datos"])

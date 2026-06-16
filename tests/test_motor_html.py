@@ -59,7 +59,7 @@ def test_cara_devuelve_html_dimensionado():
     from motor import cargar_logo
     logo = cargar_logo(LOGO_DISECOD)
     ctx = construir_contexto(logo, (0, 164, 80), (0, 90, 44), "Interbank")
-    for estilo in ("aurora", "editorial", "glass", "corporativo", "vertical", "minimal"):
+    for estilo in ("clasica", "gafete", "premium"):
         for lado in ("frontal", "reverso"):
             html, w, h = cara(estilo, lado, ctx)
             assert "class='card" in html
@@ -77,26 +77,27 @@ def test_logo_cliente_no_se_recolorea():
     logo = cargar_logo(LOGO_DISECOD)
     ctx = construir_contexto(logo, (0, 164, 80), (0, 90, 44), "Interbank")
     # brightness(0)/invert solo se usaban para blanquear el logo: no deben aparecer
-    # en ninguna cara (ni inline en el <img> ni en el <style> de la clase .logo).
-    for estilo in ("aurora", "editorial", "glass", "corporativo", "vertical", "minimal"):
+    # en ninguna cara. El logo va siempre en el frente (en algunos reversos manda el QR).
+    for estilo in ("clasica", "gafete", "premium"):
+        hf, _, _ = cara(estilo, "frontal", ctx)
+        assert ctx["logo_uri"] in hf, (estilo, "logo ausente en el frente")
         for lado in ("frontal", "reverso"):
             html, _, _ = cara(estilo, lado, ctx)
-            assert ctx["logo_uri"] in html, (estilo, lado, "logo ausente")
             assert "brightness(0)" not in html, (estilo, lado, "recoloreo prohibido")
             assert "invert(" not in html, (estilo, lado, "recoloreo prohibido")
 
 
 # ---- Task 5: generar end to end ----
 
-def test_generar_produce_brief_y_6_direcciones():
+def test_generar_produce_brief_y_3_direcciones():
     from motor import generar
     out = tempfile.mkdtemp(prefix="t_gen_")
     carpeta, rutas = generar(LOGO_DISECOD, "Interbank", out)
     base = [os.path.basename(r) for r in rutas]
     assert any("brief" in b for b in base), base
-    assert sum(b.startswith("direccion-") for b in base) == 6, base
+    assert sum(b.startswith("direccion-") for b in base) == 3, base
     diseno = glob.glob(os.path.join(carpeta, "para-diseno", "*.png"))
-    assert len(diseno) == 12, diseno
+    assert len(diseno) == 6, diseno
 
 
 # ---- Task 6: robustez ----
@@ -118,15 +119,19 @@ def test_variante_es_determinista_y_varia():
     assert all(0 <= variante_de(n) <= 2 for n in ["a", "b", "c", "xyz"])  # en rango
 
 
-def test_mismo_color_distinto_cliente_cambia_fondo():
+def test_color_se_adapta_al_logo():
+    """El layout es fijo pero el color de acento sale del logo del cliente:
+    dos marcas de distinto color => distinto --acc/--prim en el mismo estilo."""
     from plantillas import cara, construir_contexto
     from motor import cargar_logo
     logo = cargar_logo(LOGO_DISECOD)
-    a = construir_contexto(logo, (0, 120, 200), (0, 80, 140), "Constructora Lima")  # variante 0
-    b = construir_contexto(logo, (0, 120, 200), (0, 80, 140), "Frutos del Norte")   # variante 2
-    html_a, _, _ = cara("aurora", "frontal", a)
-    html_b, _, _ = cara("aurora", "frontal", b)
-    assert html_a != html_b   # mismo color, distinto fondo
+    verde = construir_contexto(logo, (0, 150, 70), (0, 90, 44), "Frutos del Norte")
+    rojo = construir_contexto(logo, (200, 40, 40), (140, 20, 20), "Frutos del Norte")
+    for estilo in ("clasica", "gafete", "premium"):
+        hv, _, _ = cara(estilo, "frontal", verde)
+        hr, _, _ = cara(estilo, "frontal", rojo)
+        assert verde["prim_css"] in hv and rojo["prim_css"] in hr   # cada uno con su color
+        assert hv != hr                                             # el diseño se recolorea
 
 
 # ---- Fase 2: foto 1x1 (encuadre sin invocar el modelo pesado) ----
