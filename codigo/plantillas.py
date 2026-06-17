@@ -21,7 +21,7 @@ F_PLAYFAIR = os.path.join(RUTA, "fuente-display.ttf")   # Playfair Display (OFL)
 F_INTER = os.path.join(RUTA, "inter.ttf")
 F_INTER_SB = os.path.join(RUTA, "inter-semibold.ttf")
 
-DATOS = {"nombre": "María Fernández G.", "cargo": "Supervisora de Operaciones", "id": "45678123"}
+DATOS = {"nombre": "Carlos González M.", "cargo": "Supervisor de Operaciones", "id": "45678123"}
 ORO = "#c9a14a"
 H, V = (1011, 638), (638, 1011)
 MG = 60  # margen de seguridad de impresion (~5mm)
@@ -113,8 +113,12 @@ def _foto_uri(prim):
 # ---------- contexto ----------
 
 def construir_contexto(logo, prim, sec, cliente):
-    from motor import web_cliente, luminancia, marca_legible, pseudo_qr
+    from motor import web_cliente, luminancia, marca_legible, pseudo_qr, distancia, saturacion
     oscuro = luminancia(prim) < 0.45
+    # color secundario de la marca como ACENTO que "puntua" (5-10%): solo si es
+    # realmente distinto y con color; si no, cae al oro. Regla: un color manda, otro puntua.
+    sec_distinta = distancia(prim, sec) > 70 and saturacion(sec) > 0.18
+    acc2 = marca_legible(sec) if sec_distinta else None
     return {
         "_prim": tuple(int(x) for x in prim[:3]),
         "logo_uri": _b64_img(logo),
@@ -125,6 +129,7 @@ def construir_contexto(logo, prim, sec, cliente):
         "oscuro_css": _rgb(_ajustar(prim, 0.22)),
         "claro_css": _rgb(_ajustar(prim, 1.7)),
         "prim_legible": _rgb(marca_legible(prim)),
+        "acc2_css": _rgb(acc2) if acc2 else ORO,
         "txt_sobre_prim": "#ffffff" if oscuro else "#1d1f24",
         "logo_oscuro": oscuro,
         "variante": variante_de(cliente),
@@ -149,9 +154,9 @@ def css_base():
 
 
 def _root(ctx):
-    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;--acc:%s;}"
+    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;--acc:%s;--acc2:%s;}"
             % (ctx["prim_css"], ctx["medio_css"], ctx["oscuro_css"],
-               ctx["claro_css"], ORO, ctx["prim_legible"]))
+               ctx["claro_css"], ORO, ctx["prim_legible"], ctx["acc2_css"]))
 
 
 def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto):
@@ -176,15 +181,16 @@ _CSS_CLASICA = """
 .clas .logohdr img{height:104px;max-width:780px;object-fit:contain}
 .clas .foto{grid-column:1;grid-row:2;align-self:center;width:286px;aspect-ratio:4/5;border:3px solid var(--acc);border-radius:10px;object-fit:cover;object-position:center 22%}
 .clas .info{grid-column:2;grid-row:2;align-self:center}
-.clas .name{font-family:'Inter';font-weight:800;font-size:58px;line-height:1.0;color:var(--acc);letter-spacing:-.01em;margin-bottom:14px;max-width:560px}
-.clas .role{font-size:30px;font-weight:700;color:var(--acc);margin-bottom:30px}
+.clas .name{font-family:'Inter';font-weight:800;font-size:58px;line-height:1.0;color:var(--acc);letter-spacing:-.01em;margin-bottom:24px;max-width:560px;position:relative}
+.clas .name::after{content:'';position:absolute;left:2px;bottom:-11px;width:74px;height:4px;background:var(--acc2);border-radius:2px}
+.clas .role{font-size:30px;font-weight:700;color:var(--acc);margin-bottom:30px;letter-spacing:.01em}
 .clas .rows{display:grid;gap:16px;font-size:26px}
 .clas .row{display:flex;align-items:center;gap:16px;border-top:2px solid #e4e6e2;padding-top:14px}
 .clas .row .lb{color:var(--acc);font-weight:700}
 .clas .ic{width:46px;height:46px;border-radius:50%;background:var(--oscuro);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .clas .bsafe{position:absolute;inset:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px}
-.clas .oline{width:520px;height:2px;background:var(--acc);opacity:.85}
-.clas .scan{font-size:29px;color:var(--acc);font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
+.clas .oline{width:520px;height:2px;background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.9}
+.clas .scan{font-size:29px;color:var(--acc);font-weight:800;letter-spacing:3px;text-transform:uppercase}
 .clas .qrbox{width:232px;height:232px;background:#fff;border:10px solid #fff;outline:3px solid var(--acc);border-radius:6px;display:flex;align-items:center;justify-content:center}
 .clas .qrbox img{width:100%;height:100%;object-fit:contain}
 .clas .ptxt{font-size:25px;color:#333}
@@ -231,17 +237,17 @@ _CSS_GAFETE = """
 .gaf .logohdr{height:94px;display:flex;align-items:center}
 .gaf .logohdr img{max-height:94px;max-width:440px;object-fit:contain}
 .gaf .foto{margin-top:26px;width:300px;aspect-ratio:4/5;border:3px solid #fff;border-radius:10px;object-fit:cover;object-position:center 22%;box-shadow:0 12px 30px -12px rgba(0,0,0,.35),0 0 0 1px #e3e3df}
-.gaf .nameband{margin:28px -46px 18px;width:calc(100% + 92px);background:var(--oscuro);color:#fff;font-family:'Inter';font-weight:800;font-size:44px;line-height:1.1;padding:20px 14px;letter-spacing:-.01em}
-.gaf .role{font-size:27px;color:var(--acc);font-weight:800;border-bottom:4px solid var(--acc);padding-bottom:9px;margin-bottom:30px}
+.gaf .nameband{margin:28px -46px 18px;width:calc(100% + 92px);background:var(--oscuro);color:#fff;font-family:'Inter';font-weight:800;font-size:44px;line-height:1.1;padding:20px 14px;letter-spacing:-.01em;border-top:4px solid var(--acc2)}
+.gaf .role{font-size:27px;color:var(--acc);font-weight:800;border-bottom:4px solid var(--acc2);padding-bottom:9px;margin-bottom:30px;letter-spacing:.05em;text-transform:uppercase}
 .gaf .data{width:436px;display:grid;gap:16px;text-align:left}
 .gaf .row{display:grid;grid-template-columns:58px 1fr;gap:16px;align-items:center;border-bottom:2px solid #d8e0d6;padding-bottom:13px}
 .gaf .ic{width:50px;height:50px;border-radius:50%;background:#fff;border:3px solid var(--acc);display:flex;align-items:center;justify-content:center}
-.gaf .lb{color:var(--acc);font-weight:700;font-size:22px}
+.gaf .lb{color:var(--acc);font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.09em}
 .gaf .vl{font-size:27px;color:#1a1a1a;font-weight:700}
 .gaf .bsafe{position:absolute;inset:46px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px}
 .gaf .qrbox{width:280px;height:280px;background:#fff;border:10px solid #fff;outline:3px solid var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-top:6px}
 .gaf .qrbox img{width:100%;height:100%;object-fit:contain}
-.gaf .pill{display:flex;align-items:center;gap:12px;border:3px solid var(--acc);border-radius:999px;padding:10px 24px;color:var(--acc);font-size:22px;font-weight:800}
+.gaf .pill{display:flex;align-items:center;gap:12px;border:3px solid var(--acc);border-radius:999px;padding:10px 24px;color:var(--acc);font-size:22px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
 .gaf .transfer{font-size:23px;color:var(--acc);font-weight:700}
 .gaf .web{font-size:27px;font-weight:800;color:var(--acc)}
 .gaf .vig{position:absolute;left:0;right:0;bottom:30px;color:#fff;font-size:25px;font-weight:800;text-align:center}
@@ -282,8 +288,9 @@ def _gafete(lado, ctx, d):
 # ============================ DIRECCIÓN 3 — PREMIUM (vertical elegante) ============================
 
 _CSS_PREMIUM = """
-.prem{background:#fbf8ef}
+.prem{background:#fbf8ef;background-image:repeating-linear-gradient(45deg,rgba(201,161,74,.045) 0 1px,transparent 1px 11px)}
 .prem .frame{position:absolute;inset:30px;border:3px solid var(--acc);border-radius:26px;opacity:.85}
+.prem .frame::after{content:'';position:absolute;inset:7px;border:1px solid var(--oro);border-radius:20px}
 .prem .botbar{position:absolute;left:0;right:0;bottom:0;height:46px;background:var(--oscuro);border-top:4px solid var(--oro)}
 .prem .safe{position:absolute;left:56px;right:56px;top:60px;bottom:60px;display:flex;flex-direction:column;align-items:center;text-align:center}
 .prem .logohdr{height:92px;display:flex;align-items:center;margin-top:4px}
@@ -297,10 +304,10 @@ _CSS_PREMIUM = """
 .prem .row{display:grid;grid-template-columns:54px 1px 1fr;gap:16px;align-items:center}
 .prem .ic{width:54px;height:54px;border-radius:50%;background:var(--oscuro);display:flex;align-items:center;justify-content:center}
 .prem .vline{height:54px;background:var(--acc);opacity:.6}
-.prem .lb{color:var(--acc);font-weight:700;font-size:22px}
+.prem .lb{color:var(--acc);font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.08em}
 .prem .vl{font-size:26px;color:#222}
 .prem .bsafe{position:absolute;left:56px;right:56px;top:74px;bottom:74px;display:flex;flex-direction:column;align-items:center;text-align:center}
-.prem .scan{font-size:26px;color:var(--acc);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-top:12px;margin-bottom:26px}
+.prem .scan{font-size:26px;color:var(--acc);font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-top:12px;margin-bottom:26px}
 .prem .qrbox{width:286px;height:286px;background:#fff;border:10px solid #fff;outline:3px solid var(--acc);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:28px}
 .prem .qrbox img{width:100%;height:100%;object-fit:contain}
 .prem .transfer{font-size:26px;line-height:1.3;color:#222;margin-bottom:26px}
