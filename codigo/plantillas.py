@@ -238,8 +238,7 @@ def _clasica(lado, ctx, d):
 
 _CSS_GAFETE = """
 .gaf{background:#fff}
-.gaf .wave{position:absolute;left:-40px;right:-40px;bottom:-34px;height:150px;background:var(--oscuro);border-radius:55% 55% 0 0}
-.gaf .slot{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:104px;height:15px;border:3px solid var(--acc);border-radius:9px;opacity:.4}
+.gaf .wave{position:absolute;left:-40px;right:-40px;bottom:-30px;height:116px;background:var(--oscuro);border-radius:42% 42% 0 0}
 .gaf .safe{position:absolute;inset:46px;display:flex;flex-direction:column;align-items:center;text-align:center}
 .gaf .logohdr{height:94px;display:flex;align-items:center}
 .gaf .logohdr img{max-height:94px;max-width:440px;object-fit:contain}
@@ -264,7 +263,7 @@ _CSS_GAFETE = """
 def _gafete(lado, ctx, d):
     if lado == "frontal":
         cuerpo = (
-            "<div class='wave'></div><div class='slot'></div>"
+            "<div class='wave'></div>"
             "<div class='safe'>"
             "<div class='logohdr'><img src='%s'></div>"
             "<img class='foto' src='%s'>"
@@ -279,7 +278,7 @@ def _gafete(lado, ctx, d):
                _icono("persona", ctx["prim_legible"], 24), d["id"]))
     else:
         cuerpo = (
-            "<div class='wave'></div><div class='slot'></div>"
+            "<div class='wave'></div>"
             "<div class='bsafe'>"
             "<div class='logohdr'><img src='%s'></div>"
             "<div class='qrbox'><img src='%s'></div>"
