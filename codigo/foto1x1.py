@@ -157,26 +157,69 @@ def _persona_limpia(img):
 
 # ---------- encuadre carnet ----------
 
+_cascade = None
+
+
+def _detectar_rostro(rgb_img):
+    """(fx,fy,fw,fh) del rostro mas grande, o None. Usa cv2 Haar si esta disponible."""
+    global _cascade
+    try:
+        import cv2
+        import numpy as np
+    except Exception:
+        return None
+    if _cascade is None:
+        _cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    gris = cv2.cvtColor(np.asarray(rgb_img), cv2.COLOR_RGB2GRAY)
+    caras = _cascade.detectMultiScale(gris, 1.1, 5, minSize=(80, 80))
+    if len(caras) == 0:
+        return None
+    return max(caras, key=lambda f: f[2] * f[3])
+
+
+def _caja_cabeza_hombros(rostro, alpha, ancho, alto, head_frac=0.58, headroom=0.09):
+    """Caja (x,y,w,h) para un encuadre carnet head-and-shoulders: cabeza ~head_frac
+    del alto, aire (headroom) arriba, corte al pecho. Relativa al rostro si lo hay."""
+    aspect = ancho / float(alto)
+    if rostro is not None:
+        fx, fy, fw, fh = (float(v) for v in rostro)
+        cx = fx + fw / 2.0
+        crown_y = fy - 0.45 * fh             # corona, arriba de la frente
+        head_h = 1.45 * fh                   # cabeza completa (corona a menton)
+        crop_h = head_h / head_frac
+        crop_w = crop_h * aspect
+        top = crown_y - headroom * crop_h
+        left = cx - crop_w / 2.0
+        return int(round(left)), int(round(top)), int(round(crop_w)), int(round(crop_h))
+    # sin rostro: aproximar por el bbox de la persona (ancla a la parte superior)
+    bbox = alpha.getbbox()
+    if not bbox:
+        return 0, 0, alpha.width, alpha.height
+    x0, y0, x1, y1 = bbox
+    crop_w = (x1 - x0) * 1.7
+    crop_h = crop_w / aspect
+    cx = (x0 + x1) / 2.0
+    return int(round(cx - crop_w / 2.0)), int(round(y0 - 0.06 * crop_h)), int(round(crop_w)), int(round(crop_h))
+
+
 def _encuadrar_retrato(persona_rgba, ancho, alto):
-    """Centra el recorte de la persona (segun su bbox alpha) en un lienzo blanco
-    del formato pedido, con aire arriba/abajo proporcional a un retrato carnet."""
-    bbox = persona_rgba.getchannel("A").getbbox()
-    if bbox:
-        persona_rgba = persona_rgba.crop(bbox)
-    # margen: la persona ocupa ~86% del alto, centrada horizontal, anclada un poco arriba
-    pw, ph = persona_rgba.size
-    escala = (alto * 0.86) / ph
-    nuevo = (max(1, int(pw * escala)), max(1, int(ph * escala)))
-    persona_rgba = persona_rgba.resize(nuevo, Image.LANCZOS)
-    if persona_rgba.width > ancho:  # si queda muy ancho, reescalar por ancho
-        escala2 = (ancho * 0.92) / persona_rgba.width
-        persona_rgba = persona_rgba.resize(
-            (int(persona_rgba.width * escala2), int(persona_rgba.height * escala2)), Image.LANCZOS)
-    lienzo = Image.new("RGB", (ancho, alto), (255, 255, 255))
-    x = (ancho - persona_rgba.width) // 2
-    y = int(alto * 0.08)  # aire arriba (cabeza no pegada al borde)
-    lienzo.paste(persona_rgba, (x, y), persona_rgba)
-    return lienzo
+    """Encuadra a la persona en formato CARNET head-and-shoulders sobre blanco:
+    cabeza arriba (aire ~10%), corte al pecho. Usa deteccion de rostro para que el
+    encuadre sea consistente sin importar cuanto zoom traiga la foto de origen.
+    Ajustable con MOCKUPS_HEAD_FRAC (0.44 mas abierto, 0.50 mas cerrado)."""
+    base = Image.new("RGB", persona_rgba.size, (255, 255, 255))
+    base.paste(persona_rgba, (0, 0), persona_rgba)
+    alpha = persona_rgba.getchannel("A")
+    head_frac = float(os.environ.get("MOCKUPS_HEAD_FRAC", "0.58"))
+    rostro = _detectar_rostro(base)
+    x, y, w, h = _caja_cabeza_hombros(rostro, alpha, ancho, alto, head_frac=head_frac)
+    w, h = max(1, w), max(1, h)
+    lienzo = Image.new("RGB", (w, h), (255, 255, 255))
+    sx0, sy0 = max(0, x), max(0, y)
+    sx1, sy1 = min(base.width, x + w), min(base.height, y + h)
+    if sx1 > sx0 and sy1 > sy0:
+        lienzo.paste(base.crop((sx0, sy0, sx1, sy1)), (sx0 - x, sy0 - y))
+    return lienzo.resize((ancho, alto), Image.LANCZOS)
 
 
 def generar_foto(ruta_foto, formato="3x4", carpeta_salida=None):
