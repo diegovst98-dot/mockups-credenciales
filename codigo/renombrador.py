@@ -95,6 +95,12 @@ CATS = [
     ("FOTOCHECKS",      ["FOTOCHECK"]),
     ("OTROS",           ["GIFT CARD", "TARJETA DE REGALO"]),
 ]
+VOCABULARIO = [
+    "FOTOCHECKS", "ACCESORIOS", "INSUMOS", "KIT DE LIMPIEZA", "MANTENIMIENTO",
+    "IMPRESORAS", "OTROS", "PVC", "PVC ADHESIVO", "TARJETAS IMPRESAS",
+    "GIFT CARD", "ZENIUS 2 CLASSIC", "PRIMACY 2 DUPLEX",
+]
+
 _MONTO_RE = re.compile(r"^\d{1,3}(?:,\d{3})*\.\d{2}$")
 # Código de producto = primera palabra de la línea de ítem (plantilla A): empieza con
 # mayúscula y contiene al menos un dígito o un guion. Cubre F400102, ACL001, RCT223NAAA,
