@@ -888,14 +888,17 @@ def _renom_elegir(self):
     self._renom_carpeta = carpeta
     self._renom_ruta.config(text=carpeta)
     self._items = self._renom.planificar_carpeta(carpeta)
+    self._renom_poblar_tabla()
+    self._renom_estado.config(text=f"{len(self._items)} cotizaciones leídas.")
+
+def _renom_poblar_tabla(self):
+    from pathlib import Path
     self._tabla.delete(*self._tabla.get_children())
     for it in self._items:
-        from pathlib import Path
         iid = self._tabla.insert("", "end", tags=(it["confianza"],), values=(
             Path(it["archivo"]).name, it["categoria"], it.get("cliente",""),
             it.get("fecha") or "", it.get("numero") or ""))
         it["_iid"] = iid
-    self._renom_estado.config(text=f"{len(self._items)} cotizaciones leídas.")
 
 def _renom_editar_celda(self, event):
     from tkinter import simpledialog, ttk as _ttk
@@ -933,18 +936,9 @@ def _renom_aplicar(self):
     messagebox.showinfo("Listo",
         f"{res['renombrados']} renombrados · {res['revisar']} marcados para revisar."
         + (f"\nErrores: {len(res['errores'])}" if res['errores'] else ""))
-    self._renom_elegir_recargar()
-
-def _renom_elegir_recargar(self):
-    if getattr(self, "_renom_carpeta", None):
+    if getattr(self, "_renom_carpeta", None):  # recargar mostrando los nuevos nombres
         self._items = self._renom.planificar_carpeta(self._renom_carpeta)
-        self._tabla.delete(*self._tabla.get_children())
-        for it in self._items:
-            from pathlib import Path
-            iid = self._tabla.insert("", "end", tags=(it["confianza"],), values=(
-                Path(it["archivo"]).name, it["categoria"], it.get("cliente",""),
-                it.get("fecha") or "", it.get("numero") or ""))
-            it["_iid"] = iid
+        self._renom_poblar_tabla()
 ```
 
 - [ ] **Step 4: Probar la GUI manualmente**
