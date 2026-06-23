@@ -92,5 +92,9 @@ def test_limpiar_conserva_guion_en_razon_social():
     # el cliente tiene guion propio y NO termina en sufijo societario en el lado derecho
     assert r.limpiar_cliente("CUTTING - EDGE PERU SAC") == "CUTTING - EDGE PERU SAC"
 
+def test_limpiar_no_colapsa_marca_con_guion_y_sufijo():
+    # izquierda NO es forma legal larga -> no se parte aunque la derecha tenga sufijo
+    assert r.limpiar_cliente("ALPHA - BETA PERU SAC") == "ALPHA - BETA PERU SAC"
+
 def test_limpiar_quita_caracteres_prohibidos():
     assert r.limpiar_cliente('A/B:C*?"<>|') == "ABC"

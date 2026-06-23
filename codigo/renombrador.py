@@ -57,6 +57,8 @@ def extraer_fecha(texto: str, plantilla: str) -> str | None:
 
 _SUFIJO_SOC = re.compile(r"(S\.?A\.?C|E\.?I\.?R\.?L|S\.?A|S\.?R\.?L)\.?$")
 
+_LEGAL = re.compile(r"SOCIEDAD (ANONIMA|COMERCIAL)|RESPONSABILIDAD LIMITADA")
+
 
 def extraer_cliente(texto: str, plantilla: str) -> str | None:
     nz = [l.strip() for l in texto.splitlines() if l.strip()]
@@ -76,21 +78,15 @@ def extraer_cliente(texto: str, plantilla: str) -> str | None:
 
 def limpiar_cliente(nombre: str) -> str:
     c = nombre.strip()
-    # Primero remover SOCIEDAD ANONIMA CERRADA (redundancia con S.A.C.)
-    c = re.sub(r"\s+SOCIEDAD ANONIMA CERRADA", "", c, flags=re.I).strip()
-    # Luego revisar si hay " - " con sufijo societario en el lado derecho
     if " - " in c:
-        parts = c.split(" - ")
-        derecho = parts[-1].strip()
-        izquierdo = parts[0].strip()
-        # Si el lado derecho tiene un sufijo y ambos lados empiezan con las mismas palabras,
-        # es redundancia (mismo nombre, dos formas) -> tomar solo el lado derecho
-        if _SUFIJO_SOC.search(_norm(derecho)):
-            # Extraer las primeras palabras de cada lado para comparar
-            palabras_izq = izquierdo.split()[:2]
-            palabras_der = derecho.split()[:2]
-            if palabras_izq == palabras_der:
-                c = derecho
+        izq, der = c.split(" - ", 1)
+        # Colapsar SOLO la redundancia legal del ERP: "<largo> SOCIEDAD ANONIMA
+        # CERRADA - <corto> S.A.C." -> "<corto> S.A.C.". Nunca partir marcas con
+        # guion propio (ej. "CUTTING - EDGE PERU SAC") donde la izquierda no es
+        # la forma legal larga.
+        if _LEGAL.search(_norm(izq)) and _SUFIJO_SOC.search(_norm(der)):
+            c = der.strip()
+    c = re.sub(r"\s+SOCIEDAD ANONIMA CERRADA", "", c, flags=re.I).strip()
     c = re.sub(r'[\\/:*?"<>|]', "", c)
     if len(c) > 45:
         c = c[:45].strip()
