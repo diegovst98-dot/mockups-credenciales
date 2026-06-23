@@ -229,6 +229,28 @@ def test_aplicar_renombra_en_el_sitio(tmp_path):
     assert (tmp_path / "DC INSUMOS - ACME 23-06.pdf").exists()
     assert not orig.exists()
 
+def test_aplicar_no_toca_pdf_ilegible(tmp_path):
+    # PDF dañado (item con "error"): se deja INTACTO con su nombre original.
+    orig = tmp_path / "DC dañado original.pdf"
+    orig.write_text("roto")
+    items = [{"archivo": str(orig), "sugerido": orig.name, "categoria": "OTROS",
+              "cliente": "", "fecha": None, "confianza": "revisar", "error": "ilegible"}]
+    res = r.aplicar(items, tmp_path)
+    assert res["renombrados"] == 0
+    assert res["revisar"] == 1
+    assert orig.exists()  # NO se renombró ni se duplicó
+
+def test_aplicar_no_duplica_si_ya_nombrado(tmp_path):
+    # Re-correr sobre un archivo que ya tiene el nombre destino: no-op, sin " (2)".
+    nombre = "DC FOTOCHECKS - ACME 23-06.pdf"
+    orig = tmp_path / nombre
+    orig.write_text("x")
+    items = [{"archivo": str(orig), "nombre_final": nombre, "confianza": "alta"}]
+    res = r.aplicar(items, tmp_path)
+    assert res["renombrados"] == 0
+    assert orig.exists()
+    assert not (tmp_path / "DC FOTOCHECKS - ACME 23-06 (2).pdf").exists()
+
 import pytest
 from pathlib import Path
 

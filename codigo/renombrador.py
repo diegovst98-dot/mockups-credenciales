@@ -291,11 +291,23 @@ def aplicar(items: list[dict], carpeta) -> dict:
     renombrados, revisar, errores = 0, 0, []
 
     for it in items:
+        # PDF ilegible/dañado: dejarlo INTACTO (conservar su nombre original es la acción
+        # segura) y solo marcarlo para revisar. Nunca renombrar lo que no se pudo leer.
+        if it.get("error"):
+            revisar += 1
+            continue
+
         nombre = it.get("nombre_final") or it.get("sugerido")
         origen = Path(it["archivo"])
 
         if not nombre or not origen.exists():
             errores.append(origen.name)
+            continue
+
+        if nombre == origen.name:  # ya tiene el nombre destino: no-op (no duplicar a " (2)")
+            ocupados.add(nombre)
+            if it.get("confianza") == "revisar":
+                revisar += 1
             continue
 
         destino_nombre = _destino_unico(carpeta, nombre, ocupados)

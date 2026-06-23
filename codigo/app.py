@@ -218,6 +218,8 @@ class App:
         if not self._items or not getattr(self, "_renom_carpeta", None):
             return  # nada que renombrar si no se eligió carpeta
         for it in self._items:  # recomputar nombre con lo editado
+            if it.get("error"):  # PDF ilegible: conservar el nombre original (aplicar lo salta)
+                continue
             it["nombre_final"] = self._renom.nombre_destino(
                 it["categoria"], it.get("cliente") or "SIN CLIENTE", it.get("fecha"))
         res = self._renom.aplicar(self._items, self._renom_carpeta)
