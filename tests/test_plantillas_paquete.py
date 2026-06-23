@@ -80,3 +80,24 @@ def test_mh2_horizontal_con_tipo_de_sangre():
     _render_invariantes("mh2", (1011, 638))
     html, _, _ = cara("mh2", "frontal", _ctx())
     assert DATOS["tipo_sangre"] in html
+
+
+# ---- Task 6: catálogo completo (18 modelos) ----
+
+ESPERADOS = ["clasica", "gafete", "premium",
+             "mv1", "mv2", "mv3", "mv4", "mv5", "mv6", "mv7", "mv8",
+             "mh1", "mh2", "mh3", "mh4", "mh5", "mh6", "mh7"]
+
+
+def test_catalogo_completo_render_y_dimensiones():
+    from plantillas import cara, catalogo
+    ctx = _ctx()
+    claves = [m.clave for m in catalogo()]
+    for c in ESPERADOS:
+        assert c in claves, ("falta modelo", c)
+    for m in catalogo():
+        html, w, h = cara(m.clave, "frontal", ctx)
+        esperado = (1011, 638) if m.orientacion == "H" else (638, 1011)
+        assert (w, h) == esperado, (m.clave, w, h)
+        assert ctx["logo_uri"] in html, (m.clave, "logo ausente")
+        assert "brightness(0)" not in html and "invert(" not in html, (m.clave, "recoloreo prohibido")
