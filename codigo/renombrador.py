@@ -53,3 +53,45 @@ def extraer_fecha(texto: str, plantilla: str) -> str | None:
         if mes:
             return f"{dia}-{mes}"
     return None
+
+
+_SUFIJO_SOC = re.compile(r"(S\.?A\.?C|E\.?I\.?R\.?L|S\.?A|S\.?R\.?L)\.?$")
+
+
+def extraer_cliente(texto: str, plantilla: str) -> str | None:
+    nz = [l.strip() for l in texto.splitlines() if l.strip()]
+    if plantilla == "A":
+        for i, l in enumerate(nz):
+            if _norm(l).startswith("FECHA") and i + 1 < len(nz):
+                return nz[i + 1]
+        return None
+    # Plantilla B: primera linea bajo "Señores:" que no sea "Presente.-"
+    for i, l in enumerate(nz):
+        if _norm(l).rstrip(":") == "SENORES":
+            for j in range(i + 1, len(nz)):
+                if "PRESENTE" not in _norm(nz[j]):
+                    return nz[j]
+    return None
+
+
+def limpiar_cliente(nombre: str) -> str:
+    c = nombre.strip()
+    # Primero remover SOCIEDAD ANONIMA CERRADA (redundancia con S.A.C.)
+    c = re.sub(r"\s+SOCIEDAD ANONIMA CERRADA", "", c, flags=re.I).strip()
+    # Luego revisar si hay " - " con sufijo societario en el lado derecho
+    if " - " in c:
+        parts = c.split(" - ")
+        derecho = parts[-1].strip()
+        izquierdo = parts[0].strip()
+        # Si el lado derecho tiene un sufijo y ambos lados empiezan con las mismas palabras,
+        # es redundancia (mismo nombre, dos formas) -> tomar solo el lado derecho
+        if _SUFIJO_SOC.search(_norm(derecho)):
+            # Extraer las primeras palabras de cada lado para comparar
+            palabras_izq = izquierdo.split()[:2]
+            palabras_der = derecho.split()[:2]
+            if palabras_izq == palabras_der:
+                c = derecho
+    c = re.sub(r'[\\/:*?"<>|]', "", c)
+    if len(c) > 45:
+        c = c[:45].strip()
+    return c
