@@ -98,3 +98,96 @@ def test_limpiar_no_colapsa_marca_con_guion_y_sufijo():
 
 def test_limpiar_quita_caracteres_prohibidos():
     assert r.limpiar_cliente('A/B:C*?"<>|') == "ABC"
+
+# Plantilla A: kit de limpieza unico
+TEXTO_A_KIT = """PROPUESTA ECONÓMICA
+DC-001-00000062
+Fecha: 22/06/2026
+DEMO HOLDING S.A.C.
+R.U.C. : 20111111111
+Señores:
+CÓDIGO
+DESCRIPCIÓN
+CANT.
+P. TOTAL
+P. UNIT
+ACL001
+KIT DE LIMPIEZA - ACL001
+1
+90.00
+90.00
+SUBTOTAL
+S/
+90.00
+"""
+
+# Plantilla A: mezcla fotocheck (grande) + accesorios (chico) -> gana FOTOCHECKS
+TEXTO_A_MIX = """PROPUESTA ECONÓMICA
+DC-001-00000078
+Fecha: 23/06/2026
+DEMO MIX S.A.C.
+R.U.C. : 20222222222
+Señores:
+CÓDIGO
+DESCRIPCIÓN
+CANT.
+P. TOTAL
+P. UNIT
+TOTAL INC IGV
+F400102
+FOTOCHECK EN PVC AMBAS CARAS A COLOR
+100
+7.00
+700.00
+826.00
+P400112
+PORTAFOTOCHECK ACRILICO VERTICAL TRANSPARENTE
+100
+1.00
+100.00
+118.00
+SUBTOTAL
+S/
+800.00
+"""
+
+# Plantilla B: impresora combo que menciona "incluye cinta/kit/tarjetas" -> gana IMPRESORAS
+TEXTO_B_IMPR = """DC-12942-2026
+Lima, 08 de Junio del 2026
+Señores:
+DEMO PRINT S.A.C.
+Presente.-
+Item
+Descripción
+01
+IMPRESORA DE CARNETS ZENIUS 2 CLASSIC
+Promoción incluye:
+- 01 Cinta de color de 200 impresiones
+- 100 tarjetas blancas PVC
+- 01 tarjeta y 01 hisopo de limpieza
+01
+762.71
+900.00
+02
+Tarjetas PVC Blanco
+01
+20.00
+23.60
+"""
+
+def test_clasifica_kit_unico():
+    cat, montos = r.clasificar(TEXTO_A_KIT, "A")
+    assert cat == "KIT DE LIMPIEZA"
+
+def test_clasifica_mezcla_gana_mayor_monto():
+    cat, montos = r.clasificar(TEXTO_A_MIX, "A")
+    assert cat == "FOTOCHECKS"
+    assert montos["FOTOCHECKS"] > montos["ACCESORIOS"]
+
+def test_clasifica_impresora_ignora_regalos_del_combo():
+    cat, montos = r.clasificar(TEXTO_B_IMPR, "B")
+    assert cat == "IMPRESORAS"
+
+def test_clasifica_sin_match_es_otros():
+    cat, montos = r.clasificar("PROPUESTA ECONÓMICA\nalgo raro\n5.00\nSUBTOTAL", "A")
+    assert cat == "OTROS"
