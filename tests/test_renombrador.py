@@ -191,3 +191,25 @@ def test_clasifica_impresora_ignora_regalos_del_combo():
 def test_clasifica_sin_match_es_otros():
     cat, montos = r.clasificar("PROPUESTA ECONÓMICA\nalgo raro\n5.00\nSUBTOTAL", "A")
     assert cat == "OTROS"
+
+def test_nombre_destino_con_fecha():
+    assert r.nombre_destino("FOTOCHECKS", "ACME PERU S.A.C.", "23-06") == "DC FOTOCHECKS - ACME PERU S.A.C. 23-06.pdf"
+
+def test_nombre_destino_sin_fecha():
+    assert r.nombre_destino("INSUMOS", "ACME", None) == "DC INSUMOS - ACME.pdf"
+
+def test_analizar_texto_ok_confianza_alta():
+    d = r.analizar_texto(TEXTO_A_MIX)
+    assert d["categoria"] == "FOTOCHECKS"
+    assert d["cliente"] == "DEMO MIX S.A.C."
+    assert d["confianza"] == "alta"
+    assert d["sugerido"] == "DC FOTOCHECKS - DEMO MIX S.A.C. 23-06.pdf"
+
+def test_analizar_texto_clientes_varios_marca_revisar():
+    d = r.analizar_texto(TEXTO_A_DNI + "ACL001\nKIT DE LIMPIEZA - ACL001\n1\n90.00\nSUBTOTAL")
+    assert d["cliente"] == "CLIENTES VARIOS"
+    assert d["confianza"] == "revisar"
+
+def test_analizar_texto_otros_marca_revisar():
+    d = r.analizar_texto("PROPUESTA ECONÓMICA\nDC-001-00000001\nFecha: 01-06\nX S.A.C.\nblah\nSUBTOTAL")
+    assert d["confianza"] == "revisar"

@@ -154,3 +154,47 @@ def limpiar_cliente(nombre: str) -> str:
     if len(c) > 45:
         c = c[:45].strip()
     return c
+
+
+_GENERICOS = {"CLIENTES VARIOS", "CLIENTE VARIOS", "VARIOS"}
+
+
+def nombre_destino(categoria: str, cliente: str, fecha: str | None) -> str:
+    base = f"DC {categoria} - {cliente}"
+    if fecha:
+        base += f" {fecha}"
+    return base + ".pdf"
+
+
+def analizar_texto(texto: str) -> dict:
+    plantilla = detectar_plantilla(texto)
+    numero = extraer_numero(texto)
+    fecha = extraer_fecha(texto, plantilla)
+    cliente_crudo = extraer_cliente(texto, plantilla)
+    cliente = limpiar_cliente(cliente_crudo) if cliente_crudo else ""
+    categoria, montos = clasificar(texto, plantilla)
+
+    revisar = (
+        not numero
+        or not cliente
+        or len(cliente) < 3
+        or _norm(cliente) in _GENERICOS
+        or categoria == "OTROS"
+        or not montos
+    )
+    return {
+        "plantilla": plantilla,
+        "numero": numero,
+        "fecha": fecha,
+        "cliente": cliente,
+        "categoria": categoria,
+        "montos": montos,
+        "confianza": "revisar" if revisar else "alta",
+        "sugerido": nombre_destino(categoria, cliente or "SIN CLIENTE", fecha),
+    }
+
+
+def analizar_pdf(path) -> dict:
+    d = analizar_texto(extraer_texto(path))
+    d["archivo"] = str(path)
+    return d
