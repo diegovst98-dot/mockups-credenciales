@@ -213,3 +213,18 @@ def test_analizar_texto_clientes_varios_marca_revisar():
 def test_analizar_texto_otros_marca_revisar():
     d = r.analizar_texto("PROPUESTA ECONÓMICA\nDC-001-00000001\nFecha: 01-06\nX S.A.C.\nblah\nSUBTOTAL")
     assert d["confianza"] == "revisar"
+
+def test_destino_unico_agrega_contador(tmp_path):
+    (tmp_path / "DC FOTOCHECKS - ACME 23-06.pdf").write_text("x")
+    ocupados = {"DC FOTOCHECKS - ACME 23-06.pdf"}
+    nuevo = r._destino_unico(tmp_path, "DC FOTOCHECKS - ACME 23-06.pdf", ocupados)
+    assert nuevo == "DC FOTOCHECKS - ACME 23-06 (2).pdf"
+
+def test_aplicar_renombra_en_el_sitio(tmp_path):
+    orig = tmp_path / "pdf 5.pdf"
+    orig.write_text("contenido")
+    items = [{"archivo": str(orig), "sugerido": "DC INSUMOS - ACME 23-06.pdf", "confianza": "alta"}]
+    res = r.aplicar(items, tmp_path)
+    assert res["renombrados"] == 1
+    assert (tmp_path / "DC INSUMOS - ACME 23-06.pdf").exists()
+    assert not orig.exists()

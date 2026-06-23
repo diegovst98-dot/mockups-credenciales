@@ -198,3 +198,74 @@ def analizar_pdf(path) -> dict:
     d = analizar_texto(extraer_texto(path))
     d["archivo"] = str(path)
     return d
+
+
+def planificar_carpeta(carpeta) -> list[dict]:
+    """Escanea una carpeta de PDFs, analiza cada uno, devuelve lista de items.
+
+    Si un PDF está dañado, lo agrega como revisar sin tumbar el lote.
+    """
+    carpeta = Path(carpeta)
+    items = []
+    for pdf in sorted(carpeta.glob("*.pdf")):
+        try:
+            items.append(analizar_pdf(pdf))
+        except Exception as e:  # PDF dañado no debe tumbar el lote
+            items.append({
+                "archivo": str(pdf),
+                "cliente": "",
+                "categoria": "OTROS",
+                "fecha": None,
+                "confianza": "revisar",
+                "error": str(e),
+                "sugerido": pdf.name
+            })
+    return items
+
+
+def _destino_unico(carpeta, nombre: str, ocupados: set) -> str:
+    """Anti-colisión: si nombre ya existe, agrega (2), (3), etc.
+
+    Chequea tanto el set de ocupados como el FS.
+    """
+    carpeta = Path(carpeta)
+    if nombre not in ocupados and not (carpeta / nombre).exists():
+        return nombre
+    raiz, ext = (nombre[:-4], ".pdf") if nombre.lower().endswith(".pdf") else (nombre, "")
+    i = 2
+    while True:
+        cand = f"{raiz} ({i}){ext}"
+        if cand not in ocupados and not (carpeta / cand).exists():
+            return cand
+        i += 1
+
+
+def aplicar(items: list[dict], carpeta) -> dict:
+    """Renombra archivos IN PLACE basado en item["nombre_final"] o item["sugerido"].
+
+    Devuelve {"renombrados": N, "revisar": M, "errores": [...]}
+    """
+    carpeta = Path(carpeta)
+    ocupados: set = set()
+    renombrados, revisar, errores = 0, 0, []
+
+    for it in items:
+        nombre = it.get("nombre_final") or it.get("sugerido")
+        origen = Path(it["archivo"])
+
+        if not nombre or not origen.exists():
+            errores.append(origen.name)
+            continue
+
+        destino_nombre = _destino_unico(carpeta, nombre, ocupados)
+        try:
+            origen.rename(carpeta / destino_nombre)
+            ocupados.add(destino_nombre)
+            renombrados += 1
+        except OSError as e:
+            errores.append(f"{origen.name}: {e}")
+
+        if it.get("confianza") == "revisar":
+            revisar += 1
+
+    return {"renombrados": renombrados, "revisar": revisar, "errores": errores}
