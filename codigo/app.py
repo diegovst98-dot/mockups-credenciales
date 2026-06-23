@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 """
 Mockups DISECOD — interfaz para el vendedor.
-Elegir logo + nombre del cliente + Generar. Los resultados se abren solos.
+Elegir logo + nombre del cliente + (opcional) color + Generar catálogo.
+El resultado (PDF folleto + carpeta para-diseño) se abre solo.
 """
 
 import os
 import sys
 import threading
 import tkinter as tk
-from tkinter import filedialog, font as tkfont, messagebox
+from tkinter import colorchooser, filedialog, font as tkfont, messagebox
 
 import motor
 
@@ -33,9 +34,10 @@ class App:
     def __init__(self, raiz):
         self.raiz = raiz
         self.ruta_logo = None
+        self.color = None          # None = color automático del logo; "#RRGGBB" = manual
         raiz.title("Mockups DISECOD — %s" % _version())
         raiz.configure(bg=FONDO)
-        raiz.geometry("560x420")
+        raiz.geometry("560x500")
         raiz.resizable(False, False)
         try:
             raiz.iconbitmap(os.path.join(motor.RUTA_RECURSOS, "icono.ico"))
@@ -46,9 +48,9 @@ class App:
         f_normal = tkfont.Font(family="Segoe UI", size=11)
         f_boton = tkfont.Font(family="Segoe UI", size=13, weight="bold")
 
-        tk.Label(raiz, text="Mockups de fotochecks", font=f_titulo, bg=FONDO, fg=GRIS).pack(pady=(28, 2))
-        tk.Label(raiz, text="Logo del cliente  →  3 propuestas listas para WhatsApp",
-                 font=f_normal, bg=FONDO, fg="#777").pack(pady=(0, 20))
+        tk.Label(raiz, text="Mockups de fotochecks", font=f_titulo, bg=FONDO, fg=GRIS).pack(pady=(26, 2))
+        tk.Label(raiz, text="Logo del cliente  →  catálogo de modelos con su marca (PDF)",
+                 font=f_normal, bg=FONDO, fg="#777").pack(pady=(0, 18))
 
         marco = tk.Frame(raiz, bg=FONDO)
         marco.pack(fill="x", padx=48)
@@ -65,11 +67,21 @@ class App:
         self.etiqueta_logo = tk.Label(fila, text="ningún archivo elegido", font=f_normal, bg=FONDO, fg="#999")
         self.etiqueta_logo.pack(side="left", padx=10)
 
-        self.boton_generar = tk.Button(raiz, text="Generar mockups", font=f_boton, command=self.generar,
+        fila_color = tk.Frame(marco, bg=FONDO)
+        fila_color.pack(fill="x", pady=(12, 0))
+        self.boton_color = tk.Button(fila_color, text="Cambiar color…", font=f_normal, command=self.elegir_color,
+                                     bg="#EEEAFE", fg=GRIS, activebackground="#E2DBFD", relief="flat", padx=14, pady=6)
+        self.boton_color.pack(side="left")
+        self.muestra_color = tk.Label(fila_color, text="   ", bg=FONDO, relief="solid", bd=1)
+        self.muestra_color.pack(side="left", padx=(10, 6))
+        self.etiqueta_color = tk.Label(fila_color, text="automático del logo", font=f_normal, bg=FONDO, fg="#999")
+        self.etiqueta_color.pack(side="left")
+
+        self.boton_generar = tk.Button(raiz, text="Generar catálogo", font=f_boton, command=self.generar,
                                        bg=LILA, fg="white", activebackground=LILA_OSCURO,
                                        activeforeground="white", relief="flat", padx=24, pady=10,
                                        cursor="hand2")
-        self.boton_generar.pack(pady=26)
+        self.boton_generar.pack(pady=24)
 
         self.estado = tk.Label(raiz, text="", font=f_normal, bg=FONDO, fg=GRIS)
         self.estado.pack()
@@ -85,6 +97,14 @@ class App:
             self.ruta_logo = ruta
             self.etiqueta_logo.config(text=os.path.basename(ruta), fg=GRIS)
 
+    def elegir_color(self):
+        res = colorchooser.askcolor(title="Elige el color del catálogo",
+                                    color=self.color or "#1f7a3d")
+        if res and res[1]:
+            self.color = res[1]
+            self.muestra_color.config(bg=self.color)
+            self.etiqueta_color.config(text=self.color, fg=GRIS)
+
     def generar(self):
         cliente = self.entrada_cliente.get().strip()
         if not self.ruta_logo:
@@ -94,32 +114,33 @@ class App:
             messagebox.showwarning("Falta el nombre", "Escribe el nombre de la empresa cliente.")
             return
         self.boton_generar.config(state="disabled", text="Generando…")
-        self.estado.config(text="Creando las 3 propuestas, dame unos segundos…")
+        self.estado.config(text="Creando el catálogo, dame unos segundos…")
         threading.Thread(target=self._trabajo, args=(cliente,), daemon=True).start()
 
     def _trabajo(self, cliente):
         try:
-            carpeta, _ = motor.generar(self.ruta_logo, cliente)
+            carpeta, _ = motor.generar(self.ruta_logo, cliente, color=self.color)
             self.raiz.after(0, self._listo, carpeta)
         except Exception as e:
             self.raiz.after(0, self._error, str(e))
 
     def _listo(self, carpeta):
-        self.boton_generar.config(state="normal", text="Generar mockups")
-        self.estado.config(text="¡Listo! Se abrió la carpeta con los mockups. ✓")
+        self.boton_generar.config(state="normal", text="Generar catálogo")
+        self.estado.config(text="¡Listo! Se abrió la carpeta con el catálogo. ✓")
         os.startfile(carpeta)
 
     def _error(self, mensaje):
-        self.boton_generar.config(state="normal", text="Generar mockups")
+        self.boton_generar.config(state="normal", text="Generar catálogo")
         self.estado.config(text="")
         messagebox.showerror("No se pudo generar",
                              f"Revisa que el logo sea una imagen válida.\n\nDetalle: {mensaje}")
 
 
 def main():
-    # modo consola opcional: MockupsDISECOD.exe logo.png "Cliente"
+    # modo consola opcional: MockupsDISECOD.exe logo.png "Cliente" [#RRGGBB]
     if len(sys.argv) >= 3:
-        carpeta, _ = motor.generar(sys.argv[1], sys.argv[2])
+        color = sys.argv[3] if len(sys.argv) >= 4 else None
+        carpeta, _ = motor.generar(sys.argv[1], sys.argv[2], color=color)
         print(carpeta)
         return
     raiz = tk.Tk()
