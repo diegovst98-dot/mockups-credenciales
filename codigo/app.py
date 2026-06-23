@@ -215,6 +215,8 @@ class App:
                 self._tabla.set(iid, idx, nuevo)
 
     def _renom_aplicar(self):
+        if not self._items or not getattr(self, "_renom_carpeta", None):
+            return  # nada que renombrar si no se eligió carpeta
         for it in self._items:  # recomputar nombre con lo editado
             it["nombre_final"] = self._renom.nombre_destino(
                 it["categoria"], it.get("cliente") or "SIN CLIENTE", it.get("fecha"))
