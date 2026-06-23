@@ -283,3 +283,48 @@ def test_integracion_5_reales():
     assert by_file["pdf 5.pdf"]["categoria"] == "INSUMOS"
     assert by_file["pdf2.pdf"]["categoria"] == "FOTOCHECKS"
     assert by_file["pdf 1.pdf"]["categoria"] == "FOTOCHECKS"  # mayor monto
+
+
+# Estructura REAL de pypdfium2 para una cotización de IMPRESORA (plantilla B):
+# la fila de precios repite el índice "01" como cantidad; el gran total va en USD.
+TEXTO_B_REAL_IMPRESORA = (
+    "DC-12942-2026\n"
+    "Lima, 08 de Junio del 2026\n"
+    "Señores:\n"
+    "DEMO PRINT S.A.C.\n"
+    "Presente.-\n"
+    "Item Descripción Cant Precio Unit\n"
+    "Usd $\n"
+    "Precio Total\n"
+    "Total Inc Igv\n"
+    "01 IMPRESORA DE CARNETS\n"
+    "ZENIUS 2 CLASSIC\n"
+    "Marca: Evolis\n"
+    "Promoción incluye:\n"
+    "- 01 Cinta de color de 200 impresiones\n"
+    "- 100 tarjetas blancas PVC (paq x100)\n"
+    "- 01 tarjeta y 01 hisopo de limpieza\n"
+    "01 762.71 762.71 900.00\n"
+    "02 Tarjetas PVC Blanco\n"
+    "Paquete por 100 unidades 01 8.60 8.60 10.14\n"
+    "03 Ribbon Color YMCKO R5F202A100\n"
+    "Rinde 200 impresiones 01 46.00 46.00 54.28\n"
+    "Total US$ 964.42\n"
+)
+
+def test_clasifica_real_impresora_gana_impresoras():
+    cat, montos = r.clasificar(TEXTO_B_REAL_IMPRESORA, "B")
+    assert cat == "IMPRESORAS"
+    assert montos.get("IMPRESORAS", 0) >= montos.get("INSUMOS", 0)
+
+
+DOWNLOADS = Path(r"C:/Users/Diego/Downloads")
+
+@pytest.mark.skipif(not DOWNLOADS.exists(), reason="Downloads no presente (PDFs reales no se commitean)")
+def test_integracion_impresoras_reales():
+    printers = list(DOWNLOADS.glob("DC Impresora*.pdf"))
+    if not printers:
+        pytest.skip("no hay PDFs de impresora en Downloads")
+    for p in printers:
+        d = r.analizar_pdf(p)
+        assert d["categoria"] == "IMPRESORAS", f"{p.name} -> {d['categoria']}"

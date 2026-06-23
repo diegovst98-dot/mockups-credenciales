@@ -31,7 +31,14 @@ def extraer_texto(path) -> str:
 
 
 def detectar_plantilla(texto: str) -> str:
-    return "A" if "PROPUESTA ECON" in _norm(texto) else "B"
+    # Plantilla A tiene "PROPUESTA ECONÓMICA" como línea título independiente.
+    # Plantilla B también la menciona en una frase ("nuestra propuesta económica:"),
+    # por eso verificamos que alguna línea sea sustancialmente solo esa frase.
+    for l in texto.splitlines():
+        n = _norm(l.strip())
+        if n.startswith("PROPUESTA ECON") and len(n) < 30:
+            return "A"
+    return "B"
 
 
 def extraer_numero(texto: str) -> str | None:
@@ -110,9 +117,11 @@ def clasificar(texto: str, plantilla: str) -> tuple[str, dict]:
     cut = len(nz)
     for i, l in enumerate(nz):
         n = _norm(l)
-        # Plantilla A: busca SUBTOTAL o CONDICIONES
-        # Plantilla B: busca TOTAL S/ (el monto final con símbolo) o CONDICIONES
-        is_total = n.startswith("SUBTOTAL") or n.startswith("TOTAL S/") or "CONDICIONES" in n
+        # Cortar en el total final. Plantilla A: SUBTOTAL. Plantilla B: el gran total
+        # "TOTAL S/ ..." o "TOTAL US$ ..." (NO la cabecera de columna "TOTAL INC IGV").
+        is_total = (n.startswith("SUBTOTAL")
+                    or bool(re.match(r"TOTAL\s+(US\$|USD|S/)", n))
+                    or "CONDICIONES" in n)
         if is_total:
             cut = i
             break
@@ -129,9 +138,15 @@ def clasificar(texto: str, plantilla: str) -> tuple[str, dict]:
             # Match solo la primera palabra (código de producto)
             primer_palabra = l_limpio.split()[0] if l_limpio.split() else ""
             return bool(_CODIGO_RE.match(primer_palabra))
-        # Plantilla B: línea que EMPIEZA con 1-2 dígitos Y siguiente línea tiene LETRA
-        # Esto diferencia items (01 Descripción) de cantidades (01 monto)
-        if re.match(r"^\d{1,2}(\s|$)", l):
+        # Plantilla B: un ítem empieza con un índice de 1-2 dígitos seguido de DESCRIPCIÓN.
+        # "01 IMPRESORA DE CARNETS" (índice + texto en la misma línea) es item solo si el
+        # resto tiene letras — así NO confunde la fila de precios "01 762.71 762.71 900.00"
+        # (resto sin letras) con un ítem nuevo.
+        m = re.match(r"^\d{1,2}\s+(\S.*)$", l)
+        if m:
+            return bool(re.search(r"[A-Za-z]", m.group(1)))
+        # "01" solo en su línea (descripción en la línea siguiente).
+        if re.fullmatch(r"\d{1,2}", l):
             return idx + 1 < len(body) and bool(re.search(r"[A-Za-z]", body[idx + 1]))
         return False
 
