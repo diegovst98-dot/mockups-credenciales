@@ -1,10 +1,11 @@
 {
-  "version": 20,
+  "version": 21,
   "archivos": [
     "app.py",
     "motor.py",
-    "plantillas.py",
     "render.py",
+    "folleto.py",
+    "renombrador.py",
     "version.txt",
     "fuente-display.ttf",
     "fuente-display-italic.ttf",
@@ -28,6 +29,28 @@
     "fondo-glass-3.jpg",
     "fondo-glass-4.jpg",
     "fondo-glass-5.jpg",
-    "fondo-glass-6.jpg"
+    "fondo-glass-6.jpg",
+    "plantillas/__init__.py",
+    "plantillas/base.py",
+    "plantillas/modelos/__init__.py",
+    "plantillas/modelos/clasica.py",
+    "plantillas/modelos/gafete.py",
+    "plantillas/modelos/mh1_digitalworld.py",
+    "plantillas/modelos/mh2_heartfit.py",
+    "plantillas/modelos/mh3_digitalist.py",
+    "plantillas/modelos/mh4_gaio.py",
+    "plantillas/modelos/mh5_podcast.py",
+    "plantillas/modelos/mh6_rosestore.py",
+    "plantillas/modelos/mh7_vegetata.py",
+    "plantillas/modelos/mv1_accion.py",
+    "plantillas/modelos/mv2_boka.py",
+    "plantillas/modelos/mv3_banda.py",
+    "plantillas/modelos/mv4_bandanombre.py",
+    "plantillas/modelos/mv5_tech.py",
+    "plantillas/modelos/mv6_minimal.py",
+    "plantillas/modelos/mv7_medico.py",
+    "plantillas/modelos/mv8_ondas.py",
+    "plantillas/modelos/premium.py",
+    "plantillas/registro.py"
   ]
 }
