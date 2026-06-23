@@ -232,6 +232,45 @@ def test_aplicar_renombra_en_el_sitio(tmp_path):
 import pytest
 from pathlib import Path
 
+# Estructura REAL de pypdfium2: filas en UNA línea; código de mantenimiento SIN
+# dígito y con artefacto ￾; montos como tokens en una sola línea.
+TEXTO_A_REAL_MANT = (
+    "PROPUESTA ECONÓMICA\n"
+    "DC-001-00000077\n"
+    "Fecha: 23/06/2026\n"
+    "DEMO MANT S.A.C.\n"
+    "R.U.C. : 20000000000\n"
+    "Señores:\n"
+    "CÓDIGO DESCRIPCIÓN CANT. P. UNIT P. TOTAL\n"
+    "SERV-MANT￾IMPR-EVO\n"
+    "SERVICIO DE MANTENIMIENTO DE\n"
+    "IMPRESORA EVOLIS\n"
+    "1 135.59 135.59\n"
+    "SUBTOTAL S/ 135.59\n"
+)
+
+TEXTO_A_REAL_ONELINE = (
+    "PROPUESTA ECONÓMICA\n"
+    "DC-001-00000078\n"
+    "Fecha: 23/06/2026\n"
+    "DEMO ONE S.A.C.\n"
+    "R.U.C. : 20000000001\n"
+    "Señores:\n"
+    "CÓDIGO DESCRIPCIÓN CANT. P. UNIT P. TOTAL\n"
+    "F400102 FOTOCHECK EN PVC AMBAS CARAS A COLOR 4 9.00 36.00\n"
+    "SUBTOTAL S/ 36.00\n"
+)
+
+def test_clasifica_real_mantenimiento_codigo_sin_digito_con_artefacto():
+    cat, montos = r.clasificar(TEXTO_A_REAL_MANT, "A")
+    assert cat == "MANTENIMIENTO"
+    assert round(montos["MANTENIMIENTO"]) == 136
+
+def test_clasifica_real_fila_en_una_linea():
+    cat, montos = r.clasificar(TEXTO_A_REAL_ONELINE, "A")
+    assert cat == "FOTOCHECKS"
+    assert round(montos["FOTOCHECKS"]) == 36
+
 FIXT = Path(r"C:/Users/Diego/Desktop/cotizaciones para renombrar")
 
 @pytest.mark.skipif(not FIXT.exists(), reason="PDFs reales no presentes (no se commitean)")

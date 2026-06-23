@@ -89,10 +89,11 @@ CATS = [
     ("OTROS",           ["GIFT CARD", "TARJETA DE REGALO"]),
 ]
 _MONTO_RE = re.compile(r"^\d{1,3}(?:,\d{3})*\.\d{2}$")
-# Códigos: [A-Z]{1,5} seguido por [A-Z0-9-]+ con al menos 1 dígito o N guiones-separados
-# Ejemplos: ACL001, RCT223NAAA, SERV-MANT, YF-SINLOGO, F400102, P400112
-# Patrón: (LETRA+ (DIGITO|LETRA)* ) | (LETRA+ - LETRA+)
-_CODIGO_RE = re.compile(r"^([A-Z]+\d[A-Z0-9-]*|[A-Z]+-[A-Z]+(-[A-Z]+)?|YF-[A-Z]+)$")
+# Códigos de producto (primera palabra de la línea de ítem en plantilla A):
+#   - letras seguidas de dígitos: F400102, P400112, RCT223NAAA, ACL001
+#   - 2-3 grupos de letras separados por guion: SERV-MANT-IMPR, YF-SINLOGO
+# El formato con guion se matchea de forma genérica (sin casos por producto).
+_CODIGO_RE = re.compile(r"^([A-Z]+\d[A-Z0-9-]*|[A-Z]+-[A-Z]+(-[A-Z]+)?)$")
 
 
 def _categoria_de(desc: str) -> str | None:
