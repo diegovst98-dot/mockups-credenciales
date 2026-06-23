@@ -55,3 +55,12 @@ def test_numero_plantilla_B_acepta_DJ():
 
 def test_numero_ausente():
     assert r.extraer_numero("sin numero aqui") is None
+
+def test_fecha_plantilla_A():
+    assert r.extraer_fecha(TEXTO_A, "A") == "23-06"
+
+def test_fecha_plantilla_B():
+    assert r.extraer_fecha(TEXTO_B, "B") == "11-06"
+
+def test_fecha_ausente():
+    assert r.extraer_fecha("sin fecha", "A") is None

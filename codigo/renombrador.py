@@ -12,6 +12,13 @@ def _norm(s: str) -> str:
 
 _NUM_RE = re.compile(r"\b[A-Z]{2}-\d{2,5}-\d{3,8}\b")
 
+_MESES = {
+    "ENERO": "01", "FEBRERO": "02", "MARZO": "03", "ABRIL": "04",
+    "MAYO": "05", "JUNIO": "06", "JULIO": "07", "AGOSTO": "08",
+    "SETIEMBRE": "09", "SEPTIEMBRE": "09", "OCTUBRE": "10",
+    "NOVIEMBRE": "11", "DICIEMBRE": "12",
+}
+
 
 def extraer_texto(path) -> str:
     """Devuelve el texto de la primera página del PDF."""
@@ -30,3 +37,19 @@ def detectar_plantilla(texto: str) -> str:
 def extraer_numero(texto: str) -> str | None:
     m = _NUM_RE.search(texto)
     return m.group(0) if m else None
+
+
+def extraer_fecha(texto: str, plantilla: str) -> str | None:
+    if plantilla == "A":
+        m = re.search(r"Fecha:\s*(\d{2})/(\d{2})/\d{4}", texto)
+        if m:
+            return f"{m.group(1)}-{m.group(2)}"
+        return None
+    # Plantilla B: "Lima, 11 de Junio del 2026"
+    m = re.search(r"Lima,\s*(\d{1,2})\s+de\s+([A-Za-zñÑáéíóú]+)\s+del?\s+\d{4}", texto)
+    if m:
+        dia = m.group(1).zfill(2)
+        mes = _MESES.get(_norm(m.group(2)))
+        if mes:
+            return f"{dia}-{mes}"
+    return None
