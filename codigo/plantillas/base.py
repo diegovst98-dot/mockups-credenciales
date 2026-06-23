@@ -156,9 +156,9 @@ def css_base():
 
 
 def _root(ctx):
-    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;--acc:%s;--acc2:%s;}"
+    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;--acc:%s;--acc2:%s;--txtprim:%s;}"
             % (ctx["prim_css"], ctx["medio_css"], ctx["oscuro_css"],
-               ctx["claro_css"], ORO, ctx["prim_legible"], ctx["acc2_css"]))
+               ctx["claro_css"], ORO, ctx["prim_legible"], ctx["acc2_css"], ctx["txt_sobre_prim"]))
 
 
 def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto):

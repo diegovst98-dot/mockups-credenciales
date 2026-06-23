@@ -53,3 +53,30 @@ def test_datos_demo_tienen_campos_extra():
     from plantillas import DATOS
     assert DATOS["tipo_sangre"] == "O+"
     assert DATOS["codigo"] == "10052"
+
+
+# ---- Task 4-5: modelos de validación Fase 1 (mv1, mh1, mh2) ----
+
+def _render_invariantes(clave, esperado):
+    from plantillas import cara
+    ctx = _ctx()
+    html, w, h = cara(clave, "frontal", ctx)
+    assert (w, h) == esperado, (clave, w, h)
+    assert ctx["logo_uri"] in html, (clave, "logo del cliente ausente")
+    assert ctx["prim_css"] in html, (clave, "color de marca ausente")
+    assert "brightness(0)" not in html and "invert(" not in html, (clave, "recoloreo prohibido")
+
+
+def test_mv1_vertical():
+    _render_invariantes("mv1", (638, 1011))
+
+
+def test_mh1_horizontal():
+    _render_invariantes("mh1", (1011, 638))
+
+
+def test_mh2_horizontal_con_tipo_de_sangre():
+    from plantillas import cara, DATOS
+    _render_invariantes("mh2", (1011, 638))
+    html, _, _ = cara("mh2", "frontal", _ctx())
+    assert DATOS["tipo_sangre"] in html
