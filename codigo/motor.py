@@ -1193,67 +1193,64 @@ def slug(texto):
     return re.sub(r"[^A-Za-z0-9]+", "-", texto).strip("-") or "Cliente"
 
 
-def generar(ruta_logo, cliente, carpeta_salida=None):
+def _hex_a_rgb(c):
+    """'#RRGGBB' o (r,g,b) -> (r,g,b)."""
+    if isinstance(c, (tuple, list)):
+        return tuple(int(x) for x in c[:3])
+    c = str(c).lstrip("#")
+    return tuple(int(c[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def generar(ruta_logo, cliente, carpeta_salida=None, color=None):
+    """Arma el CATÁLOGO personalizado: PDF folleto con todos los modelos (frentes)
+    pintados con la marca del cliente + carpeta para-diseno con las caras limpias.
+    color: opcional '#RRGGBB' o (r,g,b); si no, el color sale de la tinta del logo."""
     cliente = (cliente or "Cliente").strip() or "Cliente"
     logo = cargar_logo(ruta_logo)
-    prim, sec = paleta_del_logo(logo)
-    pal = (prim, sec, oro_del_logo(logo))
+    if color:
+        prim = _hex_a_rgb(color)
+        sec = tuple(int(x * 0.6) for x in prim)   # tono más oscuro como secundario
+    else:
+        prim, sec = paleta_del_logo(logo)
 
-    # --- caras maquetadas en HTML/CSS y rasterizadas con Playwright ---
-    from plantillas import cara, construir_contexto
+    # --- frentes de cada modelo del catálogo, maquetados en HTML/CSS y rasterizados ---
+    from plantillas import cara, construir_contexto, catalogo
     from render import render_caras
+    from folleto import armar_pdf
     ctx = construir_contexto(logo, prim, sec, cliente)
-    DIRECCIONES = [("clasica", "Dirección 1 — Clásica"),
-                   ("gafete", "Dirección 2 — Gafete"),
-                   ("premium", "Dirección 3 — Premium")]
-    items = []
-    for clave, _ in DIRECCIONES:
-        for lado in ("frontal", "reverso"):
-            items.append(cara(clave, lado, ctx))
-    caras = render_caras(items)  # 6 PIL.Image a escala 2x
+    modelos = catalogo()
+    items = [cara(m.clave, "frontal", ctx) for m in modelos]   # SOLO frentes (folleto)
+    caras = render_caras(items)                                # PIL.Image a escala 2x
 
     def a_cr80(img):
         # baja del render 2x al tamaño real de imprenta (CR80 300 dpi) con LANCZOS
         destino = (CARD_W, CARD_H) if img.width > img.height else (V_W, V_H)
         return img.resize(destino, Image.LANCZOS)
 
-    piezas, caras_diseno = [], []
-    for i, (_, titulo) in enumerate(DIRECCIONES):
-        fr = a_cr80(caras[i * 2])
-        rv = a_cr80(caras[i * 2 + 1])
-        caras_diseno.append((titulo, fr, rv))
-        # versión de presentación con esquinas redondeadas (el brief se ve como tarjeta)
-        fr_p, rv_p = fr.copy(), rv.copy()
-        fr_p.putalpha(mascara_redondeada(fr.width, fr.height))
-        rv_p.putalpha(mascara_redondeada(rv.width, rv.height))
-        piezas.append((titulo, fr_p, rv_p))
+    frentes = [a_cr80(c) for c in caras]
 
     if carpeta_salida is None:
         carpeta_salida = os.path.join(RUTA_BASE, "salida", f"{slug(cliente)}-{date.today():%Y-%m-%d}")
-        # Limpiar corridas anteriores del mismo cliente/día: si no, los archivos de una
-        # versión vieja (otros estilos) quedan apilados junto a los nuevos y confunden.
-        # La carpeta queda SOLO con la salida actual (brief + 3 direcciones + para-diseno).
+        # Limpiar corridas anteriores del mismo cliente/día (no apilar archivos viejos).
         if os.path.isdir(carpeta_salida):
             shutil.rmtree(carpeta_salida, ignore_errors=True)
     os.makedirs(carpeta_salida, exist_ok=True)
 
-    rutas = []
-    # caras limpias a tamaño real de imprenta (CR80 300 dpi, full-bleed rectangular,
-    # sin sombras ni rótulos): base de trabajo para el diseñador / CardPresso
+    # caras limpias a tamaño real de imprenta (CR80 300 dpi): base para el diseñador / CardPresso
     carpeta_diseno = os.path.join(carpeta_salida, "para-diseno")
     os.makedirs(carpeta_diseno, exist_ok=True)
-    for i, (titulo, fr, rv) in enumerate(caras_diseno, 1):
-        sufijo = slug(titulo.split("—")[-1]).lower()
-        ruta = os.path.join(carpeta_salida, f"direccion-{i}-{sufijo}.png")
-        png_estilo(titulo, piezas[i - 1][1], piezas[i - 1][2]).save(ruta, optimize=True)
-        rutas.append(ruta)
-        fr.convert("RGB").save(os.path.join(carpeta_diseno, f"direccion-{i}-{sufijo}-frontal.png"), optimize=True)
-        rv.convert("RGB").save(os.path.join(carpeta_diseno, f"direccion-{i}-{sufijo}-reverso.png"), optimize=True)
+    rutas_diseno = []
+    for m, fr in zip(modelos, frentes):
+        ruta = os.path.join(carpeta_diseno, f"{m.clave}-frontal.png")
+        fr.convert("RGB").save(ruta, optimize=True)
+        rutas_diseno.append(ruta)
 
-    ruta_brief = os.path.join(carpeta_salida, "brief-presentacion.png")
-    lamina(cliente, piezas).save(ruta_brief, optimize=True)
-    rutas.insert(0, ruta_brief)
-    return carpeta_salida, rutas
+    # PDF folleto personalizado (portada con el logo del cliente + grillas de modelos)
+    items_folleto = [(m.nombre, m.orientacion, fr) for m, fr in zip(modelos, frentes)]
+    ruta_pdf = os.path.join(carpeta_salida, f"catalogo-{slug(cliente)}.pdf")
+    armar_pdf(cliente, logo, items_folleto, ruta_pdf)
+
+    return carpeta_salida, [ruta_pdf] + rutas_diseno
 
 
 if __name__ == "__main__":

@@ -87,17 +87,26 @@ def test_logo_cliente_no_se_recolorea():
             assert "invert(" not in html, (estilo, lado, "recoloreo prohibido")
 
 
-# ---- Task 5: generar end to end ----
+# ---- Task 8: generar arma el catálogo en PDF ----
 
-def test_generar_produce_brief_y_3_direcciones():
+def test_generar_produce_pdf_catalogo():
     from motor import generar
+    from plantillas import catalogo
     out = tempfile.mkdtemp(prefix="t_gen_")
     carpeta, rutas = generar(LOGO_DISECOD, "Interbank", out)
-    base = [os.path.basename(r) for r in rutas]
-    assert any("brief" in b for b in base), base
-    assert sum(b.startswith("direccion-") for b in base) == 3, base
+    assert any(r.lower().endswith(".pdf") for r in rutas), rutas
+    pdf = [r for r in rutas if r.lower().endswith(".pdf")][0]
+    assert os.path.getsize(pdf) > 1000
+    # un frente limpio por modelo del catálogo en para-diseno/
     diseno = glob.glob(os.path.join(carpeta, "para-diseno", "*.png"))
-    assert len(diseno) == 6, diseno
+    assert len(diseno) >= len(catalogo()), (len(diseno), len(catalogo()))
+
+
+def test_color_manual_se_respeta():
+    from motor import generar
+    out = tempfile.mkdtemp(prefix="t_col_")
+    carpeta, rutas = generar(LOGO_DISECOD, "Acme", out, color="#cc2222")
+    assert any(r.lower().endswith(".pdf") for r in rutas)
 
 
 # ---- Task 6: robustez ----
@@ -106,7 +115,7 @@ def test_robustez_nombre_largo():
     from motor import generar
     out = tempfile.mkdtemp(prefix="t_rob_")
     carpeta, rutas = generar(LOGO_DISECOD, "Corporación Andina de Seguridad Integral del Perú", out)
-    assert len(rutas) >= 4
+    assert any(r.lower().endswith(".pdf") for r in rutas)
 
 
 # ---- Fase 2: variedad de fondos ----
