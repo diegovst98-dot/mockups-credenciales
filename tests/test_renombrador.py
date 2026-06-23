@@ -228,3 +228,19 @@ def test_aplicar_renombra_en_el_sitio(tmp_path):
     assert res["renombrados"] == 1
     assert (tmp_path / "DC INSUMOS - ACME 23-06.pdf").exists()
     assert not orig.exists()
+
+import pytest
+from pathlib import Path
+
+FIXT = Path(r"C:/Users/Diego/Desktop/cotizaciones para renombrar")
+
+@pytest.mark.skipif(not FIXT.exists(), reason="PDFs reales no presentes (no se commitean)")
+def test_integracion_5_reales():
+    items = r.planificar_carpeta(FIXT)
+    by_file = {Path(it["archivo"]).name: it for it in items}
+    # 4/5 verificados en diseño:
+    assert by_file["pdf 3.pdf"]["categoria"] == "KIT DE LIMPIEZA"
+    assert by_file["pdf 4.pdf"]["categoria"] == "MANTENIMIENTO"
+    assert by_file["pdf 5.pdf"]["categoria"] == "INSUMOS"
+    assert by_file["pdf2.pdf"]["categoria"] == "FOTOCHECKS"
+    assert by_file["pdf 1.pdf"]["categoria"] == "FOTOCHECKS"  # mayor monto

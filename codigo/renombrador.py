@@ -89,8 +89,10 @@ CATS = [
     ("OTROS",           ["GIFT CARD", "TARJETA DE REGALO"]),
 ]
 _MONTO_RE = re.compile(r"^\d{1,3}(?:,\d{3})*\.\d{2}$")
-# {1,5} soporta codigos de 1 letra inicial como F400102, P400112
-_CODIGO_RE = re.compile(r"^[A-Z]{1,5}[A-Z0-9-]*\d[A-Z0-9-]*-?$")
+# Códigos: [A-Z]{1,5} seguido por [A-Z0-9-]+ con al menos 1 dígito o N guiones-separados
+# Ejemplos: ACL001, RCT223NAAA, SERV-MANT, YF-SINLOGO, F400102, P400112
+# Patrón: (LETRA+ (DIGITO|LETRA)* ) | (LETRA+ - LETRA+)
+_CODIGO_RE = re.compile(r"^([A-Z]+\d[A-Z0-9-]*|[A-Z]+-[A-Z]+(-[A-Z]+)?|YF-[A-Z]+)$")
 
 
 def _categoria_de(desc: str) -> str | None:
@@ -106,7 +108,11 @@ def clasificar(texto: str, plantilla: str) -> tuple[str, dict]:
     # cortar antes de los totales / condiciones
     cut = len(nz)
     for i, l in enumerate(nz):
-        if _norm(l).startswith("SUBTOTAL") or "CONDICIONES COMERCIAL" in _norm(l):
+        n = _norm(l)
+        # Plantilla A: busca SUBTOTAL o CONDICIONES
+        # Plantilla B: busca TOTAL S/ (el monto final con símbolo) o CONDICIONES
+        is_total = n.startswith("SUBTOTAL") or n.startswith("TOTAL S/") or "CONDICIONES" in n
+        if is_total:
             cut = i
             break
     body = nz[:cut]
@@ -114,9 +120,17 @@ def clasificar(texto: str, plantilla: str) -> tuple[str, dict]:
     def es_inicio_item(idx: int) -> bool:
         l = body[idx]
         if plantilla == "A":
-            return bool(_CODIGO_RE.match(l))
-        # Plantilla B: indice 1-2 digitos seguido de linea con texto
-        if re.fullmatch(r"\d{1,2}", l):
+            # Rechazar números de propuesta (ej. DC-001-00000062) que no son códigos de item
+            if _NUM_RE.search(l):
+                return False
+            # Limpiar caracteres no-ASCII que pueden romper el parsing (ej. ￾P)
+            l_limpio = "".join(c for c in l if ord(c) < 128)
+            # Match solo la primera palabra (código de producto)
+            primer_palabra = l_limpio.split()[0] if l_limpio.split() else ""
+            return bool(_CODIGO_RE.match(primer_palabra))
+        # Plantilla B: línea que EMPIEZA con 1-2 dígitos Y siguiente línea tiene LETRA
+        # Esto diferencia items (01 Descripción) de cantidades (01 monto)
+        if re.match(r"^\d{1,2}(\s|$)", l):
             return idx + 1 < len(body) and bool(re.search(r"[A-Za-z]", body[idx + 1]))
         return False
 
@@ -131,7 +145,12 @@ def clasificar(texto: str, plantilla: str) -> tuple[str, dict]:
     sums: dict[str, float] = {}
     for b in bloques:
         cat = _categoria_de(" ".join(b))
-        montos = [float(x.replace(",", "")) for x in b if _MONTO_RE.match(x)]
+        # Buscar montos dentro de los tokens de todas las líneas del bloque
+        montos = []
+        for linea in b:
+            for token in linea.split():
+                if _MONTO_RE.match(token):
+                    montos.append(float(token.replace(",", "")))
         if cat and montos:
             sums[cat] = sums.get(cat, 0.0) + max(montos)
 
