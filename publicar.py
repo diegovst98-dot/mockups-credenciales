@@ -19,7 +19,7 @@ CODIGO = BASE / "codigo"
 # Los binarios (fuentes OFL, foto sintética, fondos) también viajan por auto-update:
 # el launcher descarga con write_bytes cualquier archivo del manifest. TODO en nombres
 # PLANOS (sin subcarpeta) para que el launcher horneado del exe los reparta sin recompilar.
-ARCHIVOS = ["app.py", "motor.py", "plantillas.py", "render.py", "version.txt",
+ARCHIVOS = ["app.py", "motor.py", "plantillas.py", "render.py", "renombrador.py", "version.txt",
             "fuente-display.ttf", "fuente-display-italic.ttf", "foto-persona.jpg",
             "inter.ttf", "inter-semibold.ttf"]
 # fondos curados (fondo-aurora-1.jpg, ...) — se agregan dinámicamente

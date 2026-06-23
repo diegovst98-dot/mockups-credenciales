@@ -120,6 +120,7 @@ import PIL.ImageFilter    # noqa: F401
 import PIL.ImageFont      # noqa: F401
 import PIL.ImageOps       # noqa: F401
 import certifi            # noqa: F401
+import pypdfium2          # noqa: F401  (lo usa codigo/renombrador.py para leer PDFs)
 import tkinter            # noqa: F401
 import tkinter.filedialog  # noqa: F401
 import tkinter.font       # noqa: F401
