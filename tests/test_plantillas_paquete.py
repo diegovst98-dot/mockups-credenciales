@@ -45,3 +45,11 @@ def test_catalogo_expone_metadata():
         assert m.clave and m.nombre
         assert m.orientacion in ("V", "H")
         assert callable(m.frontal)
+
+
+# ---- Task 3: datos demo con campos extra ----
+
+def test_datos_demo_tienen_campos_extra():
+    from plantillas import DATOS
+    assert DATOS["tipo_sangre"] == "O+"
+    assert DATOS["codigo"] == "10052"
