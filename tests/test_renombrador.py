@@ -271,6 +271,59 @@ def test_clasifica_real_fila_en_una_linea():
     assert cat == "FOTOCHECKS"
     assert round(montos["FOTOCHECKS"]) == 36
 
+
+# Plantilla B donde "Subtotal" es CABECERA DE COLUMNA (antes de los ítems): el corte
+# NO debe dispararse ahí (exige moneda); el total real es "Total S/" al final.
+TEXTO_B_REAL_SUBTOTAL_HEADER = (
+    "DC-12980-2026\n"
+    "Lima, 20 de Junio del 2026\n"
+    "Señores:\n"
+    "DEMO WALKER S.A.C.\n"
+    "Presente.-\n"
+    "Item Descripción Cant\n"
+    "Precio Unit\n"
+    "S/\n"
+    "Precio\n"
+    "Subtotal\n"
+    "S/\n"
+    "01 Fotocheck pvc\n"
+    "Ambas caras a color\n"
+    "Tamaño 8.6cm x 5.4cm\n"
+    "07 10.65 74.58\n"
+    "02 Portafotocheck acrílico\n"
+    "Vertical transparente\n"
+    "07 1.00 7.00\n"
+    "Total S/ 81.58\n"
+)
+
+def test_clasifica_real_subtotal_como_cabecera_no_corta():
+    cat, montos = r.clasificar(TEXTO_B_REAL_SUBTOTAL_HEADER, "B")
+    assert cat == "FOTOCHECKS"  # 74.58 > 7.00; el "Subtotal" cabecera no cortó los ítems
+
+
+# Plantilla A con código de collar real "COLLARCOLL￾SUB1.8" (artefacto ￾ + dígitos.punto):
+# el código debe reconocerse para que el collar segmente como ACCESORIOS.
+TEXTO_A_REAL_COLLAR = (
+    "PROPUESTA ECONÓMICA\n"
+    "DC-001-00000028\n"
+    "Fecha: 15/06/2026\n"
+    "DEMO COLLAR S.A.C.\n"
+    "R.U.C. : 20000000002\n"
+    "Señores:\n"
+    "CÓDIGO DESCRIPCIÓN CANT. P. UNIT P. TOTAL TOTAL INC IGV\n"
+    "COLLARCOLL￾SUB1.8\n"
+    "COLLAR IMPRESO 1.8CM COLOR -\n"
+    "SUBLIMADO POLIESTER\n"
+    "500 3.30 1,650.01 1,947.00\n"
+    "SUBTOTAL S/ 1,650.00\n"
+)
+
+def test_clasifica_real_collar_codigo_con_artefacto():
+    cat, montos = r.clasificar(TEXTO_A_REAL_COLLAR, "A")
+    assert cat == "ACCESORIOS"
+    assert round(montos["ACCESORIOS"]) == 1947
+
+
 FIXT = Path(r"C:/Users/Diego/Desktop/cotizaciones para renombrar")
 
 @pytest.mark.skipif(not FIXT.exists(), reason="PDFs reales no presentes (no se commitean)")

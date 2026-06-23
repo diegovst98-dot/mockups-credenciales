@@ -96,11 +96,11 @@ CATS = [
     ("OTROS",           ["GIFT CARD", "TARJETA DE REGALO"]),
 ]
 _MONTO_RE = re.compile(r"^\d{1,3}(?:,\d{3})*\.\d{2}$")
-# Códigos de producto (primera palabra de la línea de ítem en plantilla A):
-#   - letras seguidas de dígitos: F400102, P400112, RCT223NAAA, ACL001
-#   - 2-3 grupos de letras separados por guion: SERV-MANT-IMPR, YF-SINLOGO
-# El formato con guion se matchea de forma genérica (sin casos por producto).
-_CODIGO_RE = re.compile(r"^([A-Z]+\d[A-Z0-9-]*|[A-Z]+-[A-Z]+(-[A-Z]+)?)$")
+# Código de producto = primera palabra de la línea de ítem (plantilla A): empieza con
+# mayúscula y contiene al menos un dígito o un guion. Cubre F400102, ACL001, RCT223NAAA,
+# COLLARCOLL-SUB1.8, SERV-MANT-IMPR-EVO, YF-SINLOGO. NO matchea palabras de descripción
+# (COLLAR, FOTOCHECK, PORTAFOTOCHECK, SERVICIO, SUBLIMADO...) que no tienen dígito ni guion.
+_CODIGO_RE = re.compile(r"^[A-Z][A-Z0-9.\-]*[-0-9][A-Z0-9.\-]*$")
 
 
 def _categoria_de(desc: str) -> str | None:
@@ -117,10 +117,10 @@ def clasificar(texto: str, plantilla: str) -> tuple[str, dict]:
     cut = len(nz)
     for i, l in enumerate(nz):
         n = _norm(l)
-        # Cortar en el total final. Plantilla A: SUBTOTAL. Plantilla B: el gran total
-        # "TOTAL S/ ..." o "TOTAL US$ ..." (NO la cabecera de columna "TOTAL INC IGV").
-        is_total = (n.startswith("SUBTOTAL")
-                    or bool(re.match(r"TOTAL\s+(US\$|USD|S/)", n))
+        # Cortar en la línea del total final: "(SUB)TOTAL <moneda> <monto>" — exige la
+        # moneda para NO cortar en una cabecera de columna suelta ("Subtotal", "Total Inc
+        # Igv") que en algunas plantillas B aparece ANTES de los ítems.
+        is_total = (bool(re.match(r"(SUB)?TOTAL\s+(US\$|USD|S/)", n))
                     or "CONDICIONES" in n)
         if is_total:
             cut = i
