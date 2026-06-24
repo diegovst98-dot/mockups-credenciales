@@ -30,20 +30,34 @@ _CSS_CLASICA = """
 
 def _clasica(lado, ctx, d):
     if lado == "frontal":
+        # filas base + opcionales según ctx["campos"] (iconos válidos de base._ICON_PATHS)
+        filas = [
+            ("edificio", "Empresa:", ctx["cliente"]),
+            ("persona", "DNI:", d["id"]),
+        ]
+        if ctx["campos"].get("codigo"):
+            filas.append(("maletin", "Código:", d["codigo"]))
+        if ctx["campos"].get("tipo_sangre"):
+            filas.append(("escudo", "T. Sangre:", d["tipo_sangre"]))
+        rows_html = "".join(
+            "<div class='row'><span class='ic'>%s</span>"
+            "<span><span class='lb'>%s</span> %s</span></div>"
+            % (_icono(ic, "#fff", 24), lb, val) for ic, lb, val in filas)
+        # posición del logo en la cabecera
+        pos = {"izq": "flex-start", "der": "flex-end", "centro": "center"}.get(
+            ctx["logo_pos"], "center")
         cuerpo = (
             "<div class='wm'>%s</div>"
             "<div class='safe'>"
-            "<div class='logohdr'><img src='%s'></div>"
+            "<div class='logohdr' style='justify-content:%s'><img src='%s'></div>"
             "<img class='foto' src='%s'>"
             "<div class='info'>"
             "<div class='name'>%s</div>"
             "<div class='role'>%s</div>"
-            "<div class='rows'>"
-            "<div class='row'><span class='ic'>%s</span><span><span class='lb'>Empresa:</span> %s</span></div>"
-            "<div class='row'><span class='ic'>%s</span><span><span class='lb'>DNI:</span> %s</span></div>"
-            "</div></div></div>"
-            % (ctx["monograma"], ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["cargo"],
-               _icono("edificio", "#fff", 24), ctx["cliente"], _icono("persona", "#fff", 24), d["id"]))
+            "<div class='rows'>%s</div>"
+            "</div></div>"
+            % (ctx["monograma"], pos, ctx["logo_uri"], ctx["foto_uri"],
+               d["nombre"], d["cargo"], rows_html))
     else:
         cuerpo = (
             "<div class='bsafe'>"
@@ -61,4 +75,6 @@ def _clasica(lado, ctx, d):
     return _shell(ctx, "clas", _CSS_CLASICA, cuerpo, *H), H[0], H[1]
 
 
-registrar("clasica", "Clásica", "H", _clasica)
+registrar("clasica", "Clásica", "H", _clasica,
+          campos_opcionales=("tipo_sangre", "codigo"),
+          logo_posiciones=("default", "izq", "der", "centro"))
