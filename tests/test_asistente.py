@@ -60,13 +60,19 @@ def test_campo_soportado_se_quita():
     assert cambios == {"campos": {"tipo_sangre": False}}
 
 
-def test_campo_no_soportado_sugiere_modelo_real():
+def test_campo_extra_aplica_en_cualquier_modelo():
+    # los campos extra son universales: NO rebota "usa otro modelo", aplica directo
     from asistente import interpretar
     import plantillas  # noqa: F401  (puebla el registro)
     m = _ModeloFake(clave="premium", nombre="Premium", campos_opcionales=())
     cambios, msg = interpretar("ponle tipo de sangre", _aj("premium"), m)
-    assert cambios == {}
-    assert "modelo" in msg.lower()        # sugiere cambiar de modelo (o avisa que no hay)
+    assert cambios == {"campos": {"tipo_sangre": True}}
+
+
+def test_campo_fecha_se_reconoce():
+    from asistente import interpretar
+    cambios, _ = interpretar("ponle fecha de vencimiento", _aj(), _ModeloFake())
+    assert cambios == {"campos": {"fecha": True}}
 
 
 def test_logo_a_la_derecha_soportado():

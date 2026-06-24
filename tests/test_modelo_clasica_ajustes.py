@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Específico de clasica: posición de logo y filas base. Los campos extra
+(tipo de sangre/código/fecha) ya NO son de clasica — son universales (test_campos_universales)."""
 import os
 import sys
 
@@ -13,44 +15,31 @@ def _ctx(ajustes=None):
     return construir_contexto(cargar_logo(LOGO), (0, 164, 80), (0, 90, 44), "Interbank", ajustes)
 
 
-def test_clasica_declara_capacidades():
+def test_clasica_declara_logo_posiciones():
     from plantillas import catalogo
     m = next(x for x in catalogo() if x.clave == "clasica")
-    assert "tipo_sangre" in m.campos_opcionales
-    assert "codigo" in m.campos_opcionales
-    assert "der" in m.logo_posiciones
+    assert "der" in m.logo_posiciones and "izq" in m.logo_posiciones
 
 
-# Nota: el VALOR "O+" es muy corto y colisiona con el base64 del logo/foto, así que
-# afirmamos sobre la ETIQUETA de la fila ("T. Sangre", "Código"), que es única y no
-# aparece en el base64 ni en el CSS — marcador robusto de que la fila se renderizó.
-
-def test_clasica_sin_campos_no_muestra_extras():
+def test_clasica_muestra_empresa_y_dni_base():
     from plantillas import cara
     html, _, _ = cara("clasica", "frontal", _ctx())
-    assert "T. Sangre" not in html
-    assert "Código" not in html and "Codigo" not in html
+    assert "Empresa:" in html and "DNI:" in html
 
 
-def test_clasica_con_tipo_sangre_lo_muestra():
-    from plantillas import cara
-    html, _, _ = cara("clasica", "frontal", _ctx({"campos": {"tipo_sangre": True}}))
-    assert "T. Sangre" in html
-
-
-def test_clasica_con_codigo_lo_muestra():
-    from plantillas import cara
-    html, _, _ = cara("clasica", "frontal", _ctx({"campos": {"codigo": True}}))
-    assert "Código" in html
-
-
-def test_clasica_logo_pos_der_cambia_alineacion():
+def test_clasica_logo_pos_der():
     from plantillas import cara
     html, _, _ = cara("clasica", "frontal", _ctx({"logo_pos": "der"}))
     assert "flex-end" in html
 
 
-def test_clasica_no_recolorea_logo_con_ajustes():
+def test_clasica_logo_pos_izq():
     from plantillas import cara
-    html, _, _ = cara("clasica", "frontal", _ctx({"campos": {"tipo_sangre": True}, "logo_pos": "izq"}))
+    html, _, _ = cara("clasica", "frontal", _ctx({"logo_pos": "izq"}))
+    assert "flex-start" in html
+
+
+def test_clasica_no_recolorea_logo():
+    from plantillas import cara
+    html, _, _ = cara("clasica", "frontal", _ctx({"logo_pos": "izq"}))
     assert "brightness(0)" not in html and "invert(" not in html

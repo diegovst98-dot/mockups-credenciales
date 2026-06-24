@@ -10,9 +10,10 @@ API pública (compatibilidad con motor.py y tests):
   registrar(...)               (lo usan los módulos de plantillas.modelos)
 """
 from plantillas.base import (construir_contexto, css_base, variante_de,
-                             DATOS, ORO, H, V, MG)
+                             DATOS, ORO, H, V, MG, CAMPOS_EXTRA, CAMPOS_LABEL)
 from plantillas.registro import registrar, catalogo, cara, Modelo
 from plantillas import modelos  # noqa: F401  (importar puebla el registro)
 
 __all__ = ["cara", "construir_contexto", "css_base", "variante_de",
-           "catalogo", "registrar", "Modelo", "DATOS", "ORO", "H", "V", "MG"]
+           "catalogo", "registrar", "Modelo", "DATOS", "ORO", "H", "V", "MG",
+           "CAMPOS_EXTRA", "CAMPOS_LABEL"]

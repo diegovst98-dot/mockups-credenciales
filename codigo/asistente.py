@@ -21,11 +21,14 @@ _COLORES = {
 
 # campo -> frases que lo activan (se buscan dentro del texto normalizado con espacios)
 _CAMPOS_SINONIMOS = {
-    "tipo_sangre": ("tipo de sangre", "grupo sanguineo", "factor rh"),
-    "codigo": ("codigo de empleado", "codigo", "n de empleado", "numero de empleado"),
+    "tipo_sangre": ("tipo de sangre", "grupo sanguineo", "factor rh", "sangre"),
+    "codigo": ("codigo de empleado", "codigo", "n de empleado", "numero de empleado", "carnet"),
+    "fecha": ("fecha de vencimiento", "vencimiento", "fecha de venc", "caducidad", "validez",
+              "fecha", "vence"),
     "web": ("pagina web", "sitio web", "la web", "url", "dominio"),
 }
-_CAMPO_LABEL = {"tipo_sangre": "el tipo de sangre", "codigo": "el código", "web": "la web"}
+_CAMPO_LABEL = {"tipo_sangre": "el tipo de sangre", "codigo": "el código",
+                "fecha": "la fecha de vencimiento", "web": "la web"}
 
 _QUITAR = ("quita", "quitar", "saca", "sacar", " sin ", "elimina", "borra", "no pongas", "remueve")
 
@@ -76,7 +79,7 @@ def _texto_override(t):
 
 
 def interpretar(texto, ajustes, modelo):
-    from plantillas.registro import modelos_con_campo, modelos_con_logo_pos
+    from plantillas.registro import modelos_con_logo_pos
     t = _norm(texto)
     quitar = any(k in t for k in _QUITAR)
     pos_pedida = next((p for p, syns in _POS_SINONIMOS.items() if any(s in t for s in syns)), None)
@@ -91,21 +94,13 @@ def interpretar(texto, ajustes, modelo):
                         "escribe «usa el modelo %s»." % (otros[0].nombre, otros[0].clave))
         return {}, "Este modelo mantiene el logo en su sitio. Puedes probar otro modelo."
 
-    # 2) CAMPO opcional (tipo de sangre / código / web)
+    # 2) CAMPO extra UNIVERSAL (tipo de sangre / código / fecha / web): cualquier modelo
+    #    lo muestra (franja inferior de _shell), así nunca rebota "usa otro modelo".
     for campo, syns in _CAMPOS_SINONIMOS.items():
         if any(s in t for s in syns):
             encender = not quitar
-            if campo in getattr(modelo, "campos_opcionales", ()):
-                verbo = "agregué" if encender else "quité"
-                return {"campos": {campo: encender}}, "Listo, %s %s." % (verbo, _CAMPO_LABEL[campo])
-            if encender:
-                otros = [m for m in modelos_con_campo(campo) if m.clave != modelo.clave]
-                if otros:
-                    return {}, ("Este modelo no tiene espacio para %s. El modelo «%s» sí — "
-                                "escribe «usa el modelo %s» para cambiarlo."
-                                % (_CAMPO_LABEL[campo], otros[0].nombre, otros[0].clave))
-                return {}, "Ningún modelo del catálogo muestra %s en el frente." % _CAMPO_LABEL[campo]
-            return {}, "Ese dato no está en este modelo; no hay nada que quitar."
+            verbo = "agregué" if encender else "quité"
+            return {"campos": {campo: encender}}, "Listo, %s %s." % (verbo, _CAMPO_LABEL[campo])
 
     # 3) COLOR (nombrado, hex, más oscuro/claro)
     m = re.search(r"#([0-9a-f]{6})", t)

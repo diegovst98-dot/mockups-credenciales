@@ -36,9 +36,6 @@ _CSS = """
 
 
 def _frontal(lado, ctx, d):
-    extra = ""
-    if ctx["campos"].get("tipo_sangre"):
-        extra = "<div class='dni'>Tipo de sangre: %s</div>" % d["tipo_sangre"]
     cuerpo = (
         "<div class='topdark'></div><div class='topprim'></div>"
         "<div class='botdark'></div><div class='botprim'></div>"
@@ -48,12 +45,9 @@ def _frontal(lado, ctx, d):
         "<div class='name'>%s</div>"
         "<div class='dni'>DNI: %s</div>"
         "<div class='cargo'>%s</div>"
-        "%s"
         "</div>"
-        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["id"], d["cargo"], extra))
+        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["id"], d["cargo"]))
     return _shell(ctx, "mv7", _CSS, cuerpo, *V), V[0], V[1]
 
 
-registrar("mv7", "Médico (vertical)", "V", _frontal,
-          campos_opcionales=("tipo_sangre",),
-          logo_posiciones=("default",))
+registrar("mv7", "Médico (vertical)", "V", _frontal)

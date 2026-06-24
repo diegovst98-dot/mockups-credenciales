@@ -30,15 +30,11 @@ _CSS_CLASICA = """
 
 def _clasica(lado, ctx, d):
     if lado == "frontal":
-        # filas base + opcionales según ctx["campos"] (iconos válidos de base._ICON_PATHS)
+        # filas de datos (los campos extra los pone la franja universal de _shell)
         filas = [
             ("edificio", "Empresa:", ctx["cliente"]),
             ("persona", "DNI:", d["id"]),
         ]
-        if ctx["campos"].get("codigo"):
-            filas.append(("maletin", "Código:", d["codigo"]))
-        if ctx["campos"].get("tipo_sangre"):
-            filas.append(("escudo", "T. Sangre:", d["tipo_sangre"]))
         rows_html = "".join(
             "<div class='row'><span class='ic'>%s</span>"
             "<span><span class='lb'>%s</span> %s</span></div>"

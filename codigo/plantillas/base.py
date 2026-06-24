@@ -21,7 +21,13 @@ F_INTER = os.path.join(RUTA, "inter.ttf")
 F_INTER_SB = os.path.join(RUTA, "inter-semibold.ttf")
 
 DATOS = {"nombre": "Carlos González M.", "cargo": "Supervisor de Operaciones", "id": "45678123",
-         "tipo_sangre": "O+", "codigo": "10052"}
+         "tipo_sangre": "O+", "codigo": "10052", "fecha": "12/2027"}
+
+# Campos extra UNIVERSALES: cualquier modelo los muestra (vía _shell -> _bloque_extra),
+# así el editor los ofrece en TODOS los modelos sin tocar cada plantilla.
+CAMPOS_EXTRA = ("tipo_sangre", "codigo", "fecha", "web")
+CAMPOS_LABEL = {"tipo_sangre": "Tipo de sangre", "codigo": "Código",
+                "fecha": "Fecha de venc.", "web": "Web"}
 ORO = "#c9a14a"
 H, V = (1011, 638), (638, 1011)
 MG = 60  # margen de seguridad de impresion (~5mm)
@@ -171,11 +177,45 @@ def _root(ctx):
                ctx["claro_css"], ORO, ctx["prim_legible"], ctx["acc2_css"], ctx["txt_sobre_prim"]))
 
 
+def _bloque_extra(ctx):
+    """Franja inferior con los campos extra ENCENDIDOS (tipo de sangre, código, fecha,
+    web). Va por _shell, así CUALQUIER modelo la muestra sin tocar su plantilla. Oscura
+    translúcida con texto blanco: legible sobre cualquier diseño. Devuelve (html, css)."""
+    campos = ctx.get("campos", {})
+    d = ctx["datos"]
+    partes = []
+    if campos.get("tipo_sangre"):
+        partes.append("T. SANGRE %s" % d.get("tipo_sangre", ""))
+    if campos.get("codigo"):
+        partes.append("CÓDIGO %s" % d.get("codigo", ""))
+    if campos.get("fecha"):
+        partes.append("VENCE %s" % d.get("fecha", ""))
+    if campos.get("web"):
+        partes.append(ctx.get("web", "").upper())
+    if not partes:
+        return "", ""
+    html = "<div class='cextra'>%s</div>" % "&nbsp;&nbsp;·&nbsp;&nbsp;".join(partes)
+    # franja como ITEM DE FLEX (flujo normal), no overlay: toma su propio alto al pie
+    css = (".cextra{flex-shrink:0;background:rgba(17,17,20,.92);color:#fff;"
+           "font:700 21px 'Inter',sans-serif;letter-spacing:.02em;text-align:center;padding:13px 18px}")
+    return html, css
+
+
 def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto):
+    extra_html, extra_css = _bloque_extra(ctx)
+    if extra_html:
+        # Con campos extra: la tarjeta es flex-columna. El contenido del modelo ocupa el
+        # resto (flex:1) y la franja toma su alto al pie -> NUNCA se encima, en cualquier
+        # modelo. Sin campos: estructura idéntica a la original (cero cambio en el catálogo).
+        cuerpo = "<div class='ccontent'>%s</div>%s" % (cuerpo, extra_html)
+        clase = clase + " has-extra"
+        extra_css += (".card.has-extra{display:flex;flex-direction:column}"
+                      ".card.has-extra>.ccontent{flex:1 1 auto;min-height:0;"
+                      "position:relative;overflow:hidden}")
     return ("<!doctype html><html><head><meta charset='utf-8'><style>%s%s"
-            ".card{width:%dpx;height:%dpx;position:relative;overflow:hidden}%s"
+            ".card{width:%dpx;height:%dpx;position:relative;overflow:hidden}%s%s"
             "</style></head><body><div class='card %s'>%s</div></body></html>"
-            % (css_base(), _root(ctx), ancho, alto, css_estilo, clase, cuerpo))
+            % (css_base(), _root(ctx), ancho, alto, css_estilo, extra_css, clase, cuerpo))
 
 
 # ⛔ REGLA FIJA — EL LOGO DEL CLIENTE NUNCA SE RECOLOREA (decisión Diego 2026-06-15).

@@ -53,13 +53,14 @@ def test_selector_tiene_18_modelos():
         top.destroy()
 
 
-def test_controles_clasica_tienen_campos_opcionales():
+def test_controles_tienen_campos_universales():
+    # cualquier modelo ofrece los 4 campos extra (ya no es per-modelo)
     import estado
     top, a = _app()
     try:
-        a.p_ajustes = estado.ajustes_inicial("clasica")
+        a.p_ajustes = estado.ajustes_inicial("premium")
         a._p_rebuild_controles()
-        assert set(a._p_campo_vars.keys()) == {"tipo_sangre", "codigo"}
+        assert set(a._p_campo_vars.keys()) == {"tipo_sangre", "codigo", "fecha", "web"}
     finally:
         top.destroy()
 

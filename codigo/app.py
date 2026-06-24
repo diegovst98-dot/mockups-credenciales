@@ -286,6 +286,7 @@ class App:
         tk.Label(top, text="Empresa:", bg=FONDO, fg=GRIS).pack(side="left", padx=(12, 4))
         self.p_cliente = tk.Entry(top, width=18)
         self.p_cliente.pack(side="left")
+        self.p_cliente.bind("<KeyRelease>", lambda _e: self._p_schedule_render())
         tk.Label(top, text="Modelo:", bg=FONDO, fg=GRIS).pack(side="left", padx=(12, 4))
         self.p_modelo_var = tk.StringVar(value=self._modelos[0][1])
         self.p_modelo_combo = ttk.Combobox(
@@ -300,8 +301,8 @@ class App:
         izq = tk.Frame(cuerpo, bg="#F4F4F6", width=420)
         izq.pack(side="left", fill="both", expand=True)
         izq.pack_propagate(False)
-        self.p_preview = tk.Label(izq, text="Elige un logo y dale «Actualizar preview».",
-                                  bg="#F4F4F6", fg="#888")
+        self.p_preview = tk.Label(izq, text="Elige un logo y empieza a editar —\nel preview se actualiza solo.",
+                                  bg="#F4F4F6", fg="#888", justify="center")
         self.p_preview.pack(expand=True)
 
         der = tk.Frame(cuerpo, bg=FONDO, width=340)
@@ -333,6 +334,7 @@ class App:
             self.p_logo_ruta = ruta
             self.p_logo = motor.cargar_logo(ruta)
             self.p_logo_lbl.config(text=os.path.basename(ruta), fg=GRIS)
+            self._p_schedule_render()          # muestra el preview sin pedir "Actualizar"
 
     def _modelo_actual(self):
         from plantillas import catalogo
@@ -348,7 +350,7 @@ class App:
         nuevo["textos"] = dict(self.p_ajustes["textos"])
         self.p_ajustes = nuevo
         self._p_rebuild_controles()
-        self._p_rerender()
+        self._p_schedule_render()
 
     def _p_construir_chat(self, panel):
         tk.Label(panel, text="Pídeme un cambio:", bg=FONDO, fg=GRIS,
@@ -387,7 +389,7 @@ class App:
         elif cambios:
             self._p_sync_controles()
         if cambios:
-            self._p_rerender()
+            self._p_schedule_render()
 
     def _p_rebuild_controles(self):
         for w in self._p_controles.winfo_children():
@@ -395,16 +397,15 @@ class App:
         m = self._modelo_actual()
         cont = self._p_controles
 
-        # campos opcionales que el modelo soporta (checkbuttons)
+        # campos extra UNIVERSALES: cualquier modelo los muestra (franja de _shell)
+        from plantillas import CAMPOS_EXTRA, CAMPOS_LABEL
         self._p_campo_vars = {}
-        if m.campos_opcionales:
-            tk.Label(cont, text="Campos:", bg=FONDO, fg=GRIS, anchor="w").pack(fill="x", pady=(6, 0))
-            etiquetas = {"tipo_sangre": "Tipo de sangre", "codigo": "Código", "web": "Web"}
-            for campo in m.campos_opcionales:
-                var = tk.BooleanVar(value=bool(self.p_ajustes["campos"].get(campo)))
-                self._p_campo_vars[campo] = var
-                tk.Checkbutton(cont, text=etiquetas.get(campo, campo), variable=var, bg=FONDO,
-                               command=lambda c=campo: self._p_toggle_campo(c)).pack(anchor="w")
+        tk.Label(cont, text="Agregar al frente:", bg=FONDO, fg=GRIS, anchor="w").pack(fill="x", pady=(6, 0))
+        for campo in CAMPOS_EXTRA:
+            var = tk.BooleanVar(value=bool(self.p_ajustes["campos"].get(campo)))
+            self._p_campo_vars[campo] = var
+            tk.Checkbutton(cont, text=CAMPOS_LABEL.get(campo, campo), variable=var, bg=FONDO,
+                           command=lambda c=campo: self._p_toggle_campo(c)).pack(anchor="w")
 
         # posición del logo (radios) si el modelo soporta más de "default"
         if len(m.logo_posiciones) > 1:
@@ -423,50 +424,70 @@ class App:
         tk.Button(filc, text="Color…", command=self._p_elegir_color).pack(side="left")
         tk.Button(filc, text="Auto", command=self._p_color_auto).pack(side="left", padx=4)
 
-        # textos
-        tk.Label(cont, text="Textos:", bg=FONDO, fg=GRIS, anchor="w").pack(fill="x", pady=(8, 0))
+        # textos EN VIVO (cambian el preview al tipear). La Empresa va arriba.
+        from plantillas import DATOS
+        tk.Label(cont, text="Textos (se actualizan al escribir):", bg=FONDO, fg=GRIS,
+                 anchor="w").pack(fill="x", pady=(8, 0))
         self._p_texto_entries = {}
-        for campo, etiq in (("nombre", "Nombre"), ("cargo", "Cargo"), ("id", "DNI"),
-                            ("empresa", "Empresa")):
+        for campo, etiq in (("nombre", "Nombre"), ("cargo", "Cargo"), ("id", "DNI")):
             f = tk.Frame(cont, bg=FONDO)
             f.pack(fill="x")
-            tk.Label(f, text=etiq, width=8, anchor="w", bg=FONDO, fg="#666").pack(side="left")
+            tk.Label(f, text=etiq, width=7, anchor="w", bg=FONDO, fg="#666").pack(side="left")
             e = tk.Entry(f)
-            e.insert(0, self.p_ajustes["textos"].get(campo, ""))
+            e.insert(0, self.p_ajustes["textos"].get(campo) or DATOS[campo])  # muestra el valor real
             e.pack(side="left", fill="x", expand=True)
-            e.bind("<Return>", lambda _e, c=campo: self._p_set_texto(c))
+            e.bind("<KeyRelease>", lambda _e, c=campo: self._p_on_texto(c))
             self._p_texto_entries[campo] = e
 
     def _p_sync_controles(self):
-        # refleja en los checkbuttons el estado actual (cuando el chat los cambió)
+        # refleja en los controles lo que cambió por chat (checkbuttons, logo, textos)
         for campo, var in getattr(self, "_p_campo_vars", {}).items():
             var.set(bool(self.p_ajustes["campos"].get(campo)))
         if hasattr(self, "_p_logo_var"):
             self._p_logo_var.set(self.p_ajustes["logo_pos"])
+        from plantillas import DATOS
+        for campo, e in getattr(self, "_p_texto_entries", {}).items():
+            val = self.p_ajustes["textos"].get(campo) or DATOS[campo]
+            e.delete(0, "end")
+            e.insert(0, val)
+
+    def _p_schedule_render(self, delay=350):
+        """Re-render DIFERIDO (debounce): junta tipeos/clicks rápidos en un solo render
+        para no abrir Edge en cada tecla."""
+        if not self.p_logo:
+            self.p_estado.config(text="Elige un logo para ver el preview.")
+            return
+        if getattr(self, "_p_render_job", None):
+            try:
+                self.raiz.after_cancel(self._p_render_job)
+            except Exception:
+                pass
+        self.p_estado.config(text="Actualizando…")
+        self._p_render_job = self.raiz.after(delay, self._p_rerender)
 
     def _p_toggle_campo(self, campo):
         val = self._p_campo_vars[campo].get()
         self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"campos": {campo: val}})
-        self._p_rerender()
+        self._p_schedule_render()
 
     def _p_set_logo_pos(self):
         self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"logo_pos": self._p_logo_var.get()})
-        self._p_rerender()
+        self._p_schedule_render()
 
     def _p_elegir_color(self):
         res = colorchooser.askcolor(title="Color del modelo", color=self.p_ajustes["color"] or "#1f7a3d")
         if res and res[1]:
             self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"color": res[1]})
-            self._p_rerender()
+            self._p_schedule_render()
 
     def _p_color_auto(self):
         self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"color": None})
-        self._p_rerender()
+        self._p_schedule_render()
 
-    def _p_set_texto(self, campo):
+    def _p_on_texto(self, campo):
         valor = self._p_texto_entries[campo].get().strip()
         self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"textos": {campo: valor}})
-        self._p_rerender()
+        self._p_schedule_render()
 
     def _p_rerender(self):
         if not self.p_logo:
