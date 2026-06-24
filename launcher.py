@@ -164,9 +164,42 @@ def _smoke():
     (BASE / "smoke_result.txt").write_text("\n".join(lineas), encoding="utf-8")
 
 
+def _threadtest():
+    """Reproduce el camino de la GUI: un render de Edge lanzado desde un HILO daemon
+    (en app de ventana sin consola). Escribe el resultado a threadtest_result.txt."""
+    import threading
+    import traceback
+    sys.path.insert(0, str(CODIGO))
+    res = {}
+
+    def work():
+        try:
+            from motor import cargar_logo, paleta_del_logo, LOGO_DISECOD
+            from plantillas import construir_contexto
+            from plantillas.registro import cara
+            from render import render_caras
+            logo = cargar_logo(LOGO_DISECOD)
+            prim, sec = paleta_del_logo(logo)
+            ctx = construir_contexto(logo, prim, sec, "ThreadTest")
+            html, w, h = cara("clasica", "frontal", ctx)
+            imgs = render_caras([(html, w, h)])
+            res["ok"] = "render OK %sx%s" % imgs[0].size
+        except Exception:
+            res["err"] = traceback.format_exc()
+
+    t = threading.Thread(target=work, daemon=True)
+    t.start()
+    t.join(120)
+    (BASE / "threadtest_result.txt").write_text(
+        res.get("ok") or res.get("err") or "TIMEOUT", encoding="utf-8")
+
+
 def main():
     if "--smoke" in sys.argv:
         _smoke()
+        return
+    if "--threadtest" in sys.argv:
+        _threadtest()
         return
     try:
         (BASE / "actualizacion.log").write_text("", encoding="utf-8")

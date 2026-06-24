@@ -29,6 +29,43 @@ def _navegador_sistema():
     return None
 
 
+# En apps de ventana (PyInstaller --noconsole) el proceso no tiene consola: hay que
+# redirigir los 3 streams y evitar abrir una ventana, o el subproceso hereda handles
+# inválidos y puede fallar (sobre todo lanzado desde un hilo). CREATE_NO_WINDOW solo
+# existe en Windows; en otros SO queda 0 (sin efecto).
+_CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+
+def _edge_screenshot(exe, hpath, opath, perfil_base, w, h, escala):
+    """Captura opath con Edge headless. Robusto: stdin/stdout/stderr redirigidos,
+    sin ventana, y REINTENTA si Edge retorna sin crear el PNG (pasa de forma
+    intermitente cuando ya hay Edge abierto). Si tras los reintentos no hay captura,
+    lanza un error CLARO con el stderr real de Edge (no el genérico 'logo inválido')."""
+    ultimo = "sin detalle"
+    for intento in range(3):
+        perfil = "%s_%d" % (perfil_base, intento)
+        cmd = [exe, "--headless=new", "--disable-gpu", "--hide-scrollbars",
+               "--no-sandbox", "--no-first-run", "--disable-extensions",
+               "--force-device-scale-factor=%d" % escala,
+               "--force-color-profile=srgb",
+               "--user-data-dir=" + perfil,
+               "--screenshot=" + opath,
+               "--window-size=%d,%d" % (w, h),
+               "file:///" + hpath.replace("\\", "/")]
+        try:
+            r = subprocess.run(cmd, timeout=90,
+                               stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                               stderr=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW)
+        except subprocess.TimeoutExpired:
+            ultimo = "timeout (intento %d)" % (intento + 1)
+            continue
+        if os.path.exists(opath) and os.path.getsize(opath) > 0:
+            return
+        ultimo = "rc=%s %s" % (r.returncode,
+                               (r.stderr or b"").decode("utf-8", "replace").strip()[-300:])
+    raise RuntimeError("Edge no generó la captura tras 3 intentos -> %s" % ultimo)
+
+
 def _render_edge(items, escala, exe):
     imgs = []
     base = tempfile.mkdtemp(prefix="mockups_render_")
@@ -39,17 +76,7 @@ def _render_edge(items, escala, exe):
             perfil = os.path.join(base, "perfil%d" % i)
             with open(hpath, "w", encoding="utf-8") as f:
                 f.write(html)
-            subprocess.run(
-                [exe, "--headless=new", "--disable-gpu", "--hide-scrollbars",
-                 "--no-sandbox", "--no-first-run", "--disable-extensions",
-                 "--force-device-scale-factor=%d" % escala,
-                 "--force-color-profile=srgb",
-                 "--user-data-dir=" + perfil,
-                 "--screenshot=" + opath,
-                 "--window-size=%d,%d" % (w, h),
-                 "file:///" + hpath.replace("\\", "/")],
-                check=True, timeout=60,
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            _edge_screenshot(exe, hpath, opath, perfil, w, h, escala)
             with open(opath, "rb") as f:
                 imgs.append(Image.open(io.BytesIO(f.read())).convert("RGBA"))
     finally:
