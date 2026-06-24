@@ -49,8 +49,8 @@ class App:
         self.color = None          # None = color automático del logo; "#RRGGBB" = manual
         raiz.title("Mockups DISECOD — %s" % _version())
         raiz.configure(bg=FONDO)
-        raiz.geometry("820x600")
-        raiz.resizable(False, False)
+        raiz.geometry("1100x840")
+        raiz.minsize(900, 680)         # redimensionable: el preview escala con la ventana
         try:
             raiz.iconbitmap(os.path.join(motor.RUTA_RECURSOS, "icono.ico"))
         except Exception:
@@ -300,9 +300,11 @@ class App:
         # --- cuerpo: preview (izq) + panel chat/controles (der) ---
         cuerpo = tk.Frame(panel, bg=FONDO)
         cuerpo.pack(fill="both", expand=True, padx=16, pady=(0, 10))
-        izq = tk.Frame(cuerpo, bg="#F4F4F6", width=420)
+        izq = tk.Frame(cuerpo, bg="#F4F4F6", width=560)
         izq.pack(side="left", fill="both", expand=True)
         izq.pack_propagate(False)
+        self._p_izq = izq
+        izq.bind("<Configure>", lambda _e: self._p_fit_preview_debounced())
         self.p_preview = tk.Label(izq, text="Elige un logo y empieza a editar —\nel preview se actualiza solo.",
                                   bg="#F4F4F6", fg="#888", justify="center")
         self.p_preview.pack(expand=True)
@@ -496,17 +498,36 @@ class App:
     def _p_mostrar(self, gen, img):
         if gen != self._p_gen:
             return                       # llegó un render viejo: descártalo
+        self._p_last_full = img          # imagen completa; el fit la escala a la ventana
+        self._p_fit_preview()
+        self.p_estado.config(text="Listo ✓")
+
+    def _p_fit_preview(self):
+        """Escala la última imagen al tamaño actual del panel (se ve completa y crece
+        con la ventana)."""
+        img = getattr(self, "_p_last_full", None)
+        if img is None:
+            return
         try:
             from PIL import ImageTk       # diferido: exe viejo (v22) no lo trae
         except Exception:
             self.p_estado.config(
                 text="Cierra y vuelve a abrir la app para activar el preview. (Exportar ya funciona.)")
             return
+        w = max(160, self._p_izq.winfo_width() - 24)
+        h = max(160, self._p_izq.winfo_height() - 24)
         disp = img.copy()
-        disp.thumbnail((380, 560), Image.LANCZOS)
+        disp.thumbnail((w, h), Image.LANCZOS)
         self._p_preview_img = ImageTk.PhotoImage(disp)
         self.p_preview.config(image=self._p_preview_img, text="")
-        self.p_estado.config(text="Listo ✓")
+
+    def _p_fit_preview_debounced(self):
+        if getattr(self, "_p_fit_job", None):
+            try:
+                self.raiz.after_cancel(self._p_fit_job)
+            except Exception:
+                pass
+        self._p_fit_job = self.raiz.after(120, self._p_fit_preview)
 
     def _p_error(self, msg):
         self.p_estado.config(text="")

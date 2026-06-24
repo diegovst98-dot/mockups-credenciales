@@ -178,11 +178,11 @@ def css_base():
         "*{margin:0;padding:0;box-sizing:border-box}"
         "body{margin:0;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}"
         # filas de datos (etiqueta:valor) compartidas: el modelo las coloca con filas_html()
-        ".fdato{font-size:26px;line-height:1.5;letter-spacing:.005em}"
+        ".fdato{font-size:26px;line-height:1.28;letter-spacing:.005em}"
         ".fdato .fetq{color:var(--acc);font-weight:800}"
         ".fdato .fval{color:#262626;font-weight:600}"
         ".fdark .fdato .fval{color:#ececef}"
-        ".datos{display:grid;gap:8px;margin-top:14px}"
+        ".datos{display:grid;gap:5px;margin-top:12px}"
         % (pf, inter, inter_sb)
     )
 
@@ -200,13 +200,17 @@ def filas_html(ctx, con_empresa=True):
     filas = list(ctx.get("filas", []))
     if con_empresa:
         filas = [("Empresa", ctx.get("cliente", ""))] + filas
+    n = len(filas)
+    # achica el texto cuando hay muchos campos, para que entren en modelos con poco espacio
+    fs = 27 if n <= 2 else 24 if n <= 3 else 21 if n <= 4 else 18 if n <= 6 else 16
     out = []
     for etq, val in filas:
         if val:
-            out.append("<div class='fdato'><span class='fetq'>%s</span> "
-                       "<span class='fval'>%s</span></div>" % (etq, val))
+            out.append("<div class='fdato' style='font-size:%dpx'><span class='fetq'>%s</span> "
+                       "<span class='fval'>%s</span></div>" % (fs, etq, val))
         else:
-            out.append("<div class='fdato'><span class='fetq'>%s</span></div>" % etq)
+            out.append("<div class='fdato' style='font-size:%dpx'><span class='fetq'>%s</span></div>"
+                       % (fs, etq))
     return "".join(out)
 
 

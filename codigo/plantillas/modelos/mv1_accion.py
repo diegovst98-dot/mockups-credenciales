@@ -12,8 +12,8 @@ _CSS = """
 .mv1 .trb{position:absolute;top:0;right:0;width:54%;height:238px;background:var(--oscuro);clip-path:polygon(100% 0,0 0,100% 100%)}
 .mv1 .tr{position:absolute;top:0;right:0;width:50%;height:214px;background:var(--prim);clip-path:polygon(100% 0,0 0,100% 100%)}
 .mv1 .safe{position:absolute;left:0;right:0;top:0;bottom:150px;display:flex;flex-direction:column;align-items:center;text-align:center}
-.mv1 .logo{margin-top:232px;height:112px;max-width:78%;object-fit:contain}
-.mv1 .foto{margin-top:28px;width:300px;height:300px;border:6px solid var(--acc);object-fit:cover;object-position:center 22%}
+.mv1 .logo{margin-top:148px;height:104px;max-width:78%;object-fit:contain}
+.mv1 .foto{margin-top:24px;width:258px;height:258px;border:6px solid var(--acc);object-fit:cover;object-position:center 22%}
 .mv1 .name{margin-top:30px;font-weight:800;font-size:46px;line-height:1.08;color:#3a3a3a;max-width:92%;letter-spacing:.01em}
 .mv1 .dni{margin-top:14px;font-weight:800;font-size:36px;color:var(--acc)}
 .mv1 .cargo{position:absolute;left:0;right:0;bottom:0;min-height:150px;background:var(--prim);color:var(--txtprim);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:36px;letter-spacing:.05em;text-transform:uppercase;padding:22px 34px;text-align:center;line-height:1.12}
