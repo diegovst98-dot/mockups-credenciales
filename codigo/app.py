@@ -14,7 +14,10 @@ from tkinter import colorchooser, filedialog, font as tkfont, messagebox, ttk
 import motor
 
 import estado
-from PIL import Image, ImageTk
+from PIL import Image
+# ImageTk se importa DIFERIDO (en _p_mostrar): el exe v22 no lo trae empaquetado, y un
+# import al cargar tumbaría toda la app tras el auto-update. Así el exe viejo sigue
+# funcionando (Mockups/Renombrar/editar/exportar) y solo el preview pide actualizar.
 
 LILA = "#9987F7"
 LILA_OSCURO = "#7A66E8"
@@ -278,6 +281,8 @@ class App:
         self._modelos = [(c, n) for c, n in motor_catalogo() if c in _LISTOS]
         self.p_ajustes = estado.ajustes_inicial(self._modelos[0][0])
 
+        tk.Label(panel, text="  🚧 Personalizar (beta) — editor en desarrollo; por ahora 7 modelos.",
+                 bg="#FFF3CD", fg="#856404", anchor="w").pack(fill="x")
         # --- barra superior: logo + cliente + modelo ---
         top = tk.Frame(panel, bg=FONDO)
         top.pack(fill="x", padx=16, pady=10)
@@ -495,6 +500,12 @@ class App:
     def _p_mostrar(self, gen, img):
         if gen != self._p_gen:
             return                       # llegó un render viejo: descártalo
+        try:
+            from PIL import ImageTk       # diferido: exe viejo (v22) no lo trae
+        except Exception:
+            self.p_estado.config(
+                text="Cierra y vuelve a abrir la app para activar el preview. (Exportar ya funciona.)")
+            return
         disp = img.copy()
         disp.thumbnail((380, 560), Image.LANCZOS)
         self._p_preview_img = ImageTk.PhotoImage(disp)
