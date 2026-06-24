@@ -103,3 +103,26 @@ def test_cambiar_modelo_conserva_color_resetea_campos():
         assert a.p_ajustes["campos"] == {}              # campos se resetean (son por-modelo)
     finally:
         top.destroy()
+
+
+def _textos_de_botones(w):
+    out = []
+    for c in w.winfo_children():
+        if isinstance(c, tk.Button):
+            try:
+                out.append(c.cget("text"))
+            except Exception:
+                pass
+        out += _textos_de_botones(c)
+    return out
+
+
+def test_botones_export_existen():
+    top, a = _app()
+    try:
+        textos = _textos_de_botones(top)
+        assert "Exportar PDF" in textos
+        assert "Exportar PNG" in textos
+        assert a.p_ajustes["modelo"]                    # hay un modelo elegido por defecto
+    finally:
+        top.destroy()

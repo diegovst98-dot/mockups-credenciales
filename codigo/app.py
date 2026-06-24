@@ -320,6 +320,10 @@ class App:
                   bg=LILA, fg="white", relief="flat", padx=14, pady=6).pack(side="left")
         self.p_estado = tk.Label(pie, text="", bg=FONDO, fg="#555")
         self.p_estado.pack(side="left", padx=10)
+        tk.Button(pie, text="Exportar PDF", command=lambda: self._p_exportar("pdf"),
+                  bg="#EEEAFE", fg=GRIS, relief="flat", padx=12, pady=6).pack(side="right")
+        tk.Button(pie, text="Exportar PNG", command=lambda: self._p_exportar("png"),
+                  bg="#EEEAFE", fg=GRIS, relief="flat", padx=12, pady=6).pack(side="right", padx=(0, 6))
 
     def _p_elegir_logo(self):
         ruta = filedialog.askopenfilename(
@@ -495,6 +499,29 @@ class App:
     def _p_error(self, msg):
         self.p_estado.config(text="")
         messagebox.showerror("No se pudo generar el preview", msg)
+
+    def _p_exportar(self, formato):
+        if not self.p_logo:
+            messagebox.showwarning("Falta el logo", "Primero elige el logo del cliente.")
+            return
+        cliente = self.p_cliente.get().strip() or "Cliente"
+        ajustes = estado.aplicar_cambios(self.p_ajustes, {})
+        self.p_estado.config(text="Exportando…")
+
+        def trabajo():
+            try:
+                carpeta, _ = motor.exportar_personalizado(
+                    self.p_logo, cliente, ajustes,
+                    pdf=(formato == "pdf"), png=(formato == "png"))
+                self.raiz.after(0, self._p_export_listo, carpeta)
+            except Exception as e:
+                self.raiz.after(0, self._p_error, str(e))
+
+        threading.Thread(target=trabajo, daemon=True).start()
+
+    def _p_export_listo(self, carpeta):
+        self.p_estado.config(text="Exportado ✓")
+        os.startfile(carpeta)
 
 
 def main():
