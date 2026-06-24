@@ -1,11 +1,13 @@
 {
-  "version": 22,
+  "version": 23,
   "archivos": [
     "app.py",
     "motor.py",
     "render.py",
     "folleto.py",
     "renombrador.py",
+    "estado.py",
+    "asistente.py",
     "version.txt",
     "fuente-display.ttf",
     "fuente-display-italic.ttf",
