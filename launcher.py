@@ -157,7 +157,8 @@ def _smoke():
         appmod.App(r); r.update()
         nbs = [w for w in r.winfo_children() if isinstance(w, ttk.Notebook)]
         tabs = [nbs[0].tab(t, "text") for t in nbs[0].tabs()] if nbs else []
-        lineas.append("GUI OK; pestanas=%s" % tabs)
+        ok3 = "Personalizar" in tabs and len(tabs) == 3
+        lineas.append("GUI %s; pestanas=%s" % ("OK" if ok3 else "FAIL(faltan pestanas)", tabs))
         r.destroy()
     except Exception:
         lineas.append("GUI FAIL\n" + traceback.format_exc())

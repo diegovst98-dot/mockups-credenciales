@@ -13,10 +13,20 @@ from tkinter import colorchooser, filedialog, font as tkfont, messagebox, ttk
 
 import motor
 
+import asistente
+import estado
+from PIL import Image, ImageTk
+
 LILA = "#9987F7"
 LILA_OSCURO = "#7A66E8"
 GRIS = "#383838"
 FONDO = "#FFFFFF"
+
+
+def motor_catalogo():
+    """[(clave, nombre)] de los modelos, para el selector — sin filtrar tipos a la GUI."""
+    from plantillas import catalogo
+    return [(m.clave, m.nombre) for m in catalogo()]
 
 
 def _version():
@@ -52,6 +62,9 @@ class App:
         frame_renombrar = tk.Frame(nb, bg=FONDO)
         nb.add(frame_mockups, text="Mockups")
         nb.add(frame_renombrar, text="Renombrar Cotizaciones")
+
+        frame_personalizar = tk.Frame(nb, bg=FONDO)
+        nb.add(frame_personalizar, text="Personalizar")
 
         # --- Pestaña 1: Mockups (catálogo de modelos con la marca del cliente) ---
         f_titulo = tkfont.Font(family="Segoe UI", size=20, weight="bold")
@@ -101,6 +114,9 @@ class App:
 
         # --- Pestaña 2: Renombrar Cotizaciones ---
         self._construir_renombrar(frame_renombrar)
+
+        # --- Pestaña 3: Personalizar (v2) ---
+        self._construir_personalizar(frame_personalizar)
 
     # ------------------------------------------------------------------ #
     # Métodos de la pestaña Mockups (catálogo + color)
@@ -248,6 +264,237 @@ class App:
         if getattr(self, "_renom_carpeta", None):  # recargar mostrando los nuevos nombres
             self._items = self._renom.planificar_carpeta(self._renom_carpeta)
             self._renom_poblar_tabla()
+
+    # ------------------------------------------------------------------ #
+    # Pestaña Personalizar (v2): editar UN modelo por chat + controles
+    # ------------------------------------------------------------------ #
+
+    def _construir_personalizar(self, panel):
+        self.p_logo = None
+        self.p_logo_ruta = None
+        self._p_preview_img = None         # referencia viva del ImageTk
+        self._p_gen = 0                    # contador de re-render (descarta renders viejos)
+        self._modelos = motor_catalogo()   # [(clave, nombre)]
+        self.p_ajustes = estado.ajustes_inicial(self._modelos[0][0])
+
+        # --- barra superior: logo + cliente + modelo ---
+        top = tk.Frame(panel, bg=FONDO)
+        top.pack(fill="x", padx=16, pady=10)
+        tk.Button(top, text="Elegir logo…", command=self._p_elegir_logo).pack(side="left")
+        self.p_logo_lbl = tk.Label(top, text="(ningún logo)", bg=FONDO, fg="#999")
+        self.p_logo_lbl.pack(side="left", padx=8)
+        tk.Label(top, text="Empresa:", bg=FONDO, fg=GRIS).pack(side="left", padx=(12, 4))
+        self.p_cliente = tk.Entry(top, width=18)
+        self.p_cliente.pack(side="left")
+        tk.Label(top, text="Modelo:", bg=FONDO, fg=GRIS).pack(side="left", padx=(12, 4))
+        self.p_modelo_var = tk.StringVar(value=self._modelos[0][1])
+        self.p_modelo_combo = ttk.Combobox(
+            top, width=22, state="readonly", textvariable=self.p_modelo_var,
+            values=[n for _c, n in self._modelos])
+        self.p_modelo_combo.pack(side="left")
+        self.p_modelo_combo.bind("<<ComboboxSelected>>", self._p_cambiar_modelo)
+
+        # --- cuerpo: preview (izq) + panel chat/controles (der) ---
+        cuerpo = tk.Frame(panel, bg=FONDO)
+        cuerpo.pack(fill="both", expand=True, padx=16, pady=(0, 10))
+        izq = tk.Frame(cuerpo, bg="#F4F4F6", width=420)
+        izq.pack(side="left", fill="both", expand=True)
+        izq.pack_propagate(False)
+        self.p_preview = tk.Label(izq, text="Elige un logo y dale «Actualizar preview».",
+                                  bg="#F4F4F6", fg="#888")
+        self.p_preview.pack(expand=True)
+
+        der = tk.Frame(cuerpo, bg=FONDO, width=340)
+        der.pack(side="right", fill="y")
+        der.pack_propagate(False)
+        self._p_panel_der = der
+        self._p_construir_chat(der)
+        self._p_controles = tk.Frame(der, bg=FONDO)
+        self._p_controles.pack(fill="x", pady=(8, 0))
+        self._p_rebuild_controles()
+
+        # --- pie: actualizar + exportar ---
+        pie = tk.Frame(panel, bg=FONDO)
+        pie.pack(fill="x", padx=16, pady=(0, 12))
+        tk.Button(pie, text="Actualizar preview", command=self._p_rerender,
+                  bg=LILA, fg="white", relief="flat", padx=14, pady=6).pack(side="left")
+        self.p_estado = tk.Label(pie, text="", bg=FONDO, fg="#555")
+        self.p_estado.pack(side="left", padx=10)
+
+    def _p_elegir_logo(self):
+        ruta = filedialog.askopenfilename(
+            title="Logo del cliente",
+            filetypes=[("Imágenes", "*.png *.jpg *.jpeg *.webp *.bmp"), ("Todos", "*.*")])
+        if ruta:
+            self.p_logo_ruta = ruta
+            self.p_logo = motor.cargar_logo(ruta)
+            self.p_logo_lbl.config(text=os.path.basename(ruta), fg=GRIS)
+
+    def _modelo_actual(self):
+        from plantillas import catalogo
+        clave = self.p_ajustes["modelo"]
+        return next(m for m in catalogo() if m.clave == clave)
+
+    def _p_cambiar_modelo(self, _evt=None):
+        nombre = self.p_modelo_var.get()
+        clave = next(c for c, n in self._modelos if n == nombre)
+        # conserva color y textos; resetea campos/logo_pos (son por-modelo)
+        nuevo = estado.ajustes_inicial(clave)
+        nuevo["color"] = self.p_ajustes["color"]
+        nuevo["textos"] = dict(self.p_ajustes["textos"])
+        self.p_ajustes = nuevo
+        self._p_rebuild_controles()
+        self._p_rerender()
+
+    def _p_construir_chat(self, panel):
+        tk.Label(panel, text="Pídeme un cambio:", bg=FONDO, fg=GRIS,
+                 anchor="w").pack(fill="x")
+        self.p_chat = tk.Text(panel, height=9, width=40, state="disabled", wrap="word",
+                              bg="#FAFAFC", relief="solid", bd=1)
+        self.p_chat.pack(fill="x")
+        fila = tk.Frame(panel, bg=FONDO)
+        fila.pack(fill="x", pady=(4, 0))
+        self.p_entrada = tk.Entry(fila)
+        self.p_entrada.pack(side="left", fill="x", expand=True)
+        self.p_entrada.bind("<Return>", lambda _e: self._p_enviar())
+        tk.Button(fila, text="Enviar", command=self._p_enviar).pack(side="left", padx=(4, 0))
+        self._p_log_chat("Asistente",
+                         "Hola 👋 Dime cosas como «ponle tipo de sangre», «el logo a la "
+                         "derecha» o «color azul». También tienes los controles abajo.")
+
+    def _p_log_chat(self, quien, texto):
+        self.p_chat.config(state="normal")
+        self.p_chat.insert("end", "%s: %s\n" % (quien, texto))
+        self.p_chat.see("end")
+        self.p_chat.config(state="disabled")
+
+    def _p_enviar(self):
+        texto = self.p_entrada.get().strip()
+        if not texto:
+            return
+        self._p_log_chat("Tú", texto)
+        cambios, mensaje = asistente.interpretar(texto, self.p_ajustes, self._modelo_actual())
+        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, cambios)
+        self._p_log_chat("Asistente", mensaje)
+        self.p_entrada.delete(0, "end")
+        if cambios.get("modelo"):
+            self.p_modelo_var.set(self._modelo_actual().nombre)
+            self._p_rebuild_controles()
+        elif cambios:
+            self._p_sync_controles()
+        if cambios:
+            self._p_rerender()
+
+    def _p_rebuild_controles(self):
+        for w in self._p_controles.winfo_children():
+            w.destroy()
+        m = self._modelo_actual()
+        cont = self._p_controles
+
+        # campos opcionales que el modelo soporta (checkbuttons)
+        self._p_campo_vars = {}
+        if m.campos_opcionales:
+            tk.Label(cont, text="Campos:", bg=FONDO, fg=GRIS, anchor="w").pack(fill="x", pady=(6, 0))
+            etiquetas = {"tipo_sangre": "Tipo de sangre", "codigo": "Código", "web": "Web"}
+            for campo in m.campos_opcionales:
+                var = tk.BooleanVar(value=bool(self.p_ajustes["campos"].get(campo)))
+                self._p_campo_vars[campo] = var
+                tk.Checkbutton(cont, text=etiquetas.get(campo, campo), variable=var, bg=FONDO,
+                               command=lambda c=campo: self._p_toggle_campo(c)).pack(anchor="w")
+
+        # posición del logo (radios) si el modelo soporta más de "default"
+        if len(m.logo_posiciones) > 1:
+            tk.Label(cont, text="Logo:", bg=FONDO, fg=GRIS, anchor="w").pack(fill="x", pady=(6, 0))
+            self._p_logo_var = tk.StringVar(value=self.p_ajustes["logo_pos"])
+            fila = tk.Frame(cont, bg=FONDO)
+            fila.pack(anchor="w")
+            txt = {"default": "Centro/def.", "izq": "Izquierda", "der": "Derecha", "centro": "Centro"}
+            for pos in m.logo_posiciones:
+                tk.Radiobutton(fila, text=txt.get(pos, pos), value=pos, variable=self._p_logo_var,
+                               bg=FONDO, command=self._p_set_logo_pos).pack(side="left")
+
+        # color
+        filc = tk.Frame(cont, bg=FONDO)
+        filc.pack(fill="x", pady=(8, 0))
+        tk.Button(filc, text="Color…", command=self._p_elegir_color).pack(side="left")
+        tk.Button(filc, text="Auto", command=self._p_color_auto).pack(side="left", padx=4)
+
+        # textos
+        tk.Label(cont, text="Textos:", bg=FONDO, fg=GRIS, anchor="w").pack(fill="x", pady=(8, 0))
+        self._p_texto_entries = {}
+        for campo, etiq in (("nombre", "Nombre"), ("cargo", "Cargo"), ("id", "DNI"),
+                            ("empresa", "Empresa")):
+            f = tk.Frame(cont, bg=FONDO)
+            f.pack(fill="x")
+            tk.Label(f, text=etiq, width=8, anchor="w", bg=FONDO, fg="#666").pack(side="left")
+            e = tk.Entry(f)
+            e.insert(0, self.p_ajustes["textos"].get(campo, ""))
+            e.pack(side="left", fill="x", expand=True)
+            e.bind("<Return>", lambda _e, c=campo: self._p_set_texto(c))
+            self._p_texto_entries[campo] = e
+
+    def _p_sync_controles(self):
+        # refleja en los checkbuttons el estado actual (cuando el chat los cambió)
+        for campo, var in getattr(self, "_p_campo_vars", {}).items():
+            var.set(bool(self.p_ajustes["campos"].get(campo)))
+        if hasattr(self, "_p_logo_var"):
+            self._p_logo_var.set(self.p_ajustes["logo_pos"])
+
+    def _p_toggle_campo(self, campo):
+        val = self._p_campo_vars[campo].get()
+        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"campos": {campo: val}})
+        self._p_rerender()
+
+    def _p_set_logo_pos(self):
+        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"logo_pos": self._p_logo_var.get()})
+        self._p_rerender()
+
+    def _p_elegir_color(self):
+        res = colorchooser.askcolor(title="Color del modelo", color=self.p_ajustes["color"] or "#1f7a3d")
+        if res and res[1]:
+            self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"color": res[1]})
+            self._p_rerender()
+
+    def _p_color_auto(self):
+        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"color": None})
+        self._p_rerender()
+
+    def _p_set_texto(self, campo):
+        valor = self._p_texto_entries[campo].get().strip()
+        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"textos": {campo: valor}})
+        self._p_rerender()
+
+    def _p_rerender(self):
+        if not self.p_logo:
+            self.p_estado.config(text="Primero elige un logo.")
+            return
+        cliente = self.p_cliente.get().strip() or "Cliente"
+        self._p_gen += 1
+        gen = self._p_gen
+        self.p_estado.config(text="Actualizando…")
+        ajustes = estado.aplicar_cambios(self.p_ajustes, {})   # copia inmutable para el hilo
+
+        def trabajo():
+            try:
+                img = motor.render_modelo(self.p_logo, cliente, ajustes)
+                self.raiz.after(0, self._p_mostrar, gen, img)
+            except Exception as e:
+                self.raiz.after(0, self._p_error, str(e))
+
+        threading.Thread(target=trabajo, daemon=True).start()
+
+    def _p_mostrar(self, gen, img):
+        if gen != self._p_gen:
+            return                       # llegó un render viejo: descártalo
+        disp = img.copy()
+        disp.thumbnail((380, 560), Image.LANCZOS)
+        self._p_preview_img = ImageTk.PhotoImage(disp)
+        self.p_preview.config(image=self._p_preview_img, text="")
+        self.p_estado.config(text="Listo ✓")
+
+    def _p_error(self, msg):
+        self.p_estado.config(text="")
+        messagebox.showerror("No se pudo generar el preview", msg)
 
 
 def main():
