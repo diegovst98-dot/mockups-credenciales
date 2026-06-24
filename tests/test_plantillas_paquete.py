@@ -75,11 +75,9 @@ def test_mh1_horizontal():
     _render_invariantes("mh1", (1011, 638))
 
 
-def test_mh2_horizontal_con_tipo_de_sangre():
-    from plantillas import cara, DATOS
+def test_mh2_horizontal():
+    # (el tipo de sangre dejó de estar hardcodeado en mh2; ahora es un campo libre)
     _render_invariantes("mh2", (1011, 638))
-    html, _, _ = cara("mh2", "frontal", _ctx())
-    assert DATOS["tipo_sangre"] in html
 
 
 # ---- Task 6: catálogo completo (18 modelos) ----

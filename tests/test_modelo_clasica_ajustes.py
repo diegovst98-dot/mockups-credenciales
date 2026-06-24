@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Específico de clasica: posición de logo y filas base. Los campos extra
-(tipo de sangre/código/fecha) ya NO son de clasica — son universales (test_campos_universales)."""
+"""Específico de clasica: posición de logo + que dibuje las filas en su zona de datos."""
 import os
 import sys
 
@@ -21,10 +20,10 @@ def test_clasica_declara_logo_posiciones():
     assert "der" in m.logo_posiciones and "izq" in m.logo_posiciones
 
 
-def test_clasica_muestra_empresa_y_dni_base():
+def test_clasica_dibuja_las_filas():
     from plantillas import cara
-    html, _, _ = cara("clasica", "frontal", _ctx())
-    assert "Empresa:" in html and "DNI:" in html
+    html, _, _ = cara("clasica", "frontal", _ctx({"filas": [{"etiqueta": "DNI", "valor": "123"}]}))
+    assert "Empresa" in html and "DNI" in html and "class='fdato'" in html
 
 
 def test_clasica_logo_pos_der():

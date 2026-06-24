@@ -5,7 +5,7 @@ elíptica recortada en el centro, una banda inferior ondulada y un acento gris d
 en la esquina inferior-izquierda. Logo arriba-izquierda (tinta real), foto circular con
 aro de marca a la izquierda; a la derecha nombre (negro + 2ª línea de color), DNI en
 itálica y cargo de color en dos líneas. Sin campos extra."""
-from plantillas.base import _shell, H
+from plantillas.base import _shell, filas_html, H
 from plantillas.registro import registrar
 
 _CSS = """
@@ -46,10 +46,10 @@ def _frontal(lado, ctx, d):
         "<img class='foto' src='%s'>"
         "<div class='info'>"
         "%s"
-        "<div class='dni'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "<div class='cargo'>%s</div>"
         "</div>"
-        % (ctx["logo_uri"], ctx["foto_uri"], nombre, d["id"], d["cargo"]))
+        % (ctx["logo_uri"], ctx["foto_uri"], nombre, filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mh4", _CSS, cuerpo, *H), H[0], H[1]
 
 

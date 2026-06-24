@@ -5,7 +5,7 @@ Gesto gráfico: onda inferior PLANA en capas de color de marca (sin degradados,
 imprenta Evolis). Logo arriba en su tinta real. Foto cuadrada con esquinas
 redondeadas y borde de acento. Nombre, DNI de color, cargo en banda inferior.
 """
-from plantillas.base import _shell, V
+from plantillas.base import _shell, filas_html, V
 from plantillas.registro import registrar
 
 _CSS = """
@@ -53,9 +53,9 @@ def _frontal(lado, ctx, d):
         "<img class='logo' src='%s'>"
         "<img class='foto' src='%s'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "</div>"
-        % (ctx["logo_uri"], ctx["foto_uri"], name_html, d["id"])
+        % (ctx["logo_uri"], ctx["foto_uri"], name_html, filas_html(ctx))
     )
     return _shell(ctx, "mv5", _CSS, cuerpo, *V), V[0], V[1]
 

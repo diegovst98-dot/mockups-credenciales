@@ -4,7 +4,7 @@ Gesto: mucho blanco; logo arriba en su tinta real; dos bandas horizontales de ma
 que cruzan detrás de una foto circular (con "muesca" blanca que las parte en dos);
 nombre grande oscuro, DNI en píldora de marca, cargo sobrio sin banda y franja
 inferior recortada en diagonal. Sobrio y limpio para Evolis (colores planos)."""
-from plantillas.base import _shell, V
+from plantillas.base import _shell, filas_html, V
 from plantillas.registro import registrar
 
 _CSS = """
@@ -35,11 +35,11 @@ def _frontal(lado, ctx, d):
         "<div class='ring'></div><img class='foto' src='%s'>"
         "<div class='info'>"
         "<div class='name'>%s</div>"
-        "<div class='pill'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "<div class='cargo'>%s</div>"
         "</div>"
         "<div class='foot'></div>"
-        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["id"], d["cargo"]))
+        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mv6", _CSS, cuerpo, *V), V[0], V[1]
 
 

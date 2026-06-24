@@ -2,7 +2,7 @@
 """Modelo mh2 — "Heartfit" (horizontal). Ref: docs/referencias-modelos/h2.jpeg.
 Gesto: panel izquierdo curvo de marca; foto circular con aro oscuro; banda inferior
 con el cargo. Campo extra: tipo de sangre (GS)."""
-from plantillas.base import _shell, H
+from plantillas.base import _shell, filas_html, H
 from plantillas.registro import registrar
 
 _CSS = """
@@ -26,11 +26,10 @@ def _frontal(lado, ctx, d):
         "<img class='logo' src='%s'>"
         "<div class='info'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
-        "<div class='gs'>GS: %s</div>"
+        "<div class='datos'>%s</div>"
         "</div>"
         "<div class='cargo'>%s</div>"
-        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], d["id"], d["tipo_sangre"], d["cargo"]))
+        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mh2", _CSS, cuerpo, *H), H[0], H[1]
 
 

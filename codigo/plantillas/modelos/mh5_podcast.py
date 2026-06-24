@@ -4,7 +4,7 @@ Gesto: banda SUPERIOR de marca de ancho completo con un "bump" blanco semicircul
 al centro donde va el logo; foto rectangular con esquinas redondeadas y borde oscuro
 a la IZQUIERDA; a la derecha el nombre grande, el DNI dentro de una PASTILLA (pill) de
 marca con texto var(--txtprim), y el cargo en texto oscuro debajo. Fondo blanco."""
-from plantillas.base import _shell, H
+from plantillas.base import _shell, filas_html, H
 from plantillas.registro import registrar
 
 _CSS = """
@@ -28,10 +28,10 @@ def _frontal(lado, ctx, d):
         "<img class='foto' src='%s'>"
         "<div class='info'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "<div class='cargo'>%s</div>"
         "</div>"
-        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["id"], d["cargo"]))
+        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mh5", _CSS, cuerpo, *H), H[0], H[1]
 
 

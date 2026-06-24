@@ -2,7 +2,7 @@
 """Modelo mh1 — "Digital World" (horizontal). Ref: docs/referencias-modelos/h1.jpeg.
 Gesto: banda superior de marca + barrido oscuro diagonal; foto cuadrada con borde
 oscuro a la izquierda; nombre/DNI a la derecha; cargo en banda; acento angular abajo-derecha."""
-from plantillas.base import _shell, H
+from plantillas.base import _shell, filas_html, H
 from plantillas.registro import registrar
 
 _CSS = """
@@ -26,11 +26,11 @@ def _frontal(lado, ctx, d):
         "<img class='foto' src='%s'>"
         "<div class='info'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "<div class='cargo'>%s</div>"
         "</div>"
         "<div class='botcorner'></div>"
-        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["id"], d["cargo"]))
+        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mh1", _CSS, cuerpo, *H), H[0], H[1]
 
 

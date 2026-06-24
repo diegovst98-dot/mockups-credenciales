@@ -4,7 +4,7 @@ Gesto: barras DIAGONALES bicolor (marca + gris/oscuro) en las esquinas superior-
 e inferior (clip-path); código de barras decorativo a la izquierda (repeating-linear-gradient);
 foto rectangular con borde de marca; bloque de texto con nombre, DNI, CÓDIGO y cargo de color.
 Campo extra: codigo."""
-from plantillas.base import _shell, H
+from plantillas.base import _shell, filas_html, H
 from plantillas.registro import registrar
 
 _CSS = """
@@ -60,11 +60,10 @@ def _frontal(lado, ctx, d):
         "<img class='logo' src='%s'>"
         "<div class='info'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
-        "<div class='cod'>CODIGO: %s</div>"
+        "<div class='datos'>%s</div>"
         "<div class='cargo'>%s</div>"
         "</div>"
-        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], d["id"], d["codigo"], d["cargo"]))
+        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mh3", _CSS, cuerpo, *H), H[0], H[1]
 
 

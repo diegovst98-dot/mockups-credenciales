@@ -276,13 +276,9 @@ class App:
         self.p_logo_ruta = None
         self._p_preview_img = None         # referencia viva del ImageTk
         self._p_gen = 0                    # contador de re-render (descarta renders viejos)
-        # modelos con el editor de campos listo (el resto se va sumando)
-        _LISTOS = ("clasica", "gafete", "premium", "mv1", "mv2", "mv3", "mv7")
-        self._modelos = [(c, n) for c, n in motor_catalogo() if c in _LISTOS]
+        self._modelos = motor_catalogo()   # [(clave, nombre)] — los 18
         self.p_ajustes = estado.ajustes_inicial(self._modelos[0][0])
 
-        tk.Label(panel, text="  🚧 Personalizar (beta) — editor en desarrollo; por ahora 7 modelos.",
-                 bg="#FFF3CD", fg="#856404", anchor="w").pack(fill="x")
         # --- barra superior: logo + cliente + modelo ---
         top = tk.Frame(panel, bg=FONDO)
         top.pack(fill="x", padx=16, pady=10)

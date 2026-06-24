@@ -4,7 +4,7 @@ Gesto: foto GRANDE a la derecha (casi a sangre, alto completo, esquinas redondea
 con esquinas angulares bicolor (clip-path) detrás. Logo arriba-izquierda en su tinta real.
 Nombre y DNI en negro a la izquierda; cargo en color de marca (REPARTIDOR). Sin banda de cargo.
 Esquina inferior-izquierda negra + barrido rojo angular abajo."""
-from plantillas.base import _shell, H
+from plantillas.base import _shell, filas_html, H
 from plantillas.registro import registrar
 
 _CSS = """
@@ -42,10 +42,10 @@ def _frontal(lado, ctx, d):
         "<img class='logo' src='%s'>"
         "<div class='info'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "<div class='cargo'>%s</div>"
         "</div>"
-        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], d["id"], d["cargo"]))
+        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mh6", _CSS, cuerpo, *H), H[0], H[1]
 
 

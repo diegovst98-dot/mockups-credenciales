@@ -4,7 +4,7 @@ Gesto: gran CÍRCULO oscuro (var(--oscuro)) que asoma por el borde izquierdo, co
 foto circular y aro blanco encima. A la derecha, sobre fondo blanco: logo arriba,
 nombre en negro, DNI en acento de marca (var(--acc)), regla divisoria y cargo sobrio
 debajo. Sin banda inferior. Sin campos extra."""
-from plantillas.base import _shell, H
+from plantillas.base import _shell, filas_html, H
 from plantillas.registro import registrar
 
 _CSS = """
@@ -27,11 +27,11 @@ def _frontal(lado, ctx, d):
         "<img class='logo' src='%s'>"
         "<div class='info'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "<div class='rule'></div>"
         "<div class='cargo'>%s</div>"
         "</div>"
-        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], d["id"], d["cargo"]))
+        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mh7", _CSS, cuerpo, *H), H[0], H[1]
 
 

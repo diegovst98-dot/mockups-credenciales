@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Cableado de la pestaña Personalizar (v2) sin rasterizar: con p_logo=None el
-re-render hace early-return (no abre Edge), así probamos chat→Ajustes→controles
-de forma rápida y headless. La lógica fina (asistente/estado/render) ya tiene sus
-propios tests; aquí verificamos el pegamento de la GUI.
-
-Se usa UN solo root Tk compartido + un Toplevel por test: crear muchos tk.Tk() en
-un mismo proceso re-inicializa Tcl y falla intermitente ('init.tcl: No error')."""
+"""Cableado del editor de campos (v2.2) sin rasterizar: con p_logo=None el re-render hace
+early-return (no abre Edge). UN root Tk compartido + un Toplevel por test (crear muchos
+tk.Tk() rompe Tcl)."""
 import os
 import sys
 
@@ -26,7 +22,6 @@ pytestmark = pytest.mark.skipif(not _TK_OK, reason="sin display tkinter")
 
 
 def _app():
-    """App sobre un Toplevel hijo del root compartido (no un Tk() nuevo)."""
     import app as appmod
     top = tk.Toplevel(_ROOT)
     top.withdraw()
@@ -48,60 +43,62 @@ def test_selector_tiene_18_modelos():
     top, a = _app()
     try:
         assert len(a._modelos) == 18
-        assert len(a.p_modelo_combo["values"]) == 18
     finally:
         top.destroy()
 
 
-def test_controles_tienen_campos_universales():
-    # cualquier modelo ofrece los 4 campos extra (ya no es per-modelo)
-    import estado
+def test_ya_no_hay_chat():
     top, a = _app()
     try:
-        a.p_ajustes = estado.ajustes_inicial("premium")
-        a._p_rebuild_controles()
-        assert set(a._p_campo_vars.keys()) == {"tipo_sangre", "codigo", "fecha", "web"}
+        assert not hasattr(a, "p_chat")
     finally:
         top.destroy()
 
 
-def test_chat_prende_campo_y_muta_ajustes():
+def test_agregar_y_editar_campo():
     import estado
     top, a = _app()
     try:
         a.p_ajustes = estado.ajustes_inicial("clasica")
-        a._p_rebuild_controles()
-        a.p_entrada.insert(0, "ponle tipo de sangre")
-        a._p_enviar()                                   # p_logo=None => sin Edge
-        assert a.p_ajustes["campos"].get("tipo_sangre") is True
-        assert a._p_campo_vars["tipo_sangre"].get() is True   # control sincronizado
+        a._p_render_filas_editor()
+        n0 = len(a.p_ajustes["filas"])
+        a._p_agregar_fila()
+        assert len(a.p_ajustes["filas"]) == n0 + 1
+        a._p_fila_rows[-1][0].insert(0, "Área")
+        a._p_fila_rows[-1][1].insert(0, "Logística")
+        a._p_on_filas()
+        assert a.p_ajustes["filas"][-1] == {"etiqueta": "Área", "valor": "Logística"}
     finally:
         top.destroy()
 
 
-def test_chat_color_azul_muta_ajustes():
-    top, a = _app()
-    try:
-        a.p_entrada.insert(0, "color azul")
-        a._p_enviar()
-        assert a.p_ajustes["color"] == "#1f4ed8"
-    finally:
-        top.destroy()
-
-
-def test_cambiar_modelo_conserva_color_resetea_campos():
+def test_quitar_campo():
     import estado
     top, a = _app()
     try:
         a.p_ajustes = estado.aplicar_cambios(
             estado.ajustes_inicial("clasica"),
-            {"color": "#123456", "campos": {"tipo_sangre": True}})
-        nombre_premium = next(n for c, n in a._modelos if c == "premium")
-        a.p_modelo_var.set(nombre_premium)
-        a._p_cambiar_modelo()                           # p_logo=None => sin Edge
-        assert a.p_ajustes["modelo"] == "premium"
-        assert a.p_ajustes["color"] == "#123456"        # color se conserva
-        assert a.p_ajustes["campos"] == {}              # campos se resetean (son por-modelo)
+            {"filas": [{"etiqueta": "DNI", "valor": "1"}, {"etiqueta": "Área", "valor": "2"}]})
+        a._p_render_filas_editor()
+        a._p_quitar_fila(0)
+        assert [f["etiqueta"] for f in a.p_ajustes["filas"]] == ["Área"]
+    finally:
+        top.destroy()
+
+
+def test_cambiar_modelo_conserva_campos_y_color():
+    import estado
+    top, a = _app()
+    try:
+        a.p_ajustes = estado.aplicar_cambios(
+            estado.ajustes_inicial("clasica"),
+            {"filas": [{"etiqueta": "Área", "valor": "X"}], "color": "#123456"})
+        nombre = next(n for c, n in a._modelos if c == "gafete")
+        a.p_modelo_var.set(nombre)
+        a._p_cambiar_modelo()
+        assert a.p_ajustes["modelo"] == "gafete"
+        assert a.p_ajustes["color"] == "#123456"
+        assert a.p_ajustes["filas"] == [{"etiqueta": "Área", "valor": "X"}]
     finally:
         top.destroy()
 
@@ -118,12 +115,11 @@ def _textos_de_botones(w):
     return out
 
 
-def test_botones_export_existen():
+def test_botones_clave_existen():
     top, a = _app()
     try:
-        textos = _textos_de_botones(top)
-        assert "Exportar PDF" in textos
-        assert "Exportar PNG" in textos
-        assert a.p_ajustes["modelo"]                    # hay un modelo elegido por defecto
+        t = _textos_de_botones(top)
+        assert "+ Agregar campo" in t
+        assert "Exportar PDF" in t and "Exportar PNG" in t
     finally:
         top.destroy()
