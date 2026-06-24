@@ -119,15 +119,55 @@ import PIL.ImageDraw      # noqa: F401
 import PIL.ImageFilter    # noqa: F401
 import PIL.ImageFont      # noqa: F401
 import PIL.ImageOps       # noqa: F401
+import PIL.ImageChops     # noqa: F401  (lo usa codigo/motor.py)
+import PIL.JpegImagePlugin  # noqa: F401  (codigo/folleto.py: JPEG embebido en el PDF)
 import certifi            # noqa: F401
 import pypdfium2          # noqa: F401  (lo usa codigo/renombrador.py para leer PDFs)
 import tkinter            # noqa: F401
+import tkinter.colorchooser  # noqa: F401  (codigo/app.py: selector de color)
 import tkinter.filedialog  # noqa: F401
 import tkinter.font       # noqa: F401
 import tkinter.messagebox  # noqa: F401
+import tkinter.simpledialog  # noqa: F401  (codigo/app.py: editar celda renombrador)
+import tkinter.ttk        # noqa: F401  (codigo/app.py: pestañas + tabla)
+
+
+def _smoke():
+    """Autodiagnóstico: importa el codigo y construye la GUI sin mainloop, escribiendo
+    el resultado a smoke_result.txt (sirve aunque el exe sea de ventana, sin consola)."""
+    import traceback
+    lineas = []
+    sys.path.insert(0, str(CODIGO))
+    try:
+        import motor  # noqa: F401
+        from plantillas import catalogo
+        lineas.append("motor+plantillas OK; modelos=%d" % len(catalogo()))
+    except Exception:
+        lineas.append("motor/plantillas FAIL\n" + traceback.format_exc())
+    try:
+        import renombrador  # noqa: F401
+        lineas.append("renombrador OK")
+    except Exception:
+        lineas.append("renombrador FAIL\n" + traceback.format_exc())
+    try:
+        import tkinter as tk
+        from tkinter import ttk
+        import app as appmod
+        r = tk.Tk(); r.withdraw()
+        appmod.App(r); r.update()
+        nbs = [w for w in r.winfo_children() if isinstance(w, ttk.Notebook)]
+        tabs = [nbs[0].tab(t, "text") for t in nbs[0].tabs()] if nbs else []
+        lineas.append("GUI OK; pestanas=%s" % tabs)
+        r.destroy()
+    except Exception:
+        lineas.append("GUI FAIL\n" + traceback.format_exc())
+    (BASE / "smoke_result.txt").write_text("\n".join(lineas), encoding="utf-8")
 
 
 def main():
+    if "--smoke" in sys.argv:
+        _smoke()
+        return
     try:
         (BASE / "actualizacion.log").write_text("", encoding="utf-8")
     except Exception:
