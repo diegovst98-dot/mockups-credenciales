@@ -350,6 +350,11 @@ FIXT = Path(r"C:/Users/Diego/Desktop/cotizaciones para renombrar")
 
 @pytest.mark.skipif(not FIXT.exists(), reason="PDFs reales no presentes (no se commitean)")
 def test_integracion_5_reales():
+    # Los 5 PDFs crudos se renombran al USAR la herramienta (su propósito mismo). Por eso
+    # el test se salta solo cuando ya fueron renombrados: es self-healing, no un fallo.
+    crudos = ["pdf 1.pdf", "pdf2.pdf", "pdf 3.pdf", "pdf 4.pdf", "pdf 5.pdf"]
+    if not all((FIXT / c).exists() for c in crudos):
+        pytest.skip("los PDFs crudos ya fueron renombrados por la herramienta")
     items = r.planificar_carpeta(FIXT)
     by_file = {Path(it["archivo"]).name: it for it in items}
     # 4/5 verificados en diseño:
