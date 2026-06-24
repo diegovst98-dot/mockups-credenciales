@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """DIRECCIÓN 1 — CLÁSICA (horizontal limpia)."""
-from plantillas.base import _shell, _icono, H
+from plantillas.base import _shell, _icono, filas_html, H
 from plantillas.registro import registrar
 
 _CSS_CLASICA = """
@@ -30,16 +30,7 @@ _CSS_CLASICA = """
 
 def _clasica(lado, ctx, d):
     if lado == "frontal":
-        # filas de datos (los campos extra los pone la franja universal de _shell)
-        filas = [
-            ("edificio", "Empresa:", ctx["cliente"]),
-            ("persona", "DNI:", d["id"]),
-        ]
-        rows_html = "".join(
-            "<div class='row'><span class='ic'>%s</span>"
-            "<span><span class='lb'>%s</span> %s</span></div>"
-            % (_icono(ic, "#fff", 24), lb, val) for ic, lb, val in filas)
-        # posición del logo en la cabecera
+        # zona de datos = filas editables (etiqueta:valor) del vendedor
         pos = {"izq": "flex-start", "der": "flex-end", "centro": "center"}.get(
             ctx["logo_pos"], "center")
         cuerpo = (
@@ -53,7 +44,7 @@ def _clasica(lado, ctx, d):
             "<div class='rows'>%s</div>"
             "</div></div>"
             % (ctx["monograma"], pos, ctx["logo_uri"], ctx["foto_uri"],
-               d["nombre"], d["cargo"], rows_html))
+               d["nombre"], d["cargo"], filas_html(ctx)))
     else:
         cuerpo = (
             "<div class='bsafe'>"

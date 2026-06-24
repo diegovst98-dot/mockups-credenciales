@@ -119,12 +119,23 @@ def _foto_uri(prim):
 
 # ---------- contexto ----------
 
+def _filas_de(ajustes):
+    """Filas de datos del vendedor (DNI + las que agregó). La Empresa la antepone cada
+    modelo vía filas_html(con_empresa=True), porque algunos ya la muestran aparte."""
+    filas = []
+    for f in ajustes.get("filas", []):
+        etq = (f.get("etiqueta") or "").strip()
+        if etq:
+            filas.append((etq, (f.get("valor") or "").strip()))
+    return filas
+
+
 def construir_contexto(logo, prim, sec, cliente, ajustes=None):
     from motor import web_cliente, luminancia, marca_legible, pseudo_qr, distancia, saturacion
     ajustes = ajustes or {}
     textos = ajustes.get("textos", {})
-    # 'empresa' override cambia el nombre mostrado (y, por coherencia, web y monograma)
-    empresa = (textos.get("empresa") or cliente)
+    # empresa = campo de arriba (marca web/monograma); cae al cliente pasado al render
+    empresa = (ajustes.get("empresa") or textos.get("empresa") or cliente)
     oscuro = luminancia(prim) < 0.45
     # color secundario de la marca como ACENTO que "puntua" (5-10%): solo si es
     # realmente distinto y con color; si no, cae al oro. Regla: un color manda, otro puntua.
@@ -151,9 +162,8 @@ def construir_contexto(logo, prim, sec, cliente, ajustes=None):
         "monograma": ("".join(w[0] for w in (empresa or "").split()[:2]).upper() or "•"),
         "web": web_cliente(empresa),
         "datos": datos,
-        # --- v2: ajustes que cada modelo lee si los soporta ---
-        "campos": dict(ajustes.get("campos", {})),
         "logo_pos": ajustes.get("logo_pos", "default"),
+        "filas": _filas_de(ajustes),
     }
 
 
@@ -167,6 +177,12 @@ def css_base():
         "@font-face{font-family:'Inter';src:url(%s) format('truetype');font-weight:600 800;}"
         "*{margin:0;padding:0;box-sizing:border-box}"
         "body{margin:0;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}"
+        # filas de datos (etiqueta:valor) compartidas: el modelo las coloca con filas_html()
+        ".fdato{font-size:26px;line-height:1.5;letter-spacing:.005em}"
+        ".fdato .fetq{color:var(--acc);font-weight:800}"
+        ".fdato .fval{color:#262626;font-weight:600}"
+        ".fdark .fdato .fval{color:#ececef}"
+        ".datos{display:grid;gap:8px;margin-top:14px}"
         % (pf, inter, inter_sb)
     )
 
@@ -177,45 +193,28 @@ def _root(ctx):
                ctx["claro_css"], ORO, ctx["prim_legible"], ctx["acc2_css"], ctx["txt_sobre_prim"]))
 
 
-def _bloque_extra(ctx):
-    """Franja inferior con los campos extra ENCENDIDOS (tipo de sangre, código, fecha,
-    web). Va por _shell, así CUALQUIER modelo la muestra sin tocar su plantilla. Oscura
-    translúcida con texto blanco: legible sobre cualquier diseño. Devuelve (html, css)."""
-    campos = ctx.get("campos", {})
-    d = ctx["datos"]
-    partes = []
-    if campos.get("tipo_sangre"):
-        partes.append("T. SANGRE %s" % d.get("tipo_sangre", ""))
-    if campos.get("codigo"):
-        partes.append("CÓDIGO %s" % d.get("codigo", ""))
-    if campos.get("fecha"):
-        partes.append("VENCE %s" % d.get("fecha", ""))
-    if campos.get("web"):
-        partes.append(ctx.get("web", "").upper())
-    if not partes:
-        return "", ""
-    html = "<div class='cextra'>%s</div>" % "&nbsp;&nbsp;·&nbsp;&nbsp;".join(partes)
-    # franja como ITEM DE FLEX (flujo normal), no overlay: toma su propio alto al pie
-    css = (".cextra{flex-shrink:0;background:rgba(17,17,20,.92);color:#fff;"
-           "font:700 21px 'Inter',sans-serif;letter-spacing:.02em;text-align:center;padding:13px 18px}")
-    return html, css
+def filas_html(ctx, con_empresa=True):
+    """HTML de las filas de datos (etiqueta: valor) para que el MODELO las dibuje en su
+    zona de datos. con_empresa=True antepone Empresa (los modelos que ya la muestran aparte
+    pasan False). Estilo base en css_base (.fdato); fondo oscuro -> clase 'fdark' en la tarjeta."""
+    filas = list(ctx.get("filas", []))
+    if con_empresa:
+        filas = [("Empresa", ctx.get("cliente", ""))] + filas
+    out = []
+    for etq, val in filas:
+        if val:
+            out.append("<div class='fdato'><span class='fetq'>%s</span> "
+                       "<span class='fval'>%s</span></div>" % (etq, val))
+        else:
+            out.append("<div class='fdato'><span class='fetq'>%s</span></div>" % etq)
+    return "".join(out)
 
 
 def _shell(ctx, clase, css_estilo, cuerpo, ancho, alto):
-    extra_html, extra_css = _bloque_extra(ctx)
-    if extra_html:
-        # Con campos extra: la tarjeta es flex-columna. El contenido del modelo ocupa el
-        # resto (flex:1) y la franja toma su alto al pie -> NUNCA se encima, en cualquier
-        # modelo. Sin campos: estructura idéntica a la original (cero cambio en el catálogo).
-        cuerpo = "<div class='ccontent'>%s</div>%s" % (cuerpo, extra_html)
-        clase = clase + " has-extra"
-        extra_css += (".card.has-extra{display:flex;flex-direction:column}"
-                      ".card.has-extra>.ccontent{flex:1 1 auto;min-height:0;"
-                      "position:relative;overflow:hidden}")
     return ("<!doctype html><html><head><meta charset='utf-8'><style>%s%s"
-            ".card{width:%dpx;height:%dpx;position:relative;overflow:hidden}%s%s"
+            ".card{width:%dpx;height:%dpx;position:relative;overflow:hidden}%s"
             "</style></head><body><div class='card %s'>%s</div></body></html>"
-            % (css_base(), _root(ctx), ancho, alto, css_estilo, extra_css, clase, cuerpo))
+            % (css_base(), _root(ctx), ancho, alto, css_estilo, clase, cuerpo))
 
 
 # ⛔ REGLA FIJA — EL LOGO DEL CLIENTE NUNCA SE RECOLOREA (decisión Diego 2026-06-15).

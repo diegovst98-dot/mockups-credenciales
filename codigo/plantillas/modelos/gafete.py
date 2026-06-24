@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """DIRECCIÓN 2 — GAFETE (vertical moderno)."""
-from plantillas.base import _shell, _icono, V
+from plantillas.base import _shell, _icono, filas_html, V
 from plantillas.registro import registrar
 
 _CSS_GAFETE = """
@@ -36,13 +36,8 @@ def _gafete(lado, ctx, d):
             "<img class='foto' src='%s'>"
             "<div class='nameband'>%s</div>"
             "<div class='role'>%s</div>"
-            "<div class='data'>"
-            "<div class='row'><span class='ic'>%s</span><span><div class='lb'>Empresa</div><div class='vl'>%s</div></span></div>"
-            "<div class='row'><span class='ic'>%s</span><span><div class='lb'>DNI</div><div class='vl'>%s</div></span></div>"
-            "</div></div>"
-            % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["cargo"],
-               _icono("edificio", ctx["prim_legible"], 24), ctx["cliente"],
-               _icono("persona", ctx["prim_legible"], 24), d["id"]))
+            "<div class='data'>%s</div></div>"
+            % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["cargo"], filas_html(ctx)))
     else:
         cuerpo = (
             "<div class='wave'></div>"

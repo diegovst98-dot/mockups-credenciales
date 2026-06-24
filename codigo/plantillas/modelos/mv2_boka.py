@@ -2,7 +2,7 @@
 """mv2 — Boka (vertical). Blobs de color de marca arriba (der. e izq.) con la foto
 CIRCULAR en un disco blanco recortado sobre el color, logo arriba a la izquierda,
 nombre + DNI centrados y banda inferior OSCURA con el cargo."""
-from plantillas.base import _shell, V
+from plantillas.base import _shell, filas_html, V
 from plantillas.registro import registrar
 
 _CSS = """
@@ -32,9 +32,9 @@ def _frontal(lado, ctx, d):
         "<div class='blobR'></div><div class='blobTL'></div><div class='blobL'></div>"
         "<div class='disco'></div><img class='foto' src='%s'>"
         "<img class='logo' src='%s'>"
-        "<div class='info'><div class='name'>%s</div><div class='dni'>DNI: %s</div></div>"
+        "<div class='info'><div class='name'>%s</div><div class='datos'>%s</div></div>"
         "<div class='cargo'>%s</div>"
-        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], d["id"], d["cargo"])
+        % (ctx["foto_uri"], ctx["logo_uri"], d["nombre"], filas_html(ctx), d["cargo"])
     )
     return _shell(ctx, "mv2", _CSS, cuerpo, *V), V[0], V[1]
 

@@ -4,7 +4,7 @@ Gesto: banda superior de marca (con segunda banda oscura desfasada a la derecha 
 esquina inferior izquierda redondeada) que lleva el logo + nombre del cliente; foto
 CIRCULAR con marco montada sobre el borde de la banda; nombre, DNI y cargo centrados
 sobre mucho blanco; banda inferior oscura con la web del cliente. Campo extra: web."""
-from plantillas.base import _shell, V
+from plantillas.base import _shell, filas_html, V
 from plantillas.registro import registrar
 
 _CSS = """
@@ -32,13 +32,13 @@ def _frontal(lado, ctx, d):
         "<img class='foto' src='%s'>"
         "<div class='info'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "<div class='sep'></div>"
         "<div class='cargo'>%s</div>"
         "</div>"
         "<div class='web'>%s</div>"
         % (ctx["logo_uri"], ctx["cliente"], ctx["foto_uri"],
-           d["nombre"], d["id"], d["cargo"], ctx["web"]))
+           d["nombre"], filas_html(ctx, con_empresa=False), d["cargo"], ctx["web"]))
     return _shell(ctx, "mv3", _CSS, cuerpo, *V), V[0], V[1]
 
 

@@ -2,7 +2,7 @@
 """Modelo mv1 — "Acción" (vertical). Ref: docs/referencias-modelos/v4.jpeg.
 Gesto: chevrons diagonales bicolor en las esquinas superiores; foto cuadrada con
 borde de marca; banda inferior con el cargo."""
-from plantillas.base import _shell, V
+from plantillas.base import _shell, filas_html, V
 from plantillas.registro import registrar
 
 _CSS = """
@@ -28,10 +28,10 @@ def _frontal(lado, ctx, d):
         "<img class='logo' src='%s'>"
         "<img class='foto' src='%s'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "</div>"
         "<div class='cargo'>%s</div>"
-        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["id"], d["cargo"]))
+        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mv1", _CSS, cuerpo, *V), V[0], V[1]
 
 

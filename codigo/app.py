@@ -13,7 +13,6 @@ from tkinter import colorchooser, filedialog, font as tkfont, messagebox, ttk
 
 import motor
 
-import asistente
 import estado
 from PIL import Image, ImageTk
 
@@ -274,7 +273,9 @@ class App:
         self.p_logo_ruta = None
         self._p_preview_img = None         # referencia viva del ImageTk
         self._p_gen = 0                    # contador de re-render (descarta renders viejos)
-        self._modelos = motor_catalogo()   # [(clave, nombre)]
+        # modelos con el editor de campos listo (el resto se va sumando)
+        _LISTOS = ("clasica", "gafete", "premium", "mv1", "mv2", "mv3", "mv7")
+        self._modelos = [(c, n) for c, n in motor_catalogo() if c in _LISTOS]
         self.p_ajustes = estado.ajustes_inicial(self._modelos[0][0])
 
         # --- barra superior: logo + cliente + modelo ---
@@ -305,11 +306,11 @@ class App:
                                   bg="#F4F4F6", fg="#888", justify="center")
         self.p_preview.pack(expand=True)
 
-        der = tk.Frame(cuerpo, bg=FONDO, width=340)
+        der = tk.Frame(cuerpo, bg=FONDO, width=370)
         der.pack(side="right", fill="y")
         der.pack_propagate(False)
         self._p_panel_der = der
-        self._p_construir_chat(der)
+        self._p_construir_campos(der)
         self._p_controles = tk.Frame(der, bg=FONDO)
         self._p_controles.pack(fill="x", pady=(8, 0))
         self._p_rebuild_controles()
@@ -344,112 +345,100 @@ class App:
     def _p_cambiar_modelo(self, _evt=None):
         nombre = self.p_modelo_var.get()
         clave = next(c for c, n in self._modelos if n == nombre)
-        # conserva color y textos; resetea campos/logo_pos (son por-modelo)
+        # conserva color, textos y los CAMPOS que el vendedor ya armó; resetea logo_pos
         nuevo = estado.ajustes_inicial(clave)
         nuevo["color"] = self.p_ajustes["color"]
         nuevo["textos"] = dict(self.p_ajustes["textos"])
+        nuevo["filas"] = [dict(f) for f in self.p_ajustes.get("filas", [])]
         self.p_ajustes = nuevo
         self._p_rebuild_controles()
         self._p_schedule_render()
 
-    def _p_construir_chat(self, panel):
-        tk.Label(panel, text="Pídeme un cambio:", bg=FONDO, fg=GRIS,
-                 anchor="w").pack(fill="x")
-        self.p_chat = tk.Text(panel, height=9, width=40, state="disabled", wrap="word",
-                              bg="#FAFAFC", relief="solid", bd=1)
-        self.p_chat.pack(fill="x")
-        fila = tk.Frame(panel, bg=FONDO)
-        fila.pack(fill="x", pady=(4, 0))
-        self.p_entrada = tk.Entry(fila)
-        self.p_entrada.pack(side="left", fill="x", expand=True)
-        self.p_entrada.bind("<Return>", lambda _e: self._p_enviar())
-        tk.Button(fila, text="Enviar", command=self._p_enviar).pack(side="left", padx=(4, 0))
-        self._p_log_chat("Asistente",
-                         "Hola 👋 Dime cosas como «ponle tipo de sangre», «el logo a la "
-                         "derecha» o «color azul». También tienes los controles abajo.")
-
-    def _p_log_chat(self, quien, texto):
-        self.p_chat.config(state="normal")
-        self.p_chat.insert("end", "%s: %s\n" % (quien, texto))
-        self.p_chat.see("end")
-        self.p_chat.config(state="disabled")
-
-    def _p_enviar(self):
-        texto = self.p_entrada.get().strip()
-        if not texto:
-            return
-        self._p_log_chat("Tú", texto)
-        cambios, mensaje = asistente.interpretar(texto, self.p_ajustes, self._modelo_actual())
-        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, cambios)
-        self._p_log_chat("Asistente", mensaje)
-        self.p_entrada.delete(0, "end")
-        if cambios.get("modelo"):
-            self.p_modelo_var.set(self._modelo_actual().nombre)
-            self._p_rebuild_controles()
-        elif cambios:
-            self._p_sync_controles()
-        if cambios:
-            self._p_schedule_render()
-
-    def _p_rebuild_controles(self):
-        for w in self._p_controles.winfo_children():
-            w.destroy()
-        m = self._modelo_actual()
-        cont = self._p_controles
-
-        # campos extra UNIVERSALES: cualquier modelo los muestra (franja de _shell)
-        from plantillas import CAMPOS_EXTRA, CAMPOS_LABEL
-        self._p_campo_vars = {}
-        tk.Label(cont, text="Agregar al frente:", bg=FONDO, fg=GRIS, anchor="w").pack(fill="x", pady=(6, 0))
-        for campo in CAMPOS_EXTRA:
-            var = tk.BooleanVar(value=bool(self.p_ajustes["campos"].get(campo)))
-            self._p_campo_vars[campo] = var
-            tk.Checkbutton(cont, text=CAMPOS_LABEL.get(campo, campo), variable=var, bg=FONDO,
-                           command=lambda c=campo: self._p_toggle_campo(c)).pack(anchor="w")
-
-        # posición del logo (radios) si el modelo soporta más de "default"
-        if len(m.logo_posiciones) > 1:
-            tk.Label(cont, text="Logo:", bg=FONDO, fg=GRIS, anchor="w").pack(fill="x", pady=(6, 0))
-            self._p_logo_var = tk.StringVar(value=self.p_ajustes["logo_pos"])
-            fila = tk.Frame(cont, bg=FONDO)
-            fila.pack(anchor="w")
-            txt = {"default": "Centro/def.", "izq": "Izquierda", "der": "Derecha", "centro": "Centro"}
-            for pos in m.logo_posiciones:
-                tk.Radiobutton(fila, text=txt.get(pos, pos), value=pos, variable=self._p_logo_var,
-                               bg=FONDO, command=self._p_set_logo_pos).pack(side="left")
-
-        # color
-        filc = tk.Frame(cont, bg=FONDO)
-        filc.pack(fill="x", pady=(8, 0))
-        tk.Button(filc, text="Color…", command=self._p_elegir_color).pack(side="left")
-        tk.Button(filc, text="Auto", command=self._p_color_auto).pack(side="left", padx=4)
-
-        # textos EN VIVO (cambian el preview al tipear). La Empresa va arriba.
+    def _p_construir_campos(self, panel):
+        """Editor de datos: Nombre/Cargo (texto héroe) + lista de campos etiqueta:valor."""
         from plantillas import DATOS
-        tk.Label(cont, text="Textos (se actualizan al escribir):", bg=FONDO, fg=GRIS,
-                 anchor="w").pack(fill="x", pady=(8, 0))
         self._p_texto_entries = {}
-        for campo, etiq in (("nombre", "Nombre"), ("cargo", "Cargo"), ("id", "DNI")):
-            f = tk.Frame(cont, bg=FONDO)
-            f.pack(fill="x")
+        for campo, etiq in (("nombre", "Nombre"), ("cargo", "Cargo")):
+            f = tk.Frame(panel, bg=FONDO)
+            f.pack(fill="x", pady=1)
             tk.Label(f, text=etiq, width=7, anchor="w", bg=FONDO, fg="#666").pack(side="left")
             e = tk.Entry(f)
-            e.insert(0, self.p_ajustes["textos"].get(campo) or DATOS[campo])  # muestra el valor real
+            e.insert(0, self.p_ajustes["textos"].get(campo) or DATOS[campo])
             e.pack(side="left", fill="x", expand=True)
             e.bind("<KeyRelease>", lambda _e, c=campo: self._p_on_texto(c))
             self._p_texto_entries[campo] = e
 
-    def _p_sync_controles(self):
-        # refleja en los controles lo que cambió por chat (checkbuttons, logo, textos)
-        for campo, var in getattr(self, "_p_campo_vars", {}).items():
-            var.set(bool(self.p_ajustes["campos"].get(campo)))
-        if hasattr(self, "_p_logo_var"):
-            self._p_logo_var.set(self.p_ajustes["logo_pos"])
-        from plantillas import DATOS
-        for campo, e in getattr(self, "_p_texto_entries", {}).items():
-            val = self.p_ajustes["textos"].get(campo) or DATOS[campo]
-            e.delete(0, "end")
-            e.insert(0, val)
+        tk.Label(panel, text="Campos (etiqueta : valor):", bg=FONDO, fg=GRIS,
+                 anchor="w").pack(fill="x", pady=(10, 2))
+        tk.Label(panel, text="Empresa, Nombre y Cargo ya están arriba; aquí agrega los demás.",
+                 bg=FONDO, fg="#999", anchor="w", font=("Segoe UI", 8)).pack(fill="x")
+        self._p_filas_cont = tk.Frame(panel, bg=FONDO)
+        self._p_filas_cont.pack(fill="x", pady=(2, 0))
+        tk.Button(panel, text="+ Agregar campo", command=self._p_agregar_fila,
+                  bg="#EEEAFE", fg=GRIS, relief="flat", padx=10, pady=3).pack(anchor="w", pady=(5, 0))
+        self._p_render_filas_editor()
+
+    def _p_render_filas_editor(self):
+        for w in self._p_filas_cont.winfo_children():
+            w.destroy()
+        self._p_fila_rows = []
+        for i, fila in enumerate(self.p_ajustes.get("filas", [])):
+            f = tk.Frame(self._p_filas_cont, bg=FONDO)
+            f.pack(fill="x", pady=1)
+            etq = tk.Entry(f, width=12)
+            etq.insert(0, fila.get("etiqueta", ""))
+            etq.pack(side="left")
+            val = tk.Entry(f, width=12)
+            val.insert(0, fila.get("valor", ""))
+            val.pack(side="left", padx=3, fill="x", expand=True)
+            etq.bind("<KeyRelease>", lambda _e: self._p_on_filas())
+            val.bind("<KeyRelease>", lambda _e: self._p_on_filas())
+            tk.Button(f, text="✕", command=lambda idx=i: self._p_quitar_fila(idx),
+                      relief="flat", padx=4, fg="#a33", bg=FONDO).pack(side="left")
+            self._p_fila_rows.append((etq, val))
+
+    def _p_filas_actuales(self):
+        return [{"etiqueta": e.get(), "valor": v.get()} for e, v in self._p_fila_rows]
+
+    def _p_on_filas(self):
+        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"filas": self._p_filas_actuales()})
+        self._p_schedule_render()
+
+    def _p_agregar_fila(self):
+        filas = self._p_filas_actuales() + [{"etiqueta": "", "valor": ""}]
+        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"filas": filas})
+        self._p_render_filas_editor()
+
+    def _p_quitar_fila(self, idx):
+        filas = self._p_filas_actuales()
+        if 0 <= idx < len(filas):
+            filas.pop(idx)
+        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"filas": filas})
+        self._p_render_filas_editor()
+        self._p_schedule_render()
+
+    def _p_rebuild_controles(self):
+        """Color + posición de logo (lo demás vive en el editor de campos de arriba)."""
+        for w in self._p_controles.winfo_children():
+            w.destroy()
+        m = self._modelo_actual()
+        cont = self._p_controles
+        # color
+        filc = tk.Frame(cont, bg=FONDO)
+        filc.pack(fill="x", pady=(10, 0))
+        tk.Label(filc, text="Color:", bg=FONDO, fg=GRIS).pack(side="left")
+        tk.Button(filc, text="Elegir…", command=self._p_elegir_color).pack(side="left", padx=4)
+        tk.Button(filc, text="Auto (del logo)", command=self._p_color_auto).pack(side="left")
+        # posición del logo (radios) si el modelo soporta más de "default"
+        if len(m.logo_posiciones) > 1:
+            fl = tk.Frame(cont, bg=FONDO)
+            fl.pack(fill="x", pady=(6, 0))
+            tk.Label(fl, text="Logo:", bg=FONDO, fg=GRIS).pack(side="left")
+            self._p_logo_var = tk.StringVar(value=self.p_ajustes["logo_pos"])
+            txt = {"default": "Centro", "izq": "Izq.", "der": "Der.", "centro": "Centro"}
+            for pos in m.logo_posiciones:
+                tk.Radiobutton(fl, text=txt.get(pos, pos), value=pos, variable=self._p_logo_var,
+                               bg=FONDO, command=self._p_set_logo_pos).pack(side="left")
 
     def _p_schedule_render(self, delay=350):
         """Re-render DIFERIDO (debounce): junta tipeos/clicks rápidos en un solo render
@@ -464,11 +453,6 @@ class App:
                 pass
         self.p_estado.config(text="Actualizando…")
         self._p_render_job = self.raiz.after(delay, self._p_rerender)
-
-    def _p_toggle_campo(self, campo):
-        val = self._p_campo_vars[campo].get()
-        self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"campos": {campo: val}})
-        self._p_schedule_render()
 
     def _p_set_logo_pos(self):
         self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"logo_pos": self._p_logo_var.get()})

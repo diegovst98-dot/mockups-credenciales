@@ -4,7 +4,7 @@ Gesto: estilo médico/limpio sobre blanco. Esquinas superiores con dos arcos cur
 (banda primaria + filo oscuro) que enmarcan; barrido curvo en la esquina inferior
 derecha. Logo arriba, foto rectangular con marco de color, nombre, DNI en acento y
 cargo en negro. Sin banda de cargo: jerarquía de texto centrado sobre blanco."""
-from plantillas.base import _shell, V
+from plantillas.base import _shell, filas_html, V
 from plantillas.registro import registrar
 
 _CSS = """
@@ -43,10 +43,10 @@ def _frontal(lado, ctx, d):
         "<img class='logo' src='%s'>"
         "<img class='foto' src='%s'>"
         "<div class='name'>%s</div>"
-        "<div class='dni'>DNI: %s</div>"
+        "<div class='datos'>%s</div>"
         "<div class='cargo'>%s</div>"
         "</div>"
-        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["id"], d["cargo"]))
+        % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], filas_html(ctx), d["cargo"]))
     return _shell(ctx, "mv7", _CSS, cuerpo, *V), V[0], V[1]
 
 

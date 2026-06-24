@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """DIRECCIÓN 3 — PREMIUM (vertical elegante)."""
-from plantillas.base import _shell, _icono, V
+from plantillas.base import _shell, _icono, filas_html, V
 from plantillas.registro import registrar
 
 _CSS_PREMIUM = """
@@ -48,12 +48,8 @@ def _premium(lado, ctx, d):
             "<div class='name'>%s</div>"
             "<div class='goldline'></div>"
             "<div class='role'>%s</div>"
-            "<div class='data'>"
-            "<div class='row'><span class='ic'>%s</span><span class='vline'></span><span><div class='lb'>Empresa</div><div class='vl'>%s</div></span></div>"
-            "<div class='row'><span class='ic'>%s</span><span class='vline'></span><span><div class='lb'>DNI</div><div class='vl'>%s</div></span></div>"
-            "</div></div>"
-            % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["cargo"],
-               _icono("edificio", "#fff", 24), ctx["cliente"], _icono("persona", "#fff", 24), d["id"]))
+            "<div class='data'>%s</div></div>"
+            % (ctx["logo_uri"], ctx["foto_uri"], d["nombre"], d["cargo"], filas_html(ctx)))
     else:
         cuerpo = (
             "<div class='frame'></div><div class='botbar'></div><div class='corners'><i></i><i></i><i></i><i></i></div>"
