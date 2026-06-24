@@ -113,18 +113,25 @@ def _foto_uri(prim):
 
 # ---------- contexto ----------
 
-def construir_contexto(logo, prim, sec, cliente):
+def construir_contexto(logo, prim, sec, cliente, ajustes=None):
     from motor import web_cliente, luminancia, marca_legible, pseudo_qr, distancia, saturacion
+    ajustes = ajustes or {}
+    textos = ajustes.get("textos", {})
+    # 'empresa' override cambia el nombre mostrado (y, por coherencia, web y monograma)
+    empresa = (textos.get("empresa") or cliente)
     oscuro = luminancia(prim) < 0.45
     # color secundario de la marca como ACENTO que "puntua" (5-10%): solo si es
     # realmente distinto y con color; si no, cae al oro. Regla: un color manda, otro puntua.
     sec_distinta = distancia(prim, sec) > 70 and saturacion(sec) > 0.18
     acc2 = marca_legible(sec) if sec_distinta else None
+    # textos demo con overrides del usuario (copia: NO muta el DATOS global)
+    datos = dict(DATOS)
+    datos.update({k: v for k, v in textos.items() if v and k in DATOS})
     return {
         "_prim": tuple(int(x) for x in prim[:3]),
         "logo_uri": _b64_img(logo),
         "foto_uri": _foto_uri(prim),
-        "qr_uri": _b64_img(pseudo_qr(cliente, 360)),
+        "qr_uri": _b64_img(pseudo_qr(empresa, 360)),
         "prim_css": _rgb(prim),
         "medio_css": _rgb(_ajustar(prim, 0.58)),
         "oscuro_css": _rgb(_ajustar(prim, 0.22)),
@@ -133,11 +140,14 @@ def construir_contexto(logo, prim, sec, cliente):
         "acc2_css": _rgb(acc2) if acc2 else ORO,
         "txt_sobre_prim": "#ffffff" if oscuro else "#1d1f24",
         "logo_oscuro": oscuro,
-        "variante": variante_de(cliente),
-        "cliente": cliente,
-        "monograma": ("".join(w[0] for w in (cliente or "").split()[:2]).upper() or "•"),
-        "web": web_cliente(cliente),
-        "datos": DATOS,
+        "variante": variante_de(empresa),
+        "cliente": empresa,
+        "monograma": ("".join(w[0] for w in (empresa or "").split()[:2]).upper() or "•"),
+        "web": web_cliente(empresa),
+        "datos": datos,
+        # --- v2: ajustes que cada modelo lee si los soporta ---
+        "campos": dict(ajustes.get("campos", {})),
+        "logo_pos": ajustes.get("logo_pos", "default"),
     }
 
 
