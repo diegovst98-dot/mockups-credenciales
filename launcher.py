@@ -121,6 +121,7 @@ import PIL.ImageFont      # noqa: F401
 import PIL.ImageOps       # noqa: F401
 import PIL.ImageChops     # noqa: F401  (lo usa codigo/motor.py)
 import PIL.JpegImagePlugin  # noqa: F401  (codigo/folleto.py: JPEG embebido en el PDF)
+import PIL.ImageTk        # noqa: F401  (codigo/app.py: preview de la pestaña Personalizar)
 import certifi            # noqa: F401
 import pypdfium2          # noqa: F401  (lo usa codigo/renombrador.py para leer PDFs)
 import tkinter            # noqa: F401

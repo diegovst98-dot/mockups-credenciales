@@ -4,3 +4,8 @@ dist/
 salida/
 entrada/
 *.zip
+# scratch de diagnóstico del launcher / auto-update (que publicar.py 'git add -A' no los barra)
+smoke_result.txt
+threadtest_result.txt
+actualizacion.log
+.superpowers/
