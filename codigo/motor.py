@@ -1201,6 +1201,50 @@ def _hex_a_rgb(c):
     return tuple(int(c[i:i + 2], 16) for i in (0, 2, 4))
 
 
+def render_modelo(logo, cliente, ajustes):
+    """Renderiza UN frente del modelo elegido con los ajustes aplicados y lo devuelve
+    como PIL.Image a tamaño CR80 (300 dpi). 'logo' es la imagen YA cargada con
+    cargar_logo(); 'ajustes' es el dict de estado.py. Alimenta el preview y el export."""
+    from plantillas import cara, construir_contexto
+    from render import render_caras
+    ajustes = ajustes or {}
+    color = ajustes.get("color")
+    if color:
+        prim = _hex_a_rgb(color)
+        sec = tuple(int(x * 0.6) for x in prim)
+    else:
+        prim, sec = paleta_del_logo(logo)
+    ctx = construir_contexto(logo, prim, sec, cliente, ajustes)
+    html, w, h = cara(ajustes["modelo"], "frontal", ctx)
+    img = render_caras([(html, w, h)])[0]
+    destino = (CARD_W, CARD_H) if img.width > img.height else (V_W, V_H)
+    return img.resize(destino, Image.LANCZOS)
+
+
+def exportar_personalizado(logo, cliente, ajustes, carpeta_salida=None, pdf=True, png=True):
+    """Renderiza el modelo elegido con sus ajustes y lo exporta como PNG y/o PDF
+    (boceto de venta). Devuelve (carpeta, [rutas]). 'logo' ya viene de cargar_logo()."""
+    from plantillas import catalogo
+    from folleto import armar_pdf
+    cliente = (cliente or "Cliente").strip() or "Cliente"
+    img = render_modelo(logo, cliente, ajustes)
+    modelo = next(m for m in catalogo() if m.clave == ajustes["modelo"])
+    if carpeta_salida is None:
+        carpeta_salida = os.path.join(RUTA_BASE, "salida", "%s-personalizado" % slug(cliente))
+    os.makedirs(carpeta_salida, exist_ok=True)
+    archivos = []
+    base = "%s-%s" % (modelo.clave, slug(cliente))
+    if png:
+        rp = os.path.join(carpeta_salida, base + ".png")
+        img.convert("RGB").save(rp, optimize=True)
+        archivos.append(rp)
+    if pdf:
+        rpdf = os.path.join(carpeta_salida, "boceto-%s.pdf" % slug(cliente))
+        armar_pdf(cliente, logo, [(modelo.nombre, modelo.orientacion, img)], rpdf)
+        archivos.append(rpdf)
+    return carpeta_salida, archivos
+
+
 def generar(ruta_logo, cliente, carpeta_salida=None, color=None):
     """Arma el CATÁLOGO personalizado: PDF folleto con todos los modelos (frentes)
     pintados con la marca del cliente + carpeta para-diseno con las caras limpias.
