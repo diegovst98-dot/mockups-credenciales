@@ -5,6 +5,18 @@
 > Reemplaza el enfoque de "editor de campos estático" (v25) por un **editor de capas
 > arrastrable** dentro de la misma pestaña Personalizar.
 
+> ## ⚠️ PIVOTE 2026-06-24 (tarde) — "EL MODELO MANDA" (lo VIGENTE)
+> El compositor genérico (separar TODO en capas: logo/foto/nombre/cargo/datos sobre un
+> fondo limpio) **no reproducía bien los 18 diseños bespoke** (texto fuera de sitio, foto
+> cuadrada en marcos redondos, texto sobre bandas oscuras). Diego eligió **"el modelo
+> manda"**: el boceto base lo dibuja el **modelo en HTML** (texto, decoración y color
+> perfectos, idéntico al catálogo); la **foto subida la enmarca el propio modelo** (respeta
+> su forma); y **solo el logo y la foto** se vuelven capa (overlay) **si el vendedor los
+> MUEVE** (`capas[id].movido`). Si no mueve nada, sale el render puro del modelo = perfecto.
+> Implementado en `motor.render_modelo` + `estado` (capas = solo logo/foto). El compositor
+> de TEXTO/datos de `lienzo.py` quedó **dormido** (sin uso). Las secciones de abajo que
+> hablan de capas de texto/fondo limpio quedan **SUPERSEDED** por este pivote.
+
 ## 1. Contexto y propósito
 
 La app MockupsDISECOD la usa **el vendedor** para mandarle al cliente, por WhatsApp y en

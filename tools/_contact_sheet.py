@@ -14,8 +14,10 @@ import estado
 import motor
 from plantillas import catalogo
 
-LOGO = motor.cargar_logo(os.path.join(RECURSOS, "logo-disecod-oscuro.png"))
-CLIENTE = "ACME SAC"
+_cands = [r"C:\Users\Diego\Downloads\LOGO GV (1).png",
+          os.path.join(RECURSOS, "logo-disecod-oscuro.png")]
+LOGO = motor.cargar_logo(next((c for c in _cands if os.path.exists(c)), _cands[-1]))
+CLIENTE = "GV"
 modelos = catalogo()
 
 COLS, CW, CH, PAD = 4, 480, 360, 12
