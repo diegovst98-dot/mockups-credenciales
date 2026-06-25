@@ -19,13 +19,12 @@ def test_ajustes_inicial_trae_capas():
         assert {"x", "y", "w", "h"} <= set(caja)
 
 
-def test_mover_capa_no_toca_las_otras():
+def test_mover_capa_copia_y_marca_movido():
     a = estado.ajustes_inicial("clasica")
-    logo0 = dict(a["capas"]["logo"])
-    b = estado.mover_capa(a, "foto", x=0.5, y=0.5)
-    assert b["capas"]["foto"]["x"] == 0.5 and b["capas"]["foto"]["y"] == 0.5
-    assert b["capas"]["logo"] == logo0                 # no mutó otras
-    assert a["capas"]["foto"] != b["capas"]["foto"]    # no mutó el original (copia)
+    b = estado.mover_capa(a, "logo", x=0.5, y=0.5)
+    assert b["capas"]["logo"]["x"] == 0.5 and b["capas"]["logo"]["y"] == 0.5
+    assert b["capas"]["logo"].get("movido") is True
+    assert not a["capas"]["logo"].get("movido")        # no mutó el original (copia)
 
 
 def test_mover_capa_clampa_a_0_1():

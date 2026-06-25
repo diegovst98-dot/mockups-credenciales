@@ -20,39 +20,33 @@ TEXTO_HERO = ("nombre", "cargo")
 # que delatan plantilla). El vendedor agrega los campos reales con "+ Agregar campo".
 FILAS_DEFAULT = []
 
-# --- Capas movibles del editor (v3.1 — "el modelo manda"): SOLO logo y foto ---
-# El boceto base lo dibuja el MODELO (texto/decoración/color perfectos, idéntico al
-# catálogo). El logo y la foto pueden RE-UBICARSE: si el vendedor los mueve
-# (caja["movido"]=True) se vuelven capa encima del render; si no, los pinta el propio
-# modelo (perfecto, respeta forma de foto). Caja normalizada 0–1.
-CAPAS_IDS = ("logo", "foto")
+# --- Capa movible del editor (v3.2 — "el modelo manda"): SOLO el logo ---
+# Decisión Diego 2026-06-24: mover el LOGO no arruina la imagen, pero mover la FOTO sí
+# (sale cuadrada en marcos redondos). Por eso la foto la pinta SIEMPRE el modelo (la
+# enmarca perfecto, respeta su forma) y el vendedor solo la SUBE; solo el logo se reubica.
+# Caja normalizada 0–1; caja["movido"]=True => el logo se vuelve capa encima del render.
+CAPAS_IDS = ("logo",)
 
-_CAPAS_H = {
-    "logo": {"x": 0.05, "y": 0.06, "w": 0.30, "h": 0.18},
-    "foto": {"x": 0.72, "y": 0.20, "w": 0.22, "h": 0.60},
-}
-_CAPAS_V = {
-    "logo": {"x": 0.18, "y": 0.05, "w": 0.64, "h": 0.16},
-    "foto": {"x": 0.28, "y": 0.24, "w": 0.44, "h": 0.40},
-}
+_CAPAS_H = {"logo": {"x": 0.05, "y": 0.06, "w": 0.30, "h": 0.18}}
+_CAPAS_V = {"logo": {"x": 0.18, "y": 0.05, "w": 0.64, "h": 0.16}}
 
 
 def capas_inicial(orientacion="H"):
-    """Cajas genéricas de logo/foto (fallback si no hay anclas del modelo)."""
+    """Caja genérica del logo (fallback si no hay ancla del modelo)."""
     base = _CAPAS_V if orientacion == "V" else _CAPAS_H
     return {k: dict(v) for k, v in base.items()}
 
 
 def capas_de_modelo(modelo_clave):
-    """Cajas NATIVAS de logo y foto del modelo (derivadas en anclas.py), para que al
-    moverlos arranquen donde el modelo los pone. Si no hay anclas, cae a las genéricas."""
+    """Caja NATIVA del logo del modelo (derivada en anclas.py), para que al moverlo
+    arranque donde el modelo lo pone. Si no hay ancla, cae a la genérica."""
     try:
         import anclas
         nativas = anclas.ANCLAS.get(modelo_clave)
     except Exception:
         nativas = None
-    if nativas and {"logo", "foto"} <= set(nativas):
-        return {k: dict(nativas[k]) for k in CAPAS_IDS}
+    if nativas and "logo" in nativas:
+        return {"logo": dict(nativas["logo"])}
     return capas_inicial("H")
 
 
