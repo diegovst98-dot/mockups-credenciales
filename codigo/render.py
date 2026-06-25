@@ -36,34 +36,63 @@ def _navegador_sistema():
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
-def _edge_screenshot(exe, hpath, opath, perfil_base, w, h, escala):
-    """Captura opath con Edge headless. Robusto: stdin/stdout/stderr redirigidos,
-    sin ventana, y REINTENTA si Edge retorna sin crear el PNG (pasa de forma
-    intermitente cuando ya hay Edge abierto). Si tras los reintentos no hay captura,
-    lanza un error CLARO con el stderr real de Edge (no el genérico 'logo inválido')."""
-    ultimo = "sin detalle"
-    for intento in range(3):
-        perfil = "%s_%d" % (perfil_base, intento)
-        cmd = [exe, "--headless=new", "--disable-gpu", "--hide-scrollbars",
-               "--no-sandbox", "--no-first-run", "--disable-extensions",
-               "--force-device-scale-factor=%d" % escala,
-               "--force-color-profile=srgb",
-               "--user-data-dir=" + perfil,
-               "--screenshot=" + opath,
-               "--window-size=%d,%d" % (w, h),
-               "file:///" + hpath.replace("\\", "/")]
+# Modos headless probados EN CASCADA: `--headless=new --screenshot` es un NO-OP en
+# algunas versiones de Edge (sale rc=0, stderr vacío y NO escribe el PNG); `--headless=old`
+# y el `--headless` clásico sí lo escriben. Probamos los tres y nos quedamos con el primero
+# que produzca el archivo, así funciona sin importar la versión de Edge del vendedor.
+_MODOS_HEADLESS = ("--headless=new", "--headless=old", "--headless")
+
+
+def _edge_version(exe):
+    try:
+        r = subprocess.run([exe, "--version"], capture_output=True, timeout=20,
+                           creationflags=_CREATE_NO_WINDOW)
+        return (r.stdout or b"").decode("utf-8", "replace").strip() or "?"
+    except Exception:
+        return "?"
+
+
+def _intento_captura(exe, modo, hpath, opath, perfil, w, h, escala):
+    """Un intento de captura con un modo headless concreto. Devuelve (ok, detalle).
+    Borra una captura previa para que el chequeo de archivo sea fiable."""
+    if os.path.exists(opath):
         try:
-            r = subprocess.run(cmd, timeout=90,
-                               stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                               stderr=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW)
-        except subprocess.TimeoutExpired:
-            ultimo = "timeout (intento %d)" % (intento + 1)
-            continue
-        if os.path.exists(opath) and os.path.getsize(opath) > 0:
+            os.remove(opath)
+        except OSError:
+            pass
+    cmd = [exe, modo, "--disable-gpu", "--hide-scrollbars",
+           "--no-sandbox", "--no-first-run", "--disable-extensions",
+           "--force-device-scale-factor=%d" % escala,
+           "--force-color-profile=srgb",
+           "--user-data-dir=" + perfil,
+           "--screenshot=" + opath,
+           "--window-size=%d,%d" % (w, h),
+           "file:///" + hpath.replace("\\", "/")]
+    try:
+        r = subprocess.run(cmd, timeout=90,
+                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW)
+    except subprocess.TimeoutExpired:
+        return False, "timeout"
+    if os.path.exists(opath) and os.path.getsize(opath) > 0:
+        return True, ""
+    return False, "rc=%s %s" % (r.returncode,
+                                (r.stderr or b"").decode("utf-8", "replace").strip()[-160:])
+
+
+def _edge_screenshot(exe, hpath, opath, perfil_base, w, h, escala, modos=_MODOS_HEADLESS):
+    """Captura opath con Edge headless probando varios modos en cascada (perfil aislado
+    por intento). Si ninguno escribe el PNG, lanza un error CLARO con la versión de Edge
+    y el detalle por modo (antes daba el genérico 'logo inválido' que despistaba)."""
+    detalles = []
+    for i, modo in enumerate(modos):
+        ok, det = _intento_captura(exe, modo, hpath, opath, "%s_%d" % (perfil_base, i),
+                                   w, h, escala)
+        if ok:
             return
-        ultimo = "rc=%s %s" % (r.returncode,
-                               (r.stderr or b"").decode("utf-8", "replace").strip()[-300:])
-    raise RuntimeError("Edge no generó la captura tras 3 intentos -> %s" % ultimo)
+        detalles.append("%s -> %s" % (modo, det))
+    raise RuntimeError("Edge no generó la captura (Edge %s). Intentos: %s"
+                       % (_edge_version(exe), " | ".join(detalles)))
 
 
 def _render_edge(items, escala, exe):
