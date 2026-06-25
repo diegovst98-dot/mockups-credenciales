@@ -1,5 +1,5 @@
 {
-  "version": 25,
+  "version": 26,
   "archivos": [
     "app.py",
     "motor.py",
@@ -8,6 +8,8 @@
     "renombrador.py",
     "estado.py",
     "asistente.py",
+    "lienzo.py",
+    "anclas.py",
     "version.txt",
     "fuente-display.ttf",
     "fuente-display-italic.ttf",
