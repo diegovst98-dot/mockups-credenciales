@@ -1201,24 +1201,70 @@ def _hex_a_rgb(c):
     return tuple(int(c[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def render_modelo(logo, cliente, ajustes):
-    """Renderiza UN frente del modelo elegido con los ajustes aplicados y lo devuelve
-    como PIL.Image a tamaño CR80 (300 dpi). 'logo' es la imagen YA cargada con
-    cargar_logo(); 'ajustes' es el dict de estado.py. Alimenta el preview y el export."""
+# PNG transparente 1×1 (data URI) para vaciar logo/foto en el fondo del compositor.
+_PIXEL_TRANSP = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1"
+                 "HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
+
+
+def _prim_sec(logo, ajustes):
+    color = (ajustes or {}).get("color")
+    if color:
+        prim = _hex_a_rgb(color)
+        return prim, tuple(int(x * 0.6) for x in prim)
+    return paleta_del_logo(logo)
+
+
+def fondo_de_modelo(logo, cliente, ajustes):
+    """Rasteriza SOLO la decoración del modelo (sin logo/foto/datos/héroe) para usarla
+    como fondo del compositor de capas. Reusa las plantillas sin modificarlas: vacía los
+    elementos editables en el ctx antes de pintar. Devuelve PIL.Image a tamaño CR80."""
     from plantillas import cara, construir_contexto
     from render import render_caras
     ajustes = ajustes or {}
-    color = ajustes.get("color")
-    if color:
-        prim = _hex_a_rgb(color)
-        sec = tuple(int(x * 0.6) for x in prim)
-    else:
-        prim, sec = paleta_del_logo(logo)
+    prim, sec = _prim_sec(logo, ajustes)
     ctx = construir_contexto(logo, prim, sec, cliente, ajustes)
+    ctx["logo_uri"] = _PIXEL_TRANSP
+    ctx["foto_uri"] = _PIXEL_TRANSP
+    ctx["filas"] = []
+    ctx["datos"] = dict(ctx["datos"], nombre="", cargo="")
     html, w, h = cara(ajustes["modelo"], "frontal", ctx)
     img = render_caras([(html, w, h)])[0]
     destino = (CARD_W, CARD_H) if img.width > img.height else (V_W, V_H)
     return img.resize(destino, Image.LANCZOS)
+
+
+def _foto_pil(ajustes):
+    """Foto del cliente (si el vendedor la subió) o la del demo. Devuelve PIL RGBA."""
+    ruta = (ajustes or {}).get("foto_ruta")
+    if ruta and os.path.exists(ruta):
+        return Image.open(ruta).convert("RGBA")
+    from plantillas.base import FOTO_PERSONA
+    return Image.open(FOTO_PERSONA).convert("RGBA")
+
+
+def render_modelo(logo, cliente, ajustes, escala=1.0):
+    """Compone la credencial: fondo decorativo del modelo + capas movibles (logo, foto,
+    nombre, cargo, datos). El MISMO camino alimenta preview y export => WYSIWYG. 'escala'
+    permite preview chico (0.5) y export grande (1.0) con resultado idéntico."""
+    from plantillas import construir_contexto
+    import lienzo
+    import estado
+    ajustes = ajustes or {}
+    capas = ajustes.get("capas") or estado.capas_inicial("H")
+    prim, sec = _prim_sec(logo, ajustes)
+    ctx = construir_contexto(logo, prim, sec, cliente, ajustes)
+    fondo = fondo_de_modelo(logo, cliente, ajustes)
+    W = int(fondo.width * escala)
+    H = int(fondo.height * escala)
+    acc = marca_legible(prim)
+    recursos = {
+        "logo": {"tipo": "imagen", "img": logo},
+        "foto": {"tipo": "imagen", "img": _foto_pil(ajustes)},
+        "nombre": {"tipo": "texto", "texto": ctx["datos"].get("nombre", ""), "peso": 800, "color": (30, 30, 30)},
+        "cargo": {"tipo": "texto", "texto": ctx["datos"].get("cargo", ""), "peso": 600, "color": (90, 90, 90)},
+        "datos": {"tipo": "datos", "filas": ctx["filas"], "color_etq": acc, "color_val": (40, 40, 40)},
+    }
+    return lienzo.componer(fondo, capas, recursos, W, H)
 
 
 def exportar_personalizado(logo, cliente, ajustes, carpeta_salida=None, pdf=True, png=True):
