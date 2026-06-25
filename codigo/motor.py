@@ -1300,8 +1300,8 @@ def render_modelo(logo, cliente, ajustes, escala=1.0):
     cli = (cliente or "").strip()
     datos_filas = ([("Empresa", cli)] if cli else []) + list(ctx["filas"])
     recursos = {
-        "logo": {"tipo": "imagen", "img": logo},
-        "foto": {"tipo": "imagen", "img": _foto_pil(ajustes)},
+        "logo": {"tipo": "imagen", "img": logo, "ajuste": "contain"},
+        "foto": {"tipo": "imagen", "img": _foto_pil(ajustes), "ajuste": "cover"},
         "nombre": {"tipo": "texto", "texto": ctx["datos"].get("nombre", ""), "peso": 800,
                    "color": (30, 30, 30), "max_frac": 0.085},
         "cargo": {"tipo": "texto", "texto": ctx["datos"].get("cargo", ""), "peso": 600,

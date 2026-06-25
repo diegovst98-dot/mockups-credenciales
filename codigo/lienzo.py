@@ -27,12 +27,26 @@ def snap(v, guias=GUIAS, umbral=0.02):
 # ---------- composición ----------
 
 def encajar_en(img, w, h):
-    """Reescala manteniendo proporción para caber en w×h (no deforma logo/foto)."""
+    """Reescala manteniendo proporción para CABER en w×h (contain, sin deformar). Para logo."""
     w = max(1, int(w))
     h = max(1, int(h))
     out = img.copy()
     out.thumbnail((w, h), Image.LANCZOS)
     return out
+
+
+def _cubrir(img, w, h):
+    """Reescala para LLENAR w×h (cover) y recorta el sobrante al centro. Para fotos:
+    llena el marco sin deformar ni dejar bordes."""
+    w = max(1, int(w))
+    h = max(1, int(h))
+    iw, ih = img.size
+    escala = max(w / iw, h / ih)
+    nw, nh = max(1, int(iw * escala)), max(1, int(ih * escala))
+    red = img.resize((nw, nh), Image.LANCZOS)
+    x = (nw - w) // 2
+    y = (nh - h) // 2
+    return red.crop((x, y, x + w, y + h))
 
 
 def _fuente(peso, tam):
@@ -103,8 +117,14 @@ def componer(fondo, capas, recursos, W, H):
         cpx = caja_px(capas[cid], W, H)
         tipo = spec.get("tipo")
         if tipo == "imagen" and spec.get("img") is not None:
-            pieza = encajar_en(spec["img"].convert("RGBA"), cpx[2] - cpx[0], cpx[3] - cpx[1])
-            base.alpha_composite(pieza, (cpx[0], cpx[1]))
+            bw, bh = cpx[2] - cpx[0], cpx[3] - cpx[1]
+            if spec.get("ajuste") == "cover":
+                pieza = _cubrir(spec["img"].convert("RGBA"), bw, bh)
+            else:
+                pieza = encajar_en(spec["img"].convert("RGBA"), bw, bh)
+            ox = cpx[0] + (bw - pieza.width) // 2
+            oy = cpx[1] + (bh - pieza.height) // 2
+            base.alpha_composite(pieza, (ox, oy))
         elif tipo == "texto":
             _dibujar_texto(base, cpx, spec, H)
         elif tipo == "datos":

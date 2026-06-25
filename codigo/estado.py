@@ -96,6 +96,7 @@ def ajustes_inicial(modelo_clave):
         "empresa": "",                # "" = usa el cliente que se pasa al render
         "filas": [dict(f) for f in FILAS_DEFAULT],
         "capas": capas_de_modelo(modelo_clave),
+        "foto_ruta": None,            # None = foto demo; ruta = foto subida del cliente
     }
 
 

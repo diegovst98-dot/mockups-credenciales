@@ -275,6 +275,7 @@ class App:
     def _construir_personalizar(self, panel):
         self.p_logo = None
         self.p_logo_ruta = None
+        self.p_foto_ruta = None            # None = foto demo; ruta = foto subida del cliente
         self._p_preview_img = None         # referencia viva del ImageTk
         self._p_gen = 0                    # contador de re-render (descarta renders viejos)
         self._modelos = motor_catalogo()   # [(clave, nombre)] — los 18
@@ -286,6 +287,7 @@ class App:
         tk.Button(top, text="Elegir logo…", command=self._p_elegir_logo).pack(side="left")
         self.p_logo_lbl = tk.Label(top, text="(ningún logo)", bg=FONDO, fg="#999")
         self.p_logo_lbl.pack(side="left", padx=8)
+        tk.Button(top, text="Foto…", command=self._p_elegir_foto).pack(side="left")
         tk.Label(top, text="Empresa:", bg=FONDO, fg=GRIS).pack(side="left", padx=(12, 4))
         self.p_cliente = tk.Entry(top, width=18)
         self.p_cliente.pack(side="left")
@@ -348,6 +350,15 @@ class App:
             self.p_logo = motor.cargar_logo(ruta)
             self.p_logo_lbl.config(text=os.path.basename(ruta), fg=GRIS)
             self._p_schedule_render()          # muestra el preview sin pedir "Actualizar"
+
+    def _p_elegir_foto(self):
+        ruta = filedialog.askopenfilename(
+            title="Foto del cliente / empleado",
+            filetypes=[("Imágenes", "*.png *.jpg *.jpeg *.webp *.bmp"), ("Todos", "*.*")])
+        if ruta:
+            self.p_foto_ruta = ruta
+            self.p_ajustes = estado.aplicar_cambios(self.p_ajustes, {"foto_ruta": ruta})
+            self._p_schedule_render()
 
     def _modelo_actual(self):
         from plantillas import catalogo
