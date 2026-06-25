@@ -9,3 +9,6 @@ smoke_result.txt
 threadtest_result.txt
 actualizacion.log
 .superpowers/
+# PNGs de render-and-look (scratch de desarrollo del editor; no van al repo público)
+tests/_*.png
+tools/_*.png
