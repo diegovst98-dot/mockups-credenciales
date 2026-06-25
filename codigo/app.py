@@ -14,6 +14,7 @@ from tkinter import colorchooser, filedialog, font as tkfont, messagebox, ttk
 import motor
 
 import estado
+import lienzo
 from PIL import Image
 # ImageTk se importa DIFERIDO (en _p_mostrar): el exe v22 no lo trae empaquetado, y un
 # import al cargar tumbaría toda la app tras el auto-update. Así el exe viejo sigue
@@ -305,9 +306,15 @@ class App:
         izq.pack_propagate(False)
         self._p_izq = izq
         izq.bind("<Configure>", lambda _e: self._p_fit_preview_debounced())
-        self.p_preview = tk.Label(izq, text="Elige un logo y empieza a editar —\nel preview se actualiza solo.",
-                                  bg="#F4F4F6", fg="#888", justify="center")
-        self.p_preview.pack(expand=True)
+        self.p_canvas = tk.Canvas(izq, bg="#F4F4F6", highlightthickness=0, cursor="hand2")
+        self.p_canvas.pack(expand=True, fill="both")
+        self.p_canvas.bind("<Button-1>", self._p_canvas_down)
+        self.p_canvas.bind("<B1-Motion>", self._p_canvas_drag)
+        self.p_canvas.bind("<ButtonRelease-1>", self._p_canvas_up)
+        self._p_canvas_geo = None      # (offx, offy, w, h) de la imagen mostrada
+        self._p_capa_sel = None        # capa seleccionada / arrastrándose
+        self._p_modo = None            # "mover" | "estirar"
+        self._p_drag0 = None
 
         der = tk.Frame(cuerpo, bg=FONDO, width=370)
         der.pack(side="right", fill="y")
@@ -503,8 +510,8 @@ class App:
         self.p_estado.config(text="Listo ✓")
 
     def _p_fit_preview(self):
-        """Escala la última imagen al tamaño actual del panel (se ve completa y crece
-        con la ventana)."""
+        """Pinta el preview compuesto en el canvas + las cajas de capa (arrastrables);
+        crece con la ventana."""
         img = getattr(self, "_p_last_full", None)
         if img is None:
             return
@@ -514,12 +521,87 @@ class App:
             self.p_estado.config(
                 text="Cierra y vuelve a abrir la app para activar el preview. (Exportar ya funciona.)")
             return
-        w = max(160, self._p_izq.winfo_width() - 24)
-        h = max(160, self._p_izq.winfo_height() - 24)
+        cw = max(160, self.p_canvas.winfo_width())
+        ch = max(160, self.p_canvas.winfo_height())
         disp = img.copy()
-        disp.thumbnail((w, h), Image.LANCZOS)
+        disp.thumbnail((cw - 16, ch - 16), Image.LANCZOS)
         self._p_preview_img = ImageTk.PhotoImage(disp)
-        self.p_preview.config(image=self._p_preview_img, text="")
+        offx = (cw - disp.width) // 2
+        offy = (ch - disp.height) // 2
+        self._p_canvas_geo = (offx, offy, disp.width, disp.height)
+        self.p_canvas.delete("all")
+        self.p_canvas.create_image(offx, offy, anchor="nw", image=self._p_preview_img, tags=("fondo",))
+        self._p_dibujar_cajas()
+
+    def _p_dibujar_cajas(self):
+        """(Re)dibuja SOLO los recuadros de capa + asas, sin re-escalar la imagen (suave
+        al arrastrar). La imagen recién se recompone al soltar."""
+        if not self._p_canvas_geo:
+            return
+        self.p_canvas.delete("capa")
+        offx, offy, w, h = self._p_canvas_geo
+        for cid, c in self.p_ajustes.get("capas", {}).items():
+            x0 = offx + c["x"] * w
+            y0 = offy + c["y"] * h
+            x1 = offx + (c["x"] + c["w"]) * w
+            y1 = offy + (c["y"] + c["h"]) * h
+            sel = (cid == self._p_capa_sel)
+            self.p_canvas.create_rectangle(
+                x0, y0, x1, y1, outline=("#378ADD" if sel else "#B9B9C9"),
+                dash=(4, 3), width=(2 if sel else 1), tags=("capa",))
+            self.p_canvas.create_rectangle(
+                x1 - 5, y1 - 5, x1 + 5, y1 + 5, fill="#ffffff", outline="#378ADD", tags=("capa",))
+
+    def _p_xy_a_norm(self, ex, ey):
+        offx, offy, w, h = self._p_canvas_geo
+        return ((ex - offx) / max(1, w), (ey - offy) / max(1, h))
+
+    def _p_canvas_down(self, e):
+        if not self._p_canvas_geo:
+            return
+        nx, ny = self._p_xy_a_norm(e.x, e.y)
+        self._p_capa_sel = None
+        self._p_modo = None
+        for cid, c in self.p_ajustes.get("capas", {}).items():
+            cerca_asa = abs(nx - (c["x"] + c["w"])) < 0.03 and abs(ny - (c["y"] + c["h"])) < 0.04
+            dentro = c["x"] <= nx <= c["x"] + c["w"] and c["y"] <= ny <= c["y"] + c["h"]
+            if cerca_asa:
+                self._p_capa_sel = cid
+                self._p_modo = "estirar"
+                break
+            if dentro:
+                self._p_capa_sel = cid
+                self._p_modo = "mover"
+        self._p_drag0 = (nx, ny)
+        self._p_dibujar_cajas()
+
+    def _p_canvas_drag(self, e):
+        if not (self._p_capa_sel and self._p_canvas_geo and self._p_drag0):
+            return
+        nx, ny = self._p_xy_a_norm(e.x, e.y)
+        dx = nx - self._p_drag0[0]
+        dy = ny - self._p_drag0[1]
+        c = self.p_ajustes["capas"][self._p_capa_sel]
+        if self._p_modo == "mover":
+            self.p_ajustes = estado.mover_capa(self.p_ajustes, self._p_capa_sel,
+                                               x=c["x"] + dx, y=c["y"] + dy)
+        else:
+            self.p_ajustes = estado.mover_capa(self.p_ajustes, self._p_capa_sel,
+                                               w=max(0.05, c["w"] + dx), h=max(0.05, c["h"] + dy))
+        self._p_drag0 = (nx, ny)
+        self._p_dibujar_cajas()
+
+    def _p_canvas_up(self, e):
+        if not self._p_capa_sel:
+            return
+        c = self.p_ajustes["capas"][self._p_capa_sel]
+        self.p_ajustes = estado.mover_capa(self.p_ajustes, self._p_capa_sel,
+                                           x=lienzo.snap(c["x"]), y=lienzo.snap(c["y"]))
+        self._p_modo = None
+        if self.p_logo:
+            self._p_schedule_render(120)   # recompone la imagen con la capa en su nuevo sitio
+        else:
+            self._p_dibujar_cajas()
 
     def _p_fit_preview_debounced(self):
         if getattr(self, "_p_fit_job", None):
