@@ -14,10 +14,13 @@ import estado
 import motor
 from plantillas import catalogo
 
-_cands = [r"C:\Users\Diego\Downloads\LOGO GV (1).png",
+_cands = [r"C:\Users\Diego\Downloads\LOGO NUEVO DISECOD.png",
+          r"C:\Users\Diego\Downloads\logo-disecod.png",
           os.path.join(RECURSOS, "logo-disecod-oscuro.png")]
-LOGO = motor.cargar_logo(next((c for c in _cands if os.path.exists(c)), _cands[-1]))
-CLIENTE = "GV"
+_logo_ruta = sys.argv[1] if len(sys.argv) > 1 else next((c for c in _cands if os.path.exists(c)), _cands[-1])
+LOGO = motor.cargar_logo(_logo_ruta)
+CLIENTE = sys.argv[2] if len(sys.argv) > 2 else "DISECOD"
+print("logo:", os.path.basename(_logo_ruta))
 modelos = catalogo()
 
 COLS, CW, CH, PAD = 4, 480, 360, 12

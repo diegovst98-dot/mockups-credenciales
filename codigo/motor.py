@@ -220,7 +220,16 @@ def paleta_del_logo(logo):
         return grupo[1] * (0.25 + saturacion(grupo[0]))
 
     grupos.sort(key=puntaje, reverse=True)
-    primario = grupos[0][0]
+    # Preferir el color de MARCA (saturado y con presencia) por encima del gris/negro
+    # dominante: un wordmark típico es texto gris/negro + un acento de color (el de la
+    # marca, ej. la "D" morada de DISECOD = 20% pero el gris es 80%). Si hay un grupo con
+    # color real (sat≥0.20) y presencia (>5%), ese manda; si no, el dominante.
+    prominentes = [g for g in grupos if g[1] > len(pixeles) * 0.05]
+    con_color = [g for g in prominentes if saturacion(g[0]) >= 0.20]
+    if con_color:
+        primario = max(con_color, key=lambda g: saturacion(g[0]) * (0.4 + g[1] / len(pixeles)))[0]
+    else:
+        primario = grupos[0][0]
 
     secundario = None
     for grupo in grupos[1:]:
