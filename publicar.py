@@ -20,7 +20,7 @@ CODIGO = BASE / "codigo"
 # el launcher descarga con write_bytes cualquier archivo del manifest. TODO en nombres
 # PLANOS (sin subcarpeta) para que el launcher horneado del exe los reparta sin recompilar.
 ARCHIVOS = ["app.py", "motor.py", "render.py", "folleto.py", "renombrador.py",
-            "estado.py", "asistente.py", "version.txt",
+            "estado.py", "asistente.py", "lienzo.py", "anclas.py", "version.txt",
             "fuente-display.ttf", "fuente-display-italic.ttf", "foto-persona.jpg",
             "inter.ttf", "inter-semibold.ttf"]
 # fondos curados (fondo-aurora-1.jpg, ...) — se agregan dinámicamente
