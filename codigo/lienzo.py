@@ -69,6 +69,21 @@ def _fit_font(texto, w, h, peso):
     return fnt, (l, t)
 
 
+def _lum_bajo(base, x0, y0, x1, y1):
+    """Luminancia media (0–1) del fondo bajo una región: para decidir texto claro/oscuro."""
+    from PIL import ImageStat
+    x0 = max(0, x0); y0 = max(0, y0)
+    x1 = min(base.width, x1); y1 = min(base.height, y1)
+    if x1 <= x0 or y1 <= y0:
+        return 1.0
+    return ImageStat.Stat(base.crop((x0, y0, x1, y1)).convert("L")).mean[0] / 255.0
+
+
+def _contraste(base, x0, y0, x1, y1, color_claro, color_oscuro):
+    """Elige el color legible según qué tan oscuro esté el fondo debajo."""
+    return color_claro if _lum_bajo(base, x0, y0, x1, y1) < 0.5 else color_oscuro
+
+
 def _dibujar_texto(base, cpx, spec, H):
     x0, y0, x1, y1 = cpx
     texto = spec.get("texto", "")
@@ -79,9 +94,12 @@ def _dibujar_texto(base, cpx, spec, H):
     # caja sea alta; el ancho de la caja sigue achicando si hace falta.
     h = min(max(1, y1 - y0), spec.get("max_frac", 0.08) * H)
     fnt, (l, t) = _fit_font(texto, w, h, spec.get("peso", 700))
+    # contraste automático: letra clara si el fondo bajo la caja es oscuro
+    color = _contraste(base, x0, y0, x1, y1,
+                       spec.get("color_claro", (245, 245, 245)),
+                       spec.get("color", (30, 30, 30)))
     # alinea la tinta visible a (x0, y0): el bbox del modelo YA es la posición correcta
-    ImageDraw.Draw(base).text((x0 - l, y0 - t), texto, font=fnt,
-                              fill=tuple(spec.get("color", (30, 30, 30))))
+    ImageDraw.Draw(base).text((x0 - l, y0 - t), texto, font=fnt, fill=tuple(color))
 
 
 def _dibujar_datos(base, cpx, spec, H):
@@ -97,10 +115,14 @@ def _dibujar_datos(base, cpx, spec, H):
         linea = etq + ("  " + val if val else "")
         fnt, (l, t) = _fit_font(linea, w, rowh * 0.92, 700)
         yy = y0 + int(i * rowh)
-        d.text((x0 - l, yy - t), etq, font=fnt, fill=tuple(spec.get("color_etq", (30, 110, 80))))
+        # contraste por fila (el bloque puede cruzar una banda)
+        oscuro_fondo = _lum_bajo(base, x0, yy, x1, yy + int(rowh)) < 0.5
+        c_etq = (255, 255, 255) if oscuro_fondo else spec.get("color_etq", (30, 110, 80))
+        c_val = (228, 228, 228) if oscuro_fondo else spec.get("color_val", (40, 40, 40))
+        d.text((x0 - l, yy - t), etq, font=fnt, fill=tuple(c_etq))
         if val:
             wlbl = d.textlength(etq + "  ", font=fnt)
-            d.text((x0 - l + wlbl, yy - t), val, font=fnt, fill=tuple(spec.get("color_val", (40, 40, 40))))
+            d.text((x0 - l + wlbl, yy - t), val, font=fnt, fill=tuple(c_val))
 
 
 def componer(fondo, capas, recursos, W, H):

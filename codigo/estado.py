@@ -20,69 +20,39 @@ TEXTO_HERO = ("nombre", "cargo")
 # que delatan plantilla). El vendedor agrega los campos reales con "+ Agregar campo".
 FILAS_DEFAULT = []
 
-# --- Capas del editor visual (v3): logo/foto/textos como objetos movibles ---
-# Cada capa guarda su CAJA en coordenadas normalizadas 0–1 (fracción de la tarjeta):
-# {x, y} = esquina sup-izq, {w, h} = ancho/alto. El mismo ajuste rinde idéntico a
-# cualquier resolución (preview chico = export grande) -> base del WYSIWYG.
-CAPAS_IDS = ("logo", "foto", "nombre", "cargo", "datos")
+# --- Capas movibles del editor (v3.1 — "el modelo manda"): SOLO logo y foto ---
+# El boceto base lo dibuja el MODELO (texto/decoración/color perfectos, idéntico al
+# catálogo). El logo y la foto pueden RE-UBICARSE: si el vendedor los mueve
+# (caja["movido"]=True) se vuelven capa encima del render; si no, los pinta el propio
+# modelo (perfecto, respeta forma de foto). Caja normalizada 0–1.
+CAPAS_IDS = ("logo", "foto")
 
 _CAPAS_H = {
-    "logo":   {"x": 0.04, "y": 0.06, "w": 0.30, "h": 0.20},
-    "foto":   {"x": 0.72, "y": 0.18, "w": 0.22, "h": 0.62},
-    "nombre": {"x": 0.05, "y": 0.40, "w": 0.55, "h": 0.12},
-    "cargo":  {"x": 0.05, "y": 0.53, "w": 0.55, "h": 0.08},
-    "datos":  {"x": 0.05, "y": 0.64, "w": 0.60, "h": 0.30},
+    "logo": {"x": 0.05, "y": 0.06, "w": 0.30, "h": 0.18},
+    "foto": {"x": 0.72, "y": 0.20, "w": 0.22, "h": 0.60},
 }
 _CAPAS_V = {
-    "logo":   {"x": 0.18, "y": 0.05, "w": 0.64, "h": 0.16},
-    "foto":   {"x": 0.28, "y": 0.24, "w": 0.44, "h": 0.34},
-    "nombre": {"x": 0.08, "y": 0.60, "w": 0.84, "h": 0.09},
-    "cargo":  {"x": 0.08, "y": 0.69, "w": 0.84, "h": 0.06},
-    "datos":  {"x": 0.08, "y": 0.77, "w": 0.84, "h": 0.20},
+    "logo": {"x": 0.18, "y": 0.05, "w": 0.64, "h": 0.16},
+    "foto": {"x": 0.28, "y": 0.24, "w": 0.44, "h": 0.40},
 }
 
 
 def capas_inicial(orientacion="H"):
-    """Cajas genéricas de las capas (fallback). 'V' = vertical, resto = horizontal."""
+    """Cajas genéricas de logo/foto (fallback si no hay anclas del modelo)."""
     base = _CAPAS_V if orientacion == "V" else _CAPAS_H
     return {k: dict(v) for k, v in base.items()}
 
 
-def _acomodar_texto(capas):
-    """Conserva logo/foto (se derivan bien) y RE-APILA nombre/cargo/datos en una columna
-    ordenada (sin solaparse) ubicada según dónde esté la foto: a su izquierda si la foto va
-    a la derecha (horizontales), o debajo de ella si está centrada (verticales)."""
-    c = {k: dict(v) for k, v in capas.items()}
-    lo = c.get("logo", {"x": 0.05, "y": 0.05, "w": 0.30, "h": 0.18})
-    fo = c.get("foto", {"x": 0.70, "y": 0.20, "w": 0.22, "h": 0.60})
-    mx = 0.06
-    if fo["x"] > 0.5:                       # foto a la derecha (horizontal) -> texto a la izquierda
-        col_x = mx
-        col_w = max(0.30, fo["x"] - 0.02 - mx)
-        col_top = max(lo["y"] + lo["h"] + 0.05, 0.42)
-        col_bot = 0.95
-    else:                                   # foto centrada/izq (vertical) -> texto debajo de la foto
-        col_x = mx
-        col_w = 1 - 2 * mx
-        col_top = min(0.92, max(fo["y"] + fo["h"] + 0.05, lo["y"] + lo["h"] + 0.05))
-        col_bot = 0.97
-    colh = max(0.18, col_bot - col_top)
-    c["nombre"] = {"x": col_x, "y": col_top, "w": col_w, "h": colh * 0.22}
-    c["cargo"] = {"x": col_x, "y": col_top + colh * 0.24, "w": col_w, "h": colh * 0.13}
-    c["datos"] = {"x": col_x, "y": col_top + colh * 0.40, "w": col_w, "h": colh * 0.58}
-    return c
-
-
 def capas_de_modelo(modelo_clave):
-    """Cajas del modelo: logo/foto NATIVOS (derivados) + texto re-apilado en columna
-    ordenada. Si no hay anclas, cae a las genéricas. Cada modelo arranca ORDENADO."""
+    """Cajas NATIVAS de logo y foto del modelo (derivadas en anclas.py), para que al
+    moverlos arranquen donde el modelo los pone. Si no hay anclas, cae a las genéricas."""
     try:
         import anclas
         nativas = anclas.ANCLAS.get(modelo_clave)
     except Exception:
         nativas = None
-    if nativas and set(CAPAS_IDS) <= set(nativas):
-        return _acomodar_texto(nativas)
+    if nativas and {"logo", "foto"} <= set(nativas):
+        return {k: dict(nativas[k]) for k in CAPAS_IDS}
     return capas_inicial("H")
 
 
@@ -134,6 +104,7 @@ def mover_capa(ajustes, capa_id, x=None, y=None, w=None, h=None):
     for nombre, val in (("x", x), ("y", y), ("w", w), ("h", h)):
         if val is not None:
             caja[nombre] = _clamp01(val)
+    caja["movido"] = True          # marca que el vendedor lo reubicó -> se vuelve capa
     return nuevo
 
 

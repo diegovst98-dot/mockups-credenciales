@@ -1283,33 +1283,44 @@ def _foto_pil(ajustes):
 
 
 def render_modelo(logo, cliente, ajustes, escala=1.0):
-    """Compone la credencial: fondo decorativo del modelo + capas movibles (logo, foto,
-    nombre, cargo, datos). El MISMO camino alimenta preview y export => WYSIWYG. 'escala'
-    permite preview chico (0.5) y export grande (1.0) con resultado idéntico."""
-    from plantillas import construir_contexto
+    """EL MODELO MANDA: el boceto base lo dibuja el modelo en HTML (texto, decoración y
+    color perfectos, idéntico al catálogo). El logo y la foto se quedan DENTRO del modelo
+    —que los enmarca perfecto, respetando su forma— salvo que el vendedor los MUEVA
+    (caja['movido']=True): ahí se vacían del HTML y se pegan como capa en su nueva posición.
+    Si nada se movió, devuelve el render puro del modelo (perfecto)."""
+    from plantillas import cara, construir_contexto
+    from render import render_caras
     import lienzo
-    import estado
     ajustes = ajustes or {}
-    capas = ajustes.get("capas") or estado.capas_inicial("H")
+    capas = ajustes.get("capas") or {}
+    logo_movido = bool(capas.get("logo", {}).get("movido"))
+    foto_movida = bool(capas.get("foto", {}).get("movido"))
     prim, sec = _prim_sec(logo, ajustes)
     ctx = construir_contexto(logo, prim, sec, cliente, ajustes)
-    fondo = fondo_de_modelo(logo, cliente, ajustes)
-    W = int(fondo.width * escala)
-    H = int(fondo.height * escala)
-    acc = marca_legible(prim)
-    cli = (cliente or "").strip()
-    datos_filas = ([("Empresa", cli)] if cli else []) + list(ctx["filas"])
-    recursos = {
-        "logo": {"tipo": "imagen", "img": logo, "ajuste": "contain"},
-        "foto": {"tipo": "imagen", "img": _foto_pil(ajustes), "ajuste": "cover"},
-        "nombre": {"tipo": "texto", "texto": ctx["datos"].get("nombre", ""), "peso": 800,
-                   "color": (30, 30, 30), "max_frac": 0.085},
-        "cargo": {"tipo": "texto", "texto": ctx["datos"].get("cargo", ""), "peso": 600,
-                  "color": (90, 90, 90), "max_frac": 0.05},
-        "datos": {"tipo": "datos", "filas": datos_filas, "color_etq": acc,
-                  "color_val": (40, 40, 40), "max_frac": 0.052},
-    }
-    return lienzo.componer(fondo, capas, recursos, W, H)
+    # Foto: si el vendedor subió una y NO la movió, que la pinte el MODELO (su marco/forma).
+    foto_ruta = ajustes.get("foto_ruta")
+    if foto_movida:
+        ctx["foto_uri"] = _PIXEL_TRANSP
+    elif foto_ruta and os.path.exists(foto_ruta):
+        from plantillas.base import _b64_img
+        ctx["foto_uri"] = _b64_img(Image.open(foto_ruta).convert("RGB"))
+    if logo_movido:
+        ctx["logo_uri"] = _PIXEL_TRANSP
+    html, w, h = cara(ajustes["modelo"], "frontal", ctx)
+    base = render_caras([(html, w, h)])[0]
+    destino = (CARD_W, CARD_H) if base.width > base.height else (V_W, V_H)
+    base = base.resize(destino, Image.LANCZOS)
+    W = int(base.width * escala)
+    H = int(base.height * escala)
+    if not (logo_movido or foto_movida):
+        return base if escala == 1.0 else base.resize((W, H), Image.LANCZOS)
+    recursos = {}
+    if logo_movido:
+        recursos["logo"] = {"tipo": "imagen", "img": logo, "ajuste": "contain"}
+    if foto_movida:
+        recursos["foto"] = {"tipo": "imagen", "img": _foto_pil(ajustes), "ajuste": "cover"}
+    capas2 = {k: capas[k] for k in recursos if k in capas}
+    return lienzo.componer(base, capas2, recursos, W, H)
 
 
 def exportar_personalizado(logo, cliente, ajustes, carpeta_salida=None, pdf=True, png=True):
