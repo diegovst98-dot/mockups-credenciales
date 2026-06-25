@@ -49,16 +49,41 @@ def capas_inicial(orientacion="H"):
     return {k: dict(v) for k, v in base.items()}
 
 
+def _acomodar_texto(capas):
+    """Conserva logo/foto (se derivan bien) y RE-APILA nombre/cargo/datos en una columna
+    ordenada (sin solaparse) ubicada según dónde esté la foto: a su izquierda si la foto va
+    a la derecha (horizontales), o debajo de ella si está centrada (verticales)."""
+    c = {k: dict(v) for k, v in capas.items()}
+    lo = c.get("logo", {"x": 0.05, "y": 0.05, "w": 0.30, "h": 0.18})
+    fo = c.get("foto", {"x": 0.70, "y": 0.20, "w": 0.22, "h": 0.60})
+    mx = 0.06
+    if fo["x"] > 0.5:                       # foto a la derecha (horizontal) -> texto a la izquierda
+        col_x = mx
+        col_w = max(0.30, fo["x"] - 0.02 - mx)
+        col_top = max(lo["y"] + lo["h"] + 0.05, 0.42)
+        col_bot = 0.95
+    else:                                   # foto centrada/izq (vertical) -> texto debajo de la foto
+        col_x = mx
+        col_w = 1 - 2 * mx
+        col_top = min(0.92, max(fo["y"] + fo["h"] + 0.05, lo["y"] + lo["h"] + 0.05))
+        col_bot = 0.97
+    colh = max(0.18, col_bot - col_top)
+    c["nombre"] = {"x": col_x, "y": col_top, "w": col_w, "h": colh * 0.22}
+    c["cargo"] = {"x": col_x, "y": col_top + colh * 0.24, "w": col_w, "h": colh * 0.13}
+    c["datos"] = {"x": col_x, "y": col_top + colh * 0.40, "w": col_w, "h": colh * 0.58}
+    return c
+
+
 def capas_de_modelo(modelo_clave):
-    """Cajas NATIVAS del modelo (su layout original) si están derivadas en anclas.py;
-    si no, cae a las genéricas. Así cada modelo arranca ORDENADO."""
+    """Cajas del modelo: logo/foto NATIVOS (derivados) + texto re-apilado en columna
+    ordenada. Si no hay anclas, cae a las genéricas. Cada modelo arranca ORDENADO."""
     try:
         import anclas
         nativas = anclas.ANCLAS.get(modelo_clave)
     except Exception:
         nativas = None
     if nativas and set(CAPAS_IDS) <= set(nativas):
-        return {k: dict(nativas[k]) for k in CAPAS_IDS}
+        return _acomodar_texto(nativas)
     return capas_inicial("H")
 
 
