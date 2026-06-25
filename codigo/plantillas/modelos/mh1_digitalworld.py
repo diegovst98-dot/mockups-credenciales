@@ -9,7 +9,7 @@ _CSS = """
 .mh1{background:#fff}
 .mh1 .topband{position:absolute;top:0;left:0;width:60%;height:88px;background:var(--prim)}
 .mh1 .topdark{position:absolute;top:0;left:26%;width:46%;height:120px;background:var(--oscuro);clip-path:polygon(20% 0,100% 0,80% 100%,0 100%)}
-.mh1 .logo{position:absolute;top:34px;right:56px;height:120px;max-width:40%;object-fit:contain}
+.mh1 .logo{position:absolute;top:42px;right:48px;height:86px;max-width:30%;object-fit:contain;object-position:right center}
 .mh1 .foto{position:absolute;left:62px;top:182px;width:300px;height:300px;border:7px solid var(--oscuro);object-fit:cover;object-position:center 22%}
 .mh1 .info{position:absolute;left:436px;right:56px;top:196px}
 .mh1 .name{font-weight:800;font-size:62px;line-height:1.04;color:#1a1a1a;letter-spacing:.005em}

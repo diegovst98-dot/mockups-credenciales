@@ -14,7 +14,7 @@ _CSS_PREMIUM = """
 .prem .corners i:nth-child(3){bottom:64px;left:48px}
 .prem .corners i:nth-child(4){bottom:64px;right:48px}
 .prem .botbar{position:absolute;left:0;right:0;bottom:0;height:46px;background:var(--oscuro);border-top:4px solid var(--oro)}
-.prem .safe{position:absolute;left:56px;right:56px;top:60px;bottom:60px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.prem .safe{position:absolute;left:56px;right:56px;top:60px;bottom:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .prem .logohdr{height:92px;display:flex;align-items:center;margin-top:4px}
 .prem .logohdr img{max-height:92px;max-width:380px;object-fit:contain}
 .prem .foto{margin-top:28px;width:252px;aspect-ratio:4/5;border:3px solid var(--acc);object-fit:cover;object-position:center 22%}

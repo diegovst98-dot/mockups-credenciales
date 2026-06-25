@@ -24,8 +24,8 @@ _CSS = """
 /* --- zona segura de contenido (no se enciman con los arcos) --- */
 .mv7 .safe{position:absolute;left:0;right:0;top:0;bottom:150px;z-index:3;
   display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 40px}
-.mv7 .logo{margin-top:170px;height:126px;max-width:60%;object-fit:contain}
-.mv7 .foto{margin-top:30px;width:282px;height:312px;border:6px solid var(--acc);
+.mv7 .logo{margin-top:248px;height:104px;max-width:62%;object-fit:contain}
+.mv7 .foto{margin-top:34px;width:282px;height:312px;border:6px solid var(--acc);
   object-fit:cover;object-position:center 22%;background:#fff}
 .mv7 .name{margin-top:28px;font-weight:800;font-size:48px;line-height:1.04;
   color:#2b2b2b;max-width:100%;letter-spacing:.005em}

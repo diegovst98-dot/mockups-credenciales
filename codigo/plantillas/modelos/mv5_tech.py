@@ -15,10 +15,10 @@ _CSS = """
    cada capa es un bloque ancho y plano; el borde superior se curva con
    border-radius en las esquinas superiores -> aspecto de onda de imprenta. */
 .mv5 .ola{position:absolute;left:-10%;right:-10%;width:120%}
-.mv5 .ola1{bottom:120px;height:96px;background:var(--acc2);border-top-left-radius:100% 80px;border-top-right-radius:100% 55px;transform:rotate(-3deg)}
-.mv5 .ola2{bottom:74px;height:120px;background:var(--prim);border-top-left-radius:100% 95px;border-top-right-radius:100% 65px;transform:rotate(-3deg)}
-.mv5 .ola3{bottom:34px;height:96px;background:var(--oscuro);border-top-left-radius:100% 55px;border-top-right-radius:100% 100px;transform:rotate(3deg)}
-.mv5 .ola4{bottom:0;height:70px;background:var(--oro);border-top-left-radius:100% 110px;border-top-right-radius:100% 45px;transform:rotate(3deg)}
+.mv5 .ola1{bottom:120px;height:96px;background:var(--claro);border-top-left-radius:100% 80px;border-top-right-radius:100% 55px;transform:rotate(-3deg)}
+.mv5 .ola2{bottom:74px;height:120px;background:var(--medio);border-top-left-radius:100% 95px;border-top-right-radius:100% 65px;transform:rotate(-3deg)}
+.mv5 .ola3{bottom:34px;height:96px;background:var(--prim);border-top-left-radius:100% 55px;border-top-right-radius:100% 100px;transform:rotate(3deg)}
+.mv5 .ola4{bottom:0;height:70px;background:var(--oscuro);border-top-left-radius:100% 110px;border-top-right-radius:100% 45px;transform:rotate(3deg)}
 
 /* ---- zona segura: contenido por encima de las olas ---- */
 .mv5 .safe{position:absolute;left:0;right:0;top:0;bottom:248px;display:flex;flex-direction:column;align-items:center;text-align:center;z-index:2}

@@ -11,7 +11,7 @@ _CSS = """
 .mv3{background:#fff}
 .mv3 .bandob{position:absolute;top:0;right:0;width:62%;height:560px;background:var(--oscuro);border-bottom-left-radius:80px}
 .mv3 .banda{position:absolute;top:0;left:0;right:0;height:500px;background:var(--prim);border-bottom-left-radius:90px}
-.mv3 .logo{position:absolute;top:50px;left:0;right:0;margin:0 auto;height:170px;max-width:54%;object-fit:contain;z-index:3}
+.mv3 .logo{position:absolute;top:56px;left:0;right:0;margin:0 auto;height:118px;max-width:62%;object-fit:contain;background:#fff;padding:22px 30px;border-radius:18px;box-shadow:0 6px 20px rgba(0,0,0,.18);z-index:3}
 .mv3 .cli{position:absolute;top:248px;left:0;right:0;text-align:center;color:var(--txtprim);font-weight:800;font-size:38px;letter-spacing:.12em;text-transform:uppercase;z-index:3}
 .mv3 .foto{position:absolute;top:330px;left:0;right:0;margin:0 auto;width:320px;height:320px;border-radius:50%;border:10px solid #111;object-fit:cover;object-position:center 20%;background:#fff;z-index:4}
 .mv3 .info{position:absolute;left:0;right:0;top:690px;bottom:118px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}

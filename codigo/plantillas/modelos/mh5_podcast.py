@@ -10,8 +10,8 @@ from plantillas.registro import registrar
 _CSS = """
 .mh5{background:#fff}
 .mh5 .topband{position:absolute;top:0;left:0;right:0;height:182px;background:var(--prim)}
-.mh5 .bump{position:absolute;top:0;left:50%;transform:translateX(-50%);width:300px;height:236px;background:#fff;border-radius:0 0 150px 150px}
-.mh5 .logo{position:absolute;top:40px;left:50%;transform:translateX(-50%);height:148px;max-width:262px;object-fit:contain;z-index:2}
+.mh5 .bump{position:absolute;top:0;left:50%;transform:translateX(-50%);width:420px;height:236px;background:#fff;border-radius:0 0 150px 150px}
+.mh5 .logo{position:absolute;top:52px;left:50%;transform:translateX(-50%);height:108px;max-width:300px;object-fit:contain;z-index:2}
 .mh5 .foto{position:absolute;left:90px;top:286px;width:282px;height:282px;border-radius:30px;border:8px solid #111;object-fit:cover;object-position:center 22%;background:#fff}
 .mh5 .info{position:absolute;left:448px;right:56px;top:298px}
 .mh5 .name{font-weight:800;font-size:52px;line-height:1.05;color:#1a1a1a;letter-spacing:.005em;text-transform:uppercase}

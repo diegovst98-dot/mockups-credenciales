@@ -19,11 +19,11 @@ _CSS = """
 /* Logo arriba centrado, sobre fondo blanco (su tinta real), SIEMPRE por encima de los blobs */
 .mv2 .logo{position:absolute;top:58px;left:0;right:0;margin:0 auto;display:block;width:auto;max-width:54%;height:148px;object-fit:contain;object-position:center;z-index:6}
 /* Bloque de textos centrado, por encima de la banda de cargo */
-.mv2 .info{position:absolute;left:36px;right:36px;top:752px;bottom:132px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;z-index:4}
-.mv2 .name{font-weight:800;font-size:58px;line-height:1.02;color:#1a1a1a;letter-spacing:.01em;text-transform:uppercase}
+.mv2 .info{position:absolute;left:28px;right:28px;top:748px;bottom:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:4;overflow:hidden}
+.mv2 .name{font-weight:800;font-size:46px;line-height:1.05;color:#1a1a1a;letter-spacing:0;text-transform:uppercase;max-width:100%}
 .mv2 .dni{margin-top:22px;font-weight:800;font-size:40px;color:#1a1a1a;letter-spacing:.01em}
 /* Banda inferior OSCURA con el cargo */
-.mv2 .cargo{position:absolute;left:0;right:0;bottom:0;height:118px;background:var(--oscuro);color:var(--txtprim);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:46px;letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:0 30px;z-index:5}
+.mv2 .cargo{position:absolute;left:0;right:0;bottom:0;height:118px;background:var(--oscuro);color:var(--txtprim);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:34px;line-height:1.1;letter-spacing:.05em;text-transform:uppercase;text-align:center;padding:0 26px;z-index:5}
 """
 
 

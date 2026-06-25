@@ -37,11 +37,11 @@ _CSS = """
 .mh3 .foto{position:absolute;left:122px;top:186px;width:300px;height:300px;
   border:9px solid var(--prim);object-fit:cover;object-position:center 22%;background:#fff;z-index:2}
 
-/* --- logo del cliente (tinta real, sin filtros) --- */
-.mh3 .logo{position:absolute;top:150px;right:74px;height:106px;max-width:44%;object-fit:contain;z-index:3}
+/* --- logo del cliente (tinta real, sin filtros) — zona propia en la banda superior --- */
+.mh3 .logo{position:absolute;top:158px;right:56px;height:88px;max-width:40%;object-fit:contain;z-index:3}
 
-/* --- bloque de texto --- */
-.mh3 .info{position:absolute;left:470px;right:56px;top:196px;z-index:3}
+/* --- bloque de texto — debajo del logo, sin colisión --- */
+.mh3 .info{position:absolute;left:470px;right:56px;top:286px;z-index:3}
 .mh3 .name{font-weight:800;font-size:54px;line-height:1.04;color:#1a1a1a;max-width:100%}
 .mh3 .dni{margin-top:18px;font-weight:800;font-size:38px;color:#1a1a1a}
 .mh3 .cod{margin-top:12px;font-weight:800;font-size:38px;color:#1a1a1a}

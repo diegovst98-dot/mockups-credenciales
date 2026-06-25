@@ -12,8 +12,8 @@ _CSS = """
 .mh7 .circ{position:absolute;left:-210px;top:-96px;width:830px;height:830px;border-radius:50%;background:var(--oscuro)}
 .mh7 .foto{position:absolute;left:70px;top:150px;width:330px;height:330px;border-radius:50%;border:8px solid #fff;object-fit:cover;object-position:center 22%;background:#fff;z-index:2}
 .mh7 .logo{position:absolute;top:70px;left:690px;width:268px;height:150px;object-fit:contain;object-position:left center;z-index:2}
-.mh7 .info{position:absolute;left:690px;right:44px;top:262px;z-index:2}
-.mh7 .name{font-weight:800;font-size:48px;line-height:1.02;color:#1a1a1a;text-transform:uppercase;letter-spacing:.01em}
+.mh7 .info{position:absolute;left:690px;right:30px;top:262px;z-index:2}
+.mh7 .name{font-weight:800;font-size:34px;line-height:1.08;color:#1a1a1a;text-transform:uppercase;letter-spacing:.005em}
 .mh7 .dni{margin-top:12px;font-weight:800;font-size:34px;color:var(--acc)}
 .mh7 .rule{margin-top:24px;height:5px;background:#1a1a1a}
 .mh7 .cargo{margin-top:24px;font-weight:700;font-size:40px;color:#1a1a1a;letter-spacing:.005em}
