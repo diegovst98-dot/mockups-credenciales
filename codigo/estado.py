@@ -44,9 +44,22 @@ _CAPAS_V = {
 
 
 def capas_inicial(orientacion="H"):
-    """Cajas por defecto de las capas (no se enciman). 'V' = vertical, resto = horizontal."""
+    """Cajas genéricas de las capas (fallback). 'V' = vertical, resto = horizontal."""
     base = _CAPAS_V if orientacion == "V" else _CAPAS_H
     return {k: dict(v) for k, v in base.items()}
+
+
+def capas_de_modelo(modelo_clave):
+    """Cajas NATIVAS del modelo (su layout original) si están derivadas en anclas.py;
+    si no, cae a las genéricas. Así cada modelo arranca ORDENADO."""
+    try:
+        import anclas
+        nativas = anclas.ANCLAS.get(modelo_clave)
+    except Exception:
+        nativas = None
+    if nativas and set(CAPAS_IDS) <= set(nativas):
+        return {k: dict(nativas[k]) for k in CAPAS_IDS}
+    return capas_inicial("H")
 
 
 def ajustes_inicial(modelo_clave):
@@ -58,7 +71,7 @@ def ajustes_inicial(modelo_clave):
         "textos": {},                 # overrides de nombre/cargo
         "empresa": "",                # "" = usa el cliente que se pasa al render
         "filas": [dict(f) for f in FILAS_DEFAULT],
-        "capas": capas_inicial("H"),
+        "capas": capas_de_modelo(modelo_clave),
     }
 
 

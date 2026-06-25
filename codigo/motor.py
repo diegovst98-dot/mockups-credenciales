@@ -1214,23 +1214,63 @@ def _prim_sec(logo, ajustes):
     return paleta_del_logo(logo)
 
 
-def fondo_de_modelo(logo, cliente, ajustes):
-    """Rasteriza SOLO la decoración del modelo (sin logo/foto/datos/héroe) para usarla
-    como fondo del compositor de capas. Reusa las plantillas sin modificarlas: vacía los
-    elementos editables en el ctx antes de pintar. Devuelve PIL.Image a tamaño CR80."""
-    from plantillas import cara, construir_contexto
-    from render import render_caras
+def _ctx_elementos(logo, cliente, ajustes, mostrar):
+    """ctx del modelo con SOLO los elementos en 'mostrar' visibles (logo/foto/nombre/
+    cargo/datos); el resto se vacía. Sirve para el fondo limpio (mostrar=∅) y para
+    derivar las anclas (un elemento a la vez)."""
+    from plantillas import construir_contexto
     ajustes = ajustes or {}
     prim, sec = _prim_sec(logo, ajustes)
-    ctx = construir_contexto(logo, prim, sec, cliente, ajustes)
-    ctx["logo_uri"] = _PIXEL_TRANSP
-    ctx["foto_uri"] = _PIXEL_TRANSP
-    ctx["filas"] = []
-    ctx["datos"] = dict(ctx["datos"], nombre="", cargo="")
-    html, w, h = cara(ajustes["modelo"], "frontal", ctx)
+    # 'datos' incluye la fila Empresa -> solo pasamos cliente cuando datos está visible
+    cli = cliente if ("datos" in mostrar) else ""
+    ctx = construir_contexto(logo, prim, sec, cli, ajustes)
+    if "logo" not in mostrar:
+        ctx["logo_uri"] = _PIXEL_TRANSP
+    if "foto" not in mostrar:
+        ctx["foto_uri"] = _PIXEL_TRANSP
+    if "datos" not in mostrar:
+        ctx["filas"] = []
+    nombre = ctx["datos"].get("nombre", "") if "nombre" in mostrar else ""
+    cargo = ctx["datos"].get("cargo", "") if "cargo" in mostrar else ""
+    ctx["datos"] = dict(ctx["datos"], nombre=nombre, cargo=cargo)
+    return ctx
+
+
+def _render_elementos(logo, cliente, ajustes, mostrar):
+    """Rasteriza el modelo mostrando solo 'mostrar'. Devuelve PIL.Image a tamaño CR80."""
+    from plantillas import cara
+    from render import render_caras
+    ctx = _ctx_elementos(logo, cliente, ajustes, mostrar)
+    html, w, h = cara((ajustes or {})["modelo"], "frontal", ctx)
     img = render_caras([(html, w, h)])[0]
     destino = (CARD_W, CARD_H) if img.width > img.height else (V_W, V_H)
     return img.resize(destino, Image.LANCZOS)
+
+
+def fondo_de_modelo(logo, cliente, ajustes):
+    """SOLO la decoración del modelo (sin logo/foto/datos/héroe), para el compositor."""
+    return _render_elementos(logo, cliente, ajustes, set())
+
+
+def anclas_de_modelo(logo, cliente, ajustes):
+    """Deriva la CAJA real (normalizada) de cada elemento del modelo por diferencia de
+    imagen contra el fondo limpio. Devuelve {capa_id: {x,y,w,h}} para sembrar el editor
+    con el layout NATIVO del modelo (arranca ordenado)."""
+    from PIL import ImageChops
+    import estado
+    bg = _render_elementos(logo, cliente, ajustes, set())
+    W, H = bg.size
+    out = {}
+    for cid in estado.CAPAS_IDS:
+        el = _render_elementos(logo, cliente, ajustes, {cid})
+        diff = ImageChops.difference(el.convert("RGB"), bg.convert("RGB"))
+        bbox = diff.getbbox()
+        if bbox:
+            x0, y0, x1, y1 = bbox
+            out[cid] = {"x": x0 / W, "y": y0 / H, "w": (x1 - x0) / W, "h": (y1 - y0) / H}
+        else:
+            out[cid] = dict(estado.capas_inicial("H")[cid])
+    return out
 
 
 def _foto_pil(ajustes):
@@ -1257,12 +1297,14 @@ def render_modelo(logo, cliente, ajustes, escala=1.0):
     W = int(fondo.width * escala)
     H = int(fondo.height * escala)
     acc = marca_legible(prim)
+    cli = (cliente or "").strip()
+    datos_filas = ([("Empresa", cli)] if cli else []) + list(ctx["filas"])
     recursos = {
         "logo": {"tipo": "imagen", "img": logo},
         "foto": {"tipo": "imagen", "img": _foto_pil(ajustes)},
         "nombre": {"tipo": "texto", "texto": ctx["datos"].get("nombre", ""), "peso": 800, "color": (30, 30, 30)},
         "cargo": {"tipo": "texto", "texto": ctx["datos"].get("cargo", ""), "peso": 600, "color": (90, 90, 90)},
-        "datos": {"tipo": "datos", "filas": ctx["filas"], "color_etq": acc, "color_val": (40, 40, 40)},
+        "datos": {"tipo": "datos", "filas": datos_filas, "color_etq": acc, "color_val": (40, 40, 40)},
     }
     return lienzo.componer(fondo, capas, recursos, W, H)
 

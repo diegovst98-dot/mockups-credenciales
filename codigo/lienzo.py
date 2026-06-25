@@ -40,11 +40,30 @@ def _fuente(peso, tam):
     return fuente(peso, max(8, int(tam)))
 
 
+def _fit_font(texto, w, h, peso):
+    """Devuelve (fuente, (l, t)) con el mayor tamaño cuyo texto entra en w×h.
+    (l, t) = offset del bbox para alinear la tinta visible a la esquina sup-izq."""
+    tam = max(8, int(h))
+    while tam > 8:
+        fnt = _fuente(peso, tam)
+        l, t, r, b = fnt.getbbox(texto or " ")
+        if (r - l) <= w and (b - t) <= h:
+            return fnt, (l, t)
+        tam = int(tam * 0.92)
+    fnt = _fuente(peso, 8)
+    l, t, r, b = fnt.getbbox(texto or " ")
+    return fnt, (l, t)
+
+
 def _dibujar_texto(base, cpx, spec):
     x0, y0, x1, y1 = cpx
-    alto = max(8, y1 - y0)
-    fnt = _fuente(spec.get("peso", 700), int(alto * 0.8))
-    ImageDraw.Draw(base).text((x0, y0), spec.get("texto", ""), font=fnt,
+    texto = spec.get("texto", "")
+    if not texto:
+        return
+    w, h = max(1, x1 - x0), max(1, y1 - y0)
+    fnt, (l, t) = _fit_font(texto, w, h, spec.get("peso", 700))
+    # alinea la tinta visible a (x0, y0): el bbox del modelo YA es la posición correcta
+    ImageDraw.Draw(base).text((x0 - l, y0 - t), texto, font=fnt,
                               fill=tuple(spec.get("color", (30, 30, 30))))
 
 
@@ -53,16 +72,17 @@ def _dibujar_datos(base, cpx, spec):
     filas = [(e, v) for e, v in spec.get("filas", []) if e]
     if not filas:
         return
-    alto_fila = max(10, (y1 - y0) // max(1, len(filas)))
-    fnt = _fuente(700, int(alto_fila * 0.62))
+    w, h = max(1, x1 - x0), max(1, y1 - y0)
+    rowh = h / len(filas)
     d = ImageDraw.Draw(base)
-    y = y0
-    for etq, val in filas:
-        d.text((x0, y), etq, font=fnt, fill=tuple(spec.get("color_etq", (30, 110, 80))))
-        wlbl = d.textlength(etq + "   ", font=fnt)
+    for i, (etq, val) in enumerate(filas):
+        linea = etq + ("  " + val if val else "")
+        fnt, (l, t) = _fit_font(linea, w, rowh * 0.92, 700)
+        yy = y0 + int(i * rowh)
+        d.text((x0 - l, yy - t), etq, font=fnt, fill=tuple(spec.get("color_etq", (30, 110, 80))))
         if val:
-            d.text((x0 + wlbl, y), val, font=fnt, fill=tuple(spec.get("color_val", (40, 40, 40))))
-        y += alto_fila
+            wlbl = d.textlength(etq + "  ", font=fnt)
+            d.text((x0 - l + wlbl, yy - t), val, font=fnt, fill=tuple(spec.get("color_val", (40, 40, 40))))
 
 
 def componer(fondo, capas, recursos, W, H):

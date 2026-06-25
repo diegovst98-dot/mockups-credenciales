@@ -198,7 +198,7 @@ def filas_html(ctx, con_empresa=True):
     zona de datos. con_empresa=True antepone Empresa (los modelos que ya la muestran aparte
     pasan False). Estilo base en css_base (.fdato); fondo oscuro -> clase 'fdark' en la tarjeta."""
     filas = list(ctx.get("filas", []))
-    if con_empresa:
+    if con_empresa and (ctx.get("cliente") or "").strip():
         filas = [("Empresa", ctx.get("cliente", ""))] + filas
     n = len(filas)
     # achica el texto cuando hay muchos campos, para que entren en modelos con poco espacio
