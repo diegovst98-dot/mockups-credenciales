@@ -120,6 +120,7 @@ def test_botones_clave_existen():
     try:
         t = _textos_de_botones(top)
         assert "+ Agregar campo" in t
-        assert "Exportar PDF" in t and "Exportar PNG" in t
+        assert "Exportar para WhatsApp" in t       # botón único (PNG + PDF)
+        assert "Guardar" in t and "Reabrir" in t   # persistencia de cotización
     finally:
         top.destroy()

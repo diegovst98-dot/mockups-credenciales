@@ -16,10 +16,9 @@ from copy import deepcopy
 # Texto héroe (nombre grande + cargo): se edita en cajas dedicadas, no en la lista de filas.
 TEXTO_HERO = ("nombre", "cargo")
 
-# Filas de datos por defecto (el vendedor las edita / agrega / quita).
-FILAS_DEFAULT = [
-    {"etiqueta": "DNI", "valor": "45678123"},
-]
+# Filas de datos por defecto: VACÍO a propósito (sin datos falsos tipo "DNI 45678123"
+# que delatan plantilla). El vendedor agrega los campos reales con "+ Agregar campo".
+FILAS_DEFAULT = []
 
 # --- Capas del editor visual (v3): logo/foto/textos como objetos movibles ---
 # Cada capa guarda su CAJA en coordenadas normalizadas 0–1 (fracción de la tarjeta):

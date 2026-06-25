@@ -55,25 +55,29 @@ def _fit_font(texto, w, h, peso):
     return fnt, (l, t)
 
 
-def _dibujar_texto(base, cpx, spec):
+def _dibujar_texto(base, cpx, spec, H):
     x0, y0, x1, y1 = cpx
     texto = spec.get("texto", "")
     if not texto:
         return
-    w, h = max(1, x1 - x0), max(1, y1 - y0)
+    w = max(1, x1 - x0)
+    # tope de altura de letra = fracción de la tarjeta -> el texto NO se infla aunque la
+    # caja sea alta; el ancho de la caja sigue achicando si hace falta.
+    h = min(max(1, y1 - y0), spec.get("max_frac", 0.08) * H)
     fnt, (l, t) = _fit_font(texto, w, h, spec.get("peso", 700))
     # alinea la tinta visible a (x0, y0): el bbox del modelo YA es la posición correcta
     ImageDraw.Draw(base).text((x0 - l, y0 - t), texto, font=fnt,
                               fill=tuple(spec.get("color", (30, 30, 30))))
 
 
-def _dibujar_datos(base, cpx, spec):
+def _dibujar_datos(base, cpx, spec, H):
     x0, y0, x1, y1 = cpx
     filas = [(e, v) for e, v in spec.get("filas", []) if e]
     if not filas:
         return
-    w, h = max(1, x1 - x0), max(1, y1 - y0)
-    rowh = h / len(filas)
+    w = max(1, x1 - x0)
+    # alto de fila acotado: ni estira a llenar la caja con pocas filas, ni desborda
+    rowh = min(max(1, y1 - y0) / len(filas), spec.get("max_frac", 0.052) * H)
     d = ImageDraw.Draw(base)
     for i, (etq, val) in enumerate(filas):
         linea = etq + ("  " + val if val else "")
@@ -102,7 +106,7 @@ def componer(fondo, capas, recursos, W, H):
             pieza = encajar_en(spec["img"].convert("RGBA"), cpx[2] - cpx[0], cpx[3] - cpx[1])
             base.alpha_composite(pieza, (cpx[0], cpx[1]))
         elif tipo == "texto":
-            _dibujar_texto(base, cpx, spec)
+            _dibujar_texto(base, cpx, spec, H)
         elif tipo == "datos":
-            _dibujar_datos(base, cpx, spec)
+            _dibujar_datos(base, cpx, spec, H)
     return base

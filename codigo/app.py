@@ -325,17 +325,19 @@ class App:
         self._p_controles.pack(fill="x", pady=(8, 0))
         self._p_rebuild_controles()
 
-        # --- pie: actualizar + exportar ---
+        # --- pie: actualizar + guardar/reabrir + exportar ---
         pie = tk.Frame(panel, bg=FONDO)
         pie.pack(fill="x", padx=16, pady=(0, 12))
         tk.Button(pie, text="Actualizar preview", command=self._p_rerender,
                   bg=LILA, fg="white", relief="flat", padx=14, pady=6).pack(side="left")
+        tk.Button(pie, text="Guardar", command=self._p_guardar,
+                  bg="#EEEAFE", fg=GRIS, relief="flat", padx=10, pady=6).pack(side="left", padx=(6, 0))
+        tk.Button(pie, text="Reabrir", command=self._p_reabrir,
+                  bg="#EEEAFE", fg=GRIS, relief="flat", padx=10, pady=6).pack(side="left", padx=(6, 0))
         self.p_estado = tk.Label(pie, text="", bg=FONDO, fg="#555")
         self.p_estado.pack(side="left", padx=10)
-        tk.Button(pie, text="Exportar PDF", command=lambda: self._p_exportar("pdf"),
-                  bg="#EEEAFE", fg=GRIS, relief="flat", padx=12, pady=6).pack(side="right")
-        tk.Button(pie, text="Exportar PNG", command=lambda: self._p_exportar("png"),
-                  bg="#EEEAFE", fg=GRIS, relief="flat", padx=12, pady=6).pack(side="right", padx=(0, 6))
+        tk.Button(pie, text="Exportar para WhatsApp", command=self._p_exportar,
+                  bg="#25D366", fg="white", relief="flat", padx=14, pady=6).pack(side="right")
 
     def _p_elegir_logo(self):
         ruta = filedialog.askopenfilename(
@@ -615,19 +617,24 @@ class App:
         self.p_estado.config(text="")
         messagebox.showerror("No se pudo generar el preview", msg)
 
-    def _p_exportar(self, formato):
+    def _p_exportar(self):
         if not self.p_logo:
             messagebox.showwarning("Falta el logo", "Primero elige el logo del cliente.")
             return
-        cliente = self.p_cliente.get().strip() or "Cliente"
+        cliente = self.p_cliente.get().strip()
+        if not cliente or cliente.lower() == "cliente":
+            messagebox.showwarning(
+                "Falta la empresa",
+                "Escribe el nombre de la empresa del cliente (arriba, en 'Empresa') antes de "
+                "exportar, para que el archivo no salga como 'Cliente'.")
+            return
         ajustes = estado.aplicar_cambios(self.p_ajustes, {})
         self.p_estado.config(text="Exportando…")
 
         def trabajo():
             try:
-                carpeta, _ = motor.exportar_personalizado(
-                    self.p_logo, cliente, ajustes,
-                    pdf=(formato == "pdf"), png=(formato == "png"))
+                carpeta, _ = motor.exportar_personalizado(self.p_logo, cliente, ajustes,
+                                                          pdf=True, png=True)
                 self.raiz.after(0, self._p_export_listo, carpeta)
             except Exception as e:
                 self.raiz.after(0, self._p_error, str(e))
@@ -635,8 +642,59 @@ class App:
         threading.Thread(target=trabajo, daemon=True).start()
 
     def _p_export_listo(self, carpeta):
-        self.p_estado.config(text="Exportado ✓")
+        self.p_estado.config(text="Exportado ✓ (PNG + PDF)")
         os.startfile(carpeta)
+
+    def _p_guardar(self):
+        cliente = self.p_cliente.get().strip()
+        ruta = filedialog.asksaveasfilename(
+            title="Guardar cotización", defaultextension=".json",
+            initialfile="cotizacion-%s.json" % (motor.slug(cliente) if cliente else "cliente"),
+            filetypes=[("Cotización Mockups", "*.json")])
+        if not ruta:
+            return
+        import json
+        data = estado.serializar(self.p_ajustes, cliente, self.p_logo_ruta,
+                                 getattr(self, "p_foto_ruta", None))
+        try:
+            with open(ruta, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            self.p_estado.config(text="Guardado ✓")
+        except Exception as e:
+            self._p_error("No se pudo guardar: %s" % e)
+
+    def _p_reabrir(self):
+        ruta = filedialog.askopenfilename(
+            title="Reabrir cotización",
+            filetypes=[("Cotización Mockups", "*.json"), ("Todos", "*.*")])
+        if not ruta:
+            return
+        import json
+        try:
+            with open(ruta, encoding="utf-8") as f:
+                data = estado.deserializar(json.load(f))
+        except Exception as e:
+            self._p_error("No se pudo abrir la cotización: %s" % e)
+            return
+        self.p_ajustes = data["ajustes"]
+        self.p_cliente.delete(0, "end")
+        self.p_cliente.insert(0, data["empresa"])
+        if data["logo_ruta"] and os.path.exists(data["logo_ruta"]):
+            self.p_logo_ruta = data["logo_ruta"]
+            self.p_logo = motor.cargar_logo(data["logo_ruta"])
+            self.p_logo_lbl.config(text=os.path.basename(data["logo_ruta"]), fg=GRIS)
+        self.p_foto_ruta = data.get("foto_ruta") or None
+        try:
+            self.p_modelo_var.set(self._modelo_actual().nombre)
+        except StopIteration:
+            pass
+        from plantillas import DATOS
+        for campo, e in self._p_texto_entries.items():
+            e.delete(0, "end")
+            e.insert(0, self.p_ajustes["textos"].get(campo) or DATOS[campo])
+        self._p_rebuild_controles()
+        self._p_render_filas_editor()
+        self._p_schedule_render()
 
 
 def main():

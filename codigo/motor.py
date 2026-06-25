@@ -1302,9 +1302,12 @@ def render_modelo(logo, cliente, ajustes, escala=1.0):
     recursos = {
         "logo": {"tipo": "imagen", "img": logo},
         "foto": {"tipo": "imagen", "img": _foto_pil(ajustes)},
-        "nombre": {"tipo": "texto", "texto": ctx["datos"].get("nombre", ""), "peso": 800, "color": (30, 30, 30)},
-        "cargo": {"tipo": "texto", "texto": ctx["datos"].get("cargo", ""), "peso": 600, "color": (90, 90, 90)},
-        "datos": {"tipo": "datos", "filas": datos_filas, "color_etq": acc, "color_val": (40, 40, 40)},
+        "nombre": {"tipo": "texto", "texto": ctx["datos"].get("nombre", ""), "peso": 800,
+                   "color": (30, 30, 30), "max_frac": 0.085},
+        "cargo": {"tipo": "texto", "texto": ctx["datos"].get("cargo", ""), "peso": 600,
+                  "color": (90, 90, 90), "max_frac": 0.05},
+        "datos": {"tipo": "datos", "filas": datos_filas, "color_etq": acc,
+                  "color_val": (40, 40, 40), "max_frac": 0.052},
     }
     return lienzo.componer(fondo, capas, recursos, W, H)
 
@@ -1318,7 +1321,9 @@ def exportar_personalizado(logo, cliente, ajustes, carpeta_salida=None, pdf=True
     img = render_modelo(logo, cliente, ajustes)
     modelo = next(m for m in catalogo() if m.clave == ajustes["modelo"])
     if carpeta_salida is None:
-        carpeta_salida = os.path.join(RUTA_BASE, "salida", "%s-personalizado" % slug(cliente))
+        from datetime import datetime
+        sello = datetime.now().strftime("%Y%m%d-%H%M%S")
+        carpeta_salida = os.path.join(RUTA_BASE, "salida", "%s-%s" % (slug(cliente), sello))
     os.makedirs(carpeta_salida, exist_ok=True)
     archivos = []
     base = "%s-%s" % (modelo.clave, slug(cliente))
