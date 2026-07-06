@@ -29,6 +29,27 @@ AFINIDAD = {
     "mv2":     {"base": 4, "necesita_oscuro": True},    # blobs grandes
 }
 
+# Combo de roles de color por modelo (rol_prim, rol_sec) — ver motor.paleta_roles.
+# Criterio de diseñador: bandas/áreas GRANDES → tono profundo/neutro + acento vivo
+# (no se lavan ni gritan); modelos limpios/minimal → acento + carbon; resto → acc/prof.
+COMBOS = {
+    # áreas grandes
+    "mv1": ("carbon", "acc"),   # Impacto (triángulo grande)
+    "mv2": ("carbon", "acc"),   # Orgánica (blobs)
+    "mv3": ("prof", "acc"),     # Corporativa (banda superior)
+    "mv4": ("carbon", "acc"),   # Doble Banda
+    "mh4": ("prof", "acc"),     # Fluida
+    "mh2": ("prof", "acc"),     # Dinámica
+    "mh7": ("prof", "acc"),     # Círculo (suele ser estrella: que lleve el color del cliente)
+    # limpios / minimal
+    "mv6": ("acc", "carbon"), "mv7": ("acc", "carbon"), "mv8": ("acc", "carbon"),
+    "clasica": ("acc", "carbon"), "mh5": ("acc", "carbon"),
+    "premium": ("acc", "carbon"), "gafete": ("acc", "carbon"),
+    # resto
+    "mv5": ("acc", "prof"), "mh1": ("acc", "prof"),
+    "mh3": ("acc", "prof"), "mh6": ("acc", "prof"),
+}
+
 NOMBRES = {
     "clasica": "Clásica", "gafete": "Gafete Ejecutivo", "premium": "Premium",
     "mv1": "Impacto", "mv2": "Orgánica", "mv3": "Corporativa",
@@ -67,7 +88,20 @@ def elegir_top(prim, n=6):
             s -= 4
         return s
 
-    orden = sorted(ori, key=lambda c: (-score(c), c))
+    # desempate variado: dentro de cada grupo de empate se rota por hash del
+    # prim, para que la estrella no sea siempre la misma con todas las marcas
+    # (determinista: mismo prim = mismo orden).
+    # (hash de tupla de ints es determinista entre corridas; el int RGB crudo
+    # caía siempre en la misma paridad con % 2)
+    sem = hash((int(prim[0]), int(prim[1]), int(prim[2]))) & 0x7FFFFFFF
+    grupos = {}
+    for c in sorted(ori):
+        grupos.setdefault(score(c), []).append(c)
+    orden = []
+    for s in sorted(grupos, reverse=True):
+        emp = grupos[s]
+        r = sem % len(emp)
+        orden += emp[r:] + emp[:r]
     top = orden[:n]
     # balance de orientaciones: mete el mejor de la orientación faltante
     for necesita in ("V", "H"):

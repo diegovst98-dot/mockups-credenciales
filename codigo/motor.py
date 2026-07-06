@@ -279,6 +279,28 @@ def paleta_marca(prim, sec):
     return prim, sec
 
 
+def _hls_a_rgb(h, l, s):
+    return tuple(int(round(x * 255)) for x in colorsys.hls_to_rgb(h, l, s))
+
+
+def paleta_roles(prim, sec):
+    """Paleta de ROLES por credencial (propuesta wow 2026-07-06). Del matiz de
+    la marca del cliente deriva 4 roles y cada modelo elige su combo (COMBOS
+    en curaduria.py) en vez de pintar los 18 con el mismo par:
+      acc    = el prim ya anti-lavado (acento vivo de la marca)
+      prof   = mismo matiz, profundo y saturado (bandas grandes con peso)
+      carbon = casi neutro del matiz ("navy" de la marca del cliente)
+      claro  = tinte suave (fondos/detalles claros)"""
+    acc, _sec2 = paleta_marca(prim, sec)
+    h, _l, _s = colorsys.rgb_to_hls(*[x / 255.0 for x in acc])
+    return {
+        "acc": acc,
+        "prof": _hls_a_rgb(h, 0.28, max(0.5, saturacion(acc))),
+        "carbon": _hls_a_rgb(h, 0.16, 0.18),
+        "claro": _hls_a_rgb(h, 0.90, 0.35),
+    }
+
+
 def tiene_transparencia(img):
     a = img.getchannel("A")
     datos = list(a.getdata())
@@ -1382,12 +1404,17 @@ def generar(ruta_logo, cliente, carpeta_salida=None, color=None):
 
     # --- frentes de cada modelo del catálogo, maquetados en HTML/CSS y rasterizados ---
     from plantillas import cara, construir_contexto, catalogo
-    from plantillas.curaduria import elegir_top, nombre_comercial
+    from plantillas.curaduria import COMBOS, elegir_top, nombre_comercial
     import render
     import folleto
-    ctx = construir_contexto(logo, prim, sec, cliente)
     modelos = catalogo()
-    items = [cara(m.clave, "frontal", ctx) for m in modelos]   # SOLO frentes (folleto)
+    # paleta de ROLES: cada modelo se pinta con su combo (no el mismo par para los 18)
+    roles = paleta_roles(prim, sec)
+    items = []
+    for m in modelos:                                          # SOLO frentes (folleto)
+        c1, c2 = COMBOS.get(m.clave, ("acc", "prof"))
+        ctx_m = construir_contexto(logo, roles[c1], roles[c2], cliente)
+        items.append(cara(m.clave, "frontal", ctx_m))
     caras = render.render_caras(items)                         # PIL.Image a escala 2x
 
     def a_cr80(img):
