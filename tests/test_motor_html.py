@@ -124,9 +124,10 @@ def test_generar_cura_top6_y_para_diseno_conserva_18(monkeypatch, tmp_path):
     import motor
     llamadas = {}
 
-    def fake_armar_propuesta(cliente, logo, estrella, alts, ruta, marca):
+    def fake_armar_propuesta(cliente, logo, estrella, alts, ruta, marca, resto=()):
         llamadas["estrella"] = estrella[0]
         llamadas["n_alts"] = len(alts)
+        llamadas["n_resto"] = len(resto)
         open(ruta, "wb").write(b"%PDF-1.4 fake")
         return 4
     import folleto
@@ -141,6 +142,7 @@ def test_generar_cura_top6_y_para_diseno_conserva_18(monkeypatch, tmp_path):
     Image.new("RGBA", (200, 80), (90, 70, 190, 255)).save(ruta_logo)
     carpeta, archivos = motor.generar(ruta_logo, "ACME SAC", carpeta_salida=str(tmp_path))
     assert llamadas["n_alts"] == 5
+    assert llamadas["n_resto"] == 12   # anexo: el resto del catálogo (18 - 6)
     assert carpeta == str(tmp_path)
     assert archivos and archivos[0].endswith(".pdf") and os.path.exists(archivos[0])
     diseno = os.listdir(os.path.join(str(tmp_path), "para-diseno"))

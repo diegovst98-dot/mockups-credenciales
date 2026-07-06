@@ -1413,8 +1413,8 @@ def generar(ruta_logo, cliente, carpeta_salida=None, color=None):
         fr.convert("RGB").save(ruta, optimize=True)
         rutas_diseno.append(ruta)
 
-    # PDF propuesta curada (portada v2 + estrella + 5 alternativas + CTA).
-    # para-diseno conserva los 18; el PDF que ve el cliente lleva solo el top-6.
+    # PDF propuesta curada (portada v2 + estrella + 5 alternativas + anexo con
+    # el resto del catálogo + CTA). para-diseno conserva los 18 igual.
     top = elegir_top(prim)
     por_clave = {m.clave: (m, fr) for m, fr in zip(modelos, frentes)}
 
@@ -1422,9 +1422,11 @@ def generar(ruta_logo, cliente, carpeta_salida=None, color=None):
         m, fr = por_clave[clave]
         return (nombre_comercial(clave), m.orientacion, fr)
 
+    resto = [item(m.clave) for m in modelos if m.clave not in top]
     ruta_pdf = os.path.join(carpeta_salida, f"catalogo-{slug(cliente)}.pdf")
     folleto.armar_propuesta(cliente, logo, item(top[0]),
-                            [item(c) for c in top[1:]], ruta_pdf, (prim, sec))
+                            [item(c) for c in top[1:]], ruta_pdf, (prim, sec),
+                            resto=resto)
 
     return carpeta_salida, [ruta_pdf] + rutas_diseno
 

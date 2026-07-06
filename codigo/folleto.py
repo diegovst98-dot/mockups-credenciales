@@ -156,14 +156,21 @@ def _grid(items, cols, titulo):
     return paginas
 
 
-def armar_propuesta(cliente, logo_img, estrella, alternativas, ruta_pdf, marca):
+def armar_propuesta(cliente, logo_img, estrella, alternativas, ruta_pdf, marca,
+                    resto=()):
     """Propuesta de agencia: portada v2 + estrella + alternativas (2 por página
-    con aire, caption 30px con nombre comercial) + CTA. Devuelve nº de páginas."""
+    con aire, caption 30px con nombre comercial) + anexo con el resto del
+    catálogo (grilla compacta, opcional) + CTA. Devuelve nº de páginas."""
     paginas = [_portada_v2(cliente, logo_img, marca), _pagina_estrella(estrella, marca)]
     vs = [it for it in alternativas if it[1] == "V"]
     hs = [it for it in alternativas if it[1] == "H"]
     paginas += _grid(vs, 2, "Alternativas — verticales")
     paginas += _grid(hs, 2, "Alternativas — horizontales")
+    if resto:
+        rvs = [it for it in resto if it[1] == "V"]
+        rhs = [it for it in resto if it[1] == "H"]
+        paginas += _grid(rvs, 3, "Más modelos de nuestro catálogo — verticales")
+        paginas += _grid(rhs, 2, "Más modelos de nuestro catálogo — horizontales")
     paginas.append(_pagina_cta(cliente, marca))
     carpeta = os.path.dirname(os.path.abspath(ruta_pdf))
     if carpeta:
