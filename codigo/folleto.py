@@ -15,7 +15,38 @@ PAG = (1240, 1754)            # A4 vertical a ~150 dpi
 MARGEN = 70
 TINTA = (40, 40, 40)
 GRIS = (120, 120, 120)
-ACENTO = (0, 120, 200)        # marco/título de portada (neutro de marca DISECOD)
+ACENTO = (0, 120, 200)        # (legado) marco/título de la portada v1
+
+# Colores oficiales DISECOD — el chrome de la propuesta es documento de MARCA
+# DISECOD; las credenciales adentro llevan el color del cliente.
+LILA = (153, 135, 247)        # #9987F7
+LIMA = (231, 248, 73)         # #E7F849 (solo hairline, discreto)
+CARBON = (56, 56, 56)         # #383838
+BLANCO = (255, 255, 255)
+
+
+def _logo_disecod_blanco():
+    try:
+        return Image.open(os.path.join(RUTA, "logo-disecod-blanco.png")).convert("RGBA")
+    except Exception:
+        return None
+
+
+def _banda_disecod(pag, alto=150):
+    """Banda inferior CARBON con el logo blanco de DISECOD, discreto."""
+    d = ImageDraw.Draw(pag)
+    y0 = PAG[1] - alto
+    d.rectangle([0, y0, PAG[0], PAG[1]], fill=CARBON)
+    lg = _logo_disecod_blanco()
+    if lg is not None:
+        lg = lg.copy()
+        lg.thumbnail((320, 46))
+        pag.paste(lg, ((PAG[0] - lg.width) // 2, y0 + (alto - lg.height) // 2 - 14), lg)
+        _centrar_texto(d, "fotochecks.pe · Lince, Lima", _fuente(22),
+                       y0 + alto // 2 + 26, (200, 200, 205))
+    else:
+        _centrar_texto(d, "DISECOD · fotochecks.pe · Lince, Lima", _fuente(24, True),
+                       y0 + alto // 2 - 14, BLANCO)
 
 
 def _fuente(tam, bold=False):
@@ -63,66 +94,72 @@ def _fuente_display(tam):
 
 
 def _portada_v2(cliente, logo_img, marca):
-    """Portada de agencia: bandas planas con la marca del cliente, logo intacto
-    en zona clara, título display. marca=(prim, sec)."""
-    prim, sec = marca
+    """Portada de agencia con chrome DISECOD (LILA/CARBON + hairline LIMA):
+    la propuesta es documento de marca DISECOD; el color del CLIENTE vive en
+    las credenciales de adentro. El logo del cliente sigue protagonista,
+    intacto en la zona clara. marca=(prim, sec) queda por compatibilidad."""
     pag = Image.new("RGB", PAG, "white")
     d = ImageDraw.Draw(pag)
-    # banda superior delgada + bloque de color al pie (planos, sin degradados)
-    d.rectangle([0, 0, PAG[0], 26], fill=prim)
-    d.rectangle([0, PAG[1] - 210, PAG[0], PAG[1]], fill=sec)
-    d.rectangle([0, PAG[1] - 224, PAG[0], PAG[1] - 210], fill=prim)
+    # banda superior LILA + hairline LIMA fino (planos, sin degradados)
+    d.rectangle([0, 0, PAG[0], 26], fill=LILA)
+    d.rectangle([0, 26, PAG[0], 31], fill=LIMA)
     # zona clara: logo del cliente intacto, grande y centrado
     if logo_img is not None:
         lg = logo_img.convert("RGBA")
         lg.thumbnail((640, 360))
         pag.paste(lg, ((PAG[0] - lg.width) // 2, 300), lg)
-    _centrar_texto(d, "Propuesta de credenciales", _fuente_display(72), 800, sec)
-    _centrar_texto(d, cliente.upper(), _fuente(54, True), 930, prim)
+    _centrar_texto(d, "Propuesta de credenciales", _fuente_display(72), 800, CARBON)
+    _centrar_texto(d, cliente.upper(), _fuente(54, True), 930, LILA)
     _centrar_texto(d, "Diseños seleccionados para tu marca — listos para producir",
                    _fuente(28), 1050, TINTA)
     from datetime import date
     _centrar_texto(d, date.today().strftime("Lima, %d/%m/%Y"), _fuente(24), 1130, GRIS)
-    _centrar_texto(d, "DISECOD · fotochecks.pe", _fuente(26, True),
-                   PAG[1] - 130, (255, 255, 255))
+    # banda inferior CARBON con logo blanco DISECOD + hairline LILA encima
+    _banda_disecod(pag, alto=210)
+    d.rectangle([0, PAG[1] - 224, PAG[0], PAG[1] - 210], fill=LILA)
     return pag
 
 
 def _pagina_estrella(item, marca):
-    """'Nuestra recomendación': un solo modelo, grande y con aire."""
-    prim, sec = marca
+    """'Nuestra recomendación': un solo modelo, grande y con aire.
+    Acentos en chrome DISECOD (LILA/CARBON); marca queda por compatibilidad."""
     nombre, ori, img = item
     pag = Image.new("RGB", PAG, "white")
     d = ImageDraw.Draw(pag)
-    d.rectangle([0, 0, PAG[0], 16], fill=prim)
-    d.text((MARGEN, MARGEN), "Nuestra recomendación", font=_fuente_display(54), fill=sec)
+    d.rectangle([0, 0, PAG[0], 16], fill=LILA)
+    d.text((MARGEN, MARGEN), "Nuestra recomendación", font=_fuente_display(54), fill=CARBON)
     d.text((MARGEN, MARGEN + 78), "El modelo que mejor le calza a tu marca",
            font=_fuente(26), fill=GRIS)
     th = img.convert("RGB").copy()
     lado = 920 if ori == "H" else 760
     th.thumbnail((lado, 1150))
-    pag.paste(th, ((PAG[0] - th.width) // 2, 320))
-    y_cap = 320 + th.height + 34
+    # bloque tarjeta+caption centrado verticalmente en el área libre
     f_cap = _fuente(34, True)
+    alto_bloque = th.height + 34 + 42
+    y_top = MARGEN + 78 + 60                      # debajo del encabezado
+    y0 = y_top + max(0, (PAG[1] - MARGEN - y_top - alto_bloque) // 2)
+    pag.paste(th, ((PAG[0] - th.width) // 2, y0))
+    y_cap = y0 + th.height + 34
     w = d.textlength(nombre, font=f_cap)
     d.text(((PAG[0] - w) // 2, y_cap), nombre, font=f_cap, fill=TINTA)
     return pag
 
 
 def _pagina_cta(cliente, marca):
-    prim, sec = marca
+    """Cierre en chrome DISECOD: bloque CARBON + acento LILA + hairline LIMA;
+    banda inferior CARBON con logo blanco. marca queda por compatibilidad."""
     pag = Image.new("RGB", PAG, "white")
     d = ImageDraw.Draw(pag)
-    d.rectangle([0, PAG[1] // 2 - 200, PAG[0], PAG[1] // 2 + 200], fill=sec)
+    d.rectangle([0, PAG[1] // 2 - 200, PAG[0], PAG[1] // 2 + 200], fill=CARBON)
     _centrar_texto(d, "¿Cuál le gustó?", _fuente_display(64), PAG[1] // 2 - 130,
-                   (255, 255, 255))
+                   BLANCO)
     _centrar_texto(d, "Se lo preparamos con los datos de su equipo — sin costo.",
-                   _fuente(30), PAG[1] // 2 - 20, (255, 255, 255))
+                   _fuente(30), PAG[1] // 2 - 20, BLANCO)
     _centrar_texto(d, "Responda este WhatsApp con el nombre del modelo elegido.",
                    _fuente(26), PAG[1] // 2 + 50, (230, 230, 235))
-    d.rectangle([0, PAG[1] // 2 + 200, PAG[0], PAG[1] // 2 + 214], fill=prim)
-    _centrar_texto(d, "DISECOD · fotochecks.pe · Lince, Lima", _fuente(24),
-                   PAG[1] - 120, GRIS)
+    d.rectangle([0, PAG[1] // 2 + 200, PAG[0], PAG[1] // 2 + 214], fill=LILA)
+    d.rectangle([0, PAG[1] // 2 + 214, PAG[0], PAG[1] // 2 + 218], fill=LIMA)
+    _banda_disecod(pag, alto=150)
     return pag
 
 
@@ -142,7 +179,8 @@ def _grid(items, cols, titulo):
     for p in range(0, len(items), por_pag):
         pag = Image.new("RGB", PAG, "white")
         d = ImageDraw.Draw(pag)
-        d.text((MARGEN, MARGEN), titulo, font=f_t, fill=TINTA)
+        d.rectangle([MARGEN, MARGEN + 48, MARGEN + 56, MARGEN + 54], fill=LILA)
+        d.text((MARGEN, MARGEN), titulo, font=f_t, fill=CARBON)
         for i, (nombre, _o, img) in enumerate(items[p:p + por_pag]):
             r, c = divmod(i, cols)
             x = ax + c * cw

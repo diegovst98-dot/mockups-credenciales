@@ -48,15 +48,29 @@ def test_armar_propuesta_estructura(tmp_path):
     assert n >= 5
 
 
-def test_portada_v2_usa_la_marca_del_cliente():
+def test_portada_v2_chrome_disecod():
+    """La portada es documento de marca DISECOD (LILA/CARBON): el color del
+    cliente ya NO pinta bandas; su logo sí sigue protagonista (intacto)."""
     import folleto
     from PIL import Image
-    marca = ((90, 70, 190), (40, 30, 90))
-    logo = Image.new("RGBA", (400, 160), (10, 10, 10, 255))
+    marca = ((200, 30, 40), (90, 10, 20))     # marca roja del cliente
+    logo = Image.new("RGBA", (120, 48), (200, 30, 40, 255))
     pag = folleto._portada_v2("ACME SAC", logo, marca)
     assert pag.size == folleto.PAG
     px = pag.convert("RGB")
     colores = px.getcolors(pag.size[0] * pag.size[1])
-    planos = {c for _n, c in colores}
-    assert marca[0] in planos or marca[1] in planos   # la marca está en la portada
+    planos = {c: n for n, c in colores}
+    assert folleto.LILA in planos and folleto.CARBON in planos
     assert (0, 120, 200) not in planos                # adiós azul hardcodeado
+    # el rojo del cliente aparece SOLO como logo (exactamente su área),
+    # no como banda (una banda ocuparía el ancho completo de la página)
+    assert planos.get(marca[0], 0) == 120 * 48
+
+
+def test_cta_banda_carbon_con_logo_disecod():
+    import folleto
+    pag = folleto._pagina_cta("ACME SAC", ((200, 30, 40), (90, 10, 20)))
+    colores = pag.convert("RGB").getcolors(pag.size[0] * pag.size[1])
+    planos = {c for _n, c in colores}
+    assert folleto.CARBON in planos and folleto.LILA in planos
+    assert folleto._logo_disecod_blanco() is not None  # asset presente en codigo\\
