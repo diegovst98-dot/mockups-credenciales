@@ -1,5 +1,5 @@
 {
-  "version": 29,
+  "version": 30,
   "archivos": [
     "app.py",
     "motor.py",
@@ -16,6 +16,7 @@
     "foto-persona.jpg",
     "inter.ttf",
     "inter-semibold.ttf",
+    "logo-disecod-blanco.png",
     "fondo-aurora-1.jpg",
     "fondo-aurora-2.jpg",
     "fondo-aurora-3.jpg",
@@ -36,6 +37,7 @@
     "fondo-glass-6.jpg",
     "plantillas/__init__.py",
     "plantillas/base.py",
+    "plantillas/curaduria.py",
     "plantillas/modelos/__init__.py",
     "plantillas/modelos/clasica.py",
     "plantillas/modelos/gafete.py",
