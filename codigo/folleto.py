@@ -110,8 +110,10 @@ def _portada_v2(cliente, logo_img, marca):
         pag.paste(lg, ((PAG[0] - lg.width) // 2, 300), lg)
     _centrar_texto(d, "Propuesta de credenciales", _fuente_display(72), 800, CARBON)
     _centrar_texto(d, cliente.upper(), _fuente(54, True), 930, LILA)
-    _centrar_texto(d, "Diseños seleccionados para tu marca — listos para producir",
-                   _fuente(28), 1050, TINTA)
+    _centrar_texto(d, "Una muestra visual con tu marca: elige tu favorito",
+                   _fuente(28), 1040, TINTA)
+    _centrar_texto(d, "y lo perfeccionamos contigo antes de imprimir.",
+                   _fuente(28), 1082, TINTA)
     from datetime import date
     _centrar_texto(d, date.today().strftime("Lima, %d/%m/%Y"), _fuente(24), 1130, GRIS)
     # banda inferior CARBON con logo blanco DISECOD + hairline LILA encima
@@ -128,7 +130,7 @@ def _pagina_estrella(item, marca):
     d = ImageDraw.Draw(pag)
     d.rectangle([0, 0, PAG[0], 16], fill=LILA)
     d.text((MARGEN, MARGEN), "Nuestra recomendación", font=_fuente_display(54), fill=CARBON)
-    d.text((MARGEN, MARGEN + 78), "El modelo que mejor le calza a tu marca",
+    d.text((MARGEN, MARGEN + 78), "El punto de partida que mejor le calza a tu marca",
            font=_fuente(26), fill=GRIS)
     th = img.convert("RGB").copy()
     lado = 920 if ori == "H" else 760
@@ -151,12 +153,16 @@ def _pagina_cta(cliente, marca):
     pag = Image.new("RGB", PAG, "white")
     d = ImageDraw.Draw(pag)
     d.rectangle([0, PAG[1] // 2 - 200, PAG[0], PAG[1] // 2 + 200], fill=CARBON)
-    _centrar_texto(d, "¿Cuál le gustó?", _fuente_display(64), PAG[1] // 2 - 130,
+    _centrar_texto(d, "¿Cuál le gustó?", _fuente_display(64), PAG[1] // 2 - 145,
                    BLANCO)
-    _centrar_texto(d, "Se lo preparamos con los datos de su equipo — sin costo.",
-                   _fuente(30), PAG[1] // 2 - 20, BLANCO)
+    _centrar_texto(d, "Estos diseños son la base: elija su favorito y lo personalizamos",
+                   _fuente(28), PAG[1] // 2 - 45, BLANCO)
+    _centrar_texto(d, "con los datos y fotos de su equipo. Verá la muestra final",
+                   _fuente(28), PAG[1] // 2 + 5, BLANCO)
+    _centrar_texto(d, "y la aprueba ANTES de imprimir — sin costo y sin compromiso.",
+                   _fuente(28), PAG[1] // 2 + 55, BLANCO)
     _centrar_texto(d, "Responda este WhatsApp con el nombre del modelo elegido.",
-                   _fuente(26), PAG[1] // 2 + 50, (230, 230, 235))
+                   _fuente(24), PAG[1] // 2 + 125, (200, 200, 205))
     d.rectangle([0, PAG[1] // 2 + 200, PAG[0], PAG[1] // 2 + 214], fill=LILA)
     d.rectangle([0, PAG[1] // 2 + 214, PAG[0], PAG[1] // 2 + 218], fill=LIMA)
     _banda_disecod(pag, alto=150)
