@@ -28,6 +28,26 @@ def test_armar_pdf_solo_verticales():
     assert n >= 2  # portada + al menos una pagina de verticales
 
 
+def _item(nombre, ori):
+    from PIL import Image
+    w, h = (638, 1011) if ori == "V" else (1011, 638)
+    return (nombre, ori, Image.new("RGB", (w, h), (200, 200, 210)))
+
+
+def test_armar_propuesta_estructura(tmp_path):
+    import folleto
+    from PIL import Image
+    marca = ((90, 70, 190), (40, 30, 90))
+    logo = Image.new("RGBA", (400, 160), (10, 10, 10, 255))
+    alts = [_item("Ejecutiva", "H"), _item("Minimalista", "V"),
+            _item("Círculo", "H"), _item("Clásica", "H"), _item("Ondas", "V")]
+    ruta = str(tmp_path / "propuesta.pdf")
+    n = folleto.armar_propuesta("ACME SAC", logo, _item("Premium", "V"), alts, ruta, marca)
+    assert os.path.exists(ruta)
+    # portada + estrella + alternativas (5 con aire → ≥2 páginas) + CTA
+    assert n >= 5
+
+
 def test_portada_v2_usa_la_marca_del_cliente():
     import folleto
     from PIL import Image

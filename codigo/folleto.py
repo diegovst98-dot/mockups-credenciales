@@ -88,11 +88,49 @@ def _portada_v2(cliente, logo_img, marca):
     return pag
 
 
+def _pagina_estrella(item, marca):
+    """'Nuestra recomendación': un solo modelo, grande y con aire."""
+    prim, sec = marca
+    nombre, ori, img = item
+    pag = Image.new("RGB", PAG, "white")
+    d = ImageDraw.Draw(pag)
+    d.rectangle([0, 0, PAG[0], 16], fill=prim)
+    d.text((MARGEN, MARGEN), "Nuestra recomendación", font=_fuente_display(54), fill=sec)
+    d.text((MARGEN, MARGEN + 78), "El modelo que mejor le calza a tu marca",
+           font=_fuente(26), fill=GRIS)
+    th = img.convert("RGB").copy()
+    lado = 920 if ori == "H" else 760
+    th.thumbnail((lado, 1150))
+    pag.paste(th, ((PAG[0] - th.width) // 2, 320))
+    y_cap = 320 + th.height + 34
+    f_cap = _fuente(34, True)
+    w = d.textlength(nombre, font=f_cap)
+    d.text(((PAG[0] - w) // 2, y_cap), nombre, font=f_cap, fill=TINTA)
+    return pag
+
+
+def _pagina_cta(cliente, marca):
+    prim, sec = marca
+    pag = Image.new("RGB", PAG, "white")
+    d = ImageDraw.Draw(pag)
+    d.rectangle([0, PAG[1] // 2 - 200, PAG[0], PAG[1] // 2 + 200], fill=sec)
+    _centrar_texto(d, "¿Cuál le gustó?", _fuente_display(64), PAG[1] // 2 - 130,
+                   (255, 255, 255))
+    _centrar_texto(d, "Se lo preparamos con los datos de su equipo — sin costo.",
+                   _fuente(30), PAG[1] // 2 - 20, (255, 255, 255))
+    _centrar_texto(d, "Responda este WhatsApp con el nombre del modelo elegido.",
+                   _fuente(26), PAG[1] // 2 + 50, (230, 230, 235))
+    d.rectangle([0, PAG[1] // 2 + 200, PAG[0], PAG[1] // 2 + 214], fill=prim)
+    _centrar_texto(d, "DISECOD · fotochecks.pe · Lince, Lima", _fuente(24),
+                   PAG[1] - 120, GRIS)
+    return pag
+
+
 def _grid(items, cols, titulo):
     if not items:
         return []
     paginas = []
-    f_t, f_l = _fuente(34, True), _fuente(22)
+    f_t, f_l = _fuente(34, True), _fuente(30)
     ax, ay = MARGEN, MARGEN + 74
     cw = (PAG[0] - 2 * MARGEN) // cols
     # alto de celda según orientación de los items de esta grilla
@@ -110,12 +148,29 @@ def _grid(items, cols, titulo):
             x = ax + c * cw
             y = ay + r * fila_h
             th = img.convert("RGB").copy()
-            th.thumbnail((cw - 30, cell_h - 24))
+            th.thumbnail((cw - 60, cell_h - 40))
             pag.paste(th, (x + (cw - th.width) // 2, y))
             lw = d.textlength(nombre, font=f_l)
             d.text((x + (cw - lw) // 2, y + cell_h - 10), nombre, font=f_l, fill=GRIS)
         paginas.append(pag)
     return paginas
+
+
+def armar_propuesta(cliente, logo_img, estrella, alternativas, ruta_pdf, marca):
+    """Propuesta de agencia: portada v2 + estrella + alternativas (2 por página
+    con aire, caption 30px con nombre comercial) + CTA. Devuelve nº de páginas."""
+    paginas = [_portada_v2(cliente, logo_img, marca), _pagina_estrella(estrella, marca)]
+    vs = [it for it in alternativas if it[1] == "V"]
+    hs = [it for it in alternativas if it[1] == "H"]
+    paginas += _grid(vs, 2, "Alternativas — verticales")
+    paginas += _grid(hs, 2, "Alternativas — horizontales")
+    paginas.append(_pagina_cta(cliente, marca))
+    carpeta = os.path.dirname(os.path.abspath(ruta_pdf))
+    if carpeta:
+        os.makedirs(carpeta, exist_ok=True)
+    paginas[0].save(ruta_pdf, "PDF", save_all=True, append_images=paginas[1:],
+                    resolution=150.0, quality=95)
+    return len(paginas)
 
 
 def armar_pdf(cliente, logo_img, items, ruta_pdf):
