@@ -35,6 +35,7 @@ def test_sec_siempre_mas_oscuro():
 def test_mh4_sin_gris_huerfano():
     src = open(os.path.join(os.path.dirname(__file__), "..", "codigo",
                "plantillas", "modelos", "mh4_gaio.py"), encoding="utf-8").read()
-    # ningún gris hardcodeado tipo #999/#aaa/#bbb/rgb(1xx,1xx,1xx) fuera de la paleta
+    # ningún gris hardcodeado tipo #999/#9aa0a6/#aaa/#bbb fuera de la paleta
+    # (cubre hex de 3 Y de 6 dígitos que empiecen en 9/a/b — el gris real era #9aa0a6)
     import re
-    assert not re.search(r"#(9[0-9a-f]{2}|a[0-9a-f]{2}|b[0-9a-f]{2})\b", src, re.I)
+    assert not re.search(r"#[9ab][0-9a-f]{2}(?:[0-9a-f]{3})?\b", src, re.I)
