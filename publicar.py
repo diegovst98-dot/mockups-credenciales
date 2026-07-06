@@ -22,7 +22,7 @@ CODIGO = BASE / "codigo"
 ARCHIVOS = ["app.py", "motor.py", "render.py", "folleto.py", "renombrador.py",
             "estado.py", "asistente.py", "lienzo.py", "anclas.py", "version.txt",
             "fuente-display.ttf", "fuente-display-italic.ttf", "foto-persona.jpg",
-            "inter.ttf", "inter-semibold.ttf"]
+            "inter.ttf", "inter-semibold.ttf", "logo-disecod-blanco.png"]
 # fondos curados (fondo-aurora-1.jpg, ...) — se agregan dinámicamente
 ARCHIVOS += sorted(p.name for p in CODIGO.glob("fondo-*.jpg"))
 # paquete plantillas/ (subcarpetas: el launcher crea los dirs y descarga por ruta
