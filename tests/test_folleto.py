@@ -26,3 +26,17 @@ def test_armar_pdf_solo_verticales():
     n = armar_pdf("Solo Verticales", logo, items, pdf)
     assert os.path.exists(pdf)
     assert n >= 2  # portada + al menos una pagina de verticales
+
+
+def test_portada_v2_usa_la_marca_del_cliente():
+    import folleto
+    from PIL import Image
+    marca = ((90, 70, 190), (40, 30, 90))
+    logo = Image.new("RGBA", (400, 160), (10, 10, 10, 255))
+    pag = folleto._portada_v2("ACME SAC", logo, marca)
+    assert pag.size == folleto.PAG
+    px = pag.convert("RGB")
+    colores = px.getcolors(pag.size[0] * pag.size[1])
+    planos = {c for _n, c in colores}
+    assert marca[0] in planos or marca[1] in planos   # la marca está en la portada
+    assert (0, 120, 200) not in planos                # adiós azul hardcodeado

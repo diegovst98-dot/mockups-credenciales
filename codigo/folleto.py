@@ -20,10 +20,17 @@ ACENTO = (0, 120, 200)        # marco/título de portada (neutro de marca DISECO
 
 def _fuente(tam, bold=False):
     nombre = "inter-semibold.ttf" if bold else "inter.ttf"
-    try:
-        return ImageFont.truetype(os.path.join(RUTA, nombre), tam)
-    except Exception:
-        return ImageFont.load_default()
+    candidatas = [os.path.join(RUTA, nombre),
+                  # fallback a fuentes del sistema (con ñ, tildes y —); el
+                  # load_default() bitmap final no cubre esos glifos
+                  "seguisb.ttf" if bold else "segoeui.ttf",
+                  "arialbd.ttf" if bold else "arial.ttf"]
+    for c in candidatas:
+        try:
+            return ImageFont.truetype(c, tam)
+        except Exception:
+            pass
+    return ImageFont.load_default()
 
 
 def _centrar_texto(d, txt, font, y, fill, ancho=PAG[0]):
@@ -45,6 +52,39 @@ def _portada(cliente, logo_img):
     _centrar_texto(d, "Elige tu modelo — el color se ajusta a tu marca",
                    _fuente(26), 800, GRIS)
     _centrar_texto(d, "DISECOD · www.fotochecks.pe", _fuente(26), PAG[1] - 110, GRIS)
+    return pag
+
+
+def _fuente_display(tam):
+    try:
+        return ImageFont.truetype(os.path.join(RUTA, "fuente-display.ttf"), tam)
+    except Exception:
+        return _fuente(tam, True)
+
+
+def _portada_v2(cliente, logo_img, marca):
+    """Portada de agencia: bandas planas con la marca del cliente, logo intacto
+    en zona clara, título display. marca=(prim, sec)."""
+    prim, sec = marca
+    pag = Image.new("RGB", PAG, "white")
+    d = ImageDraw.Draw(pag)
+    # banda superior delgada + bloque de color al pie (planos, sin degradados)
+    d.rectangle([0, 0, PAG[0], 26], fill=prim)
+    d.rectangle([0, PAG[1] - 210, PAG[0], PAG[1]], fill=sec)
+    d.rectangle([0, PAG[1] - 224, PAG[0], PAG[1] - 210], fill=prim)
+    # zona clara: logo del cliente intacto, grande y centrado
+    if logo_img is not None:
+        lg = logo_img.convert("RGBA")
+        lg.thumbnail((640, 360))
+        pag.paste(lg, ((PAG[0] - lg.width) // 2, 300), lg)
+    _centrar_texto(d, "Propuesta de credenciales", _fuente_display(72), 800, sec)
+    _centrar_texto(d, cliente.upper(), _fuente(54, True), 930, prim)
+    _centrar_texto(d, "Diseños seleccionados para tu marca — listos para producir",
+                   _fuente(28), 1050, TINTA)
+    from datetime import date
+    _centrar_texto(d, date.today().strftime("Lima, %d/%m/%Y"), _fuente(24), 1130, GRIS)
+    _centrar_texto(d, "DISECOD · fotochecks.pe", _fuente(26, True),
+                   PAG[1] - 130, (255, 255, 255))
     return pag
 
 
