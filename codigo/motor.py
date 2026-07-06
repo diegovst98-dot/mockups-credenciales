@@ -263,6 +263,22 @@ def oro_del_logo(logo):
     return ORO
 
 
+def paleta_marca(prim, sec):
+    """Regla anti-lavado (propuesta wow 2026-07-06): si la tinta del cliente es
+    pastel (clara o desaturada), las bandas usan una versión PROFUNDA del mismo
+    matiz (L<=0.50, S>=0.45); una tinta ya fuerte no se toca. sec se deriva
+    del prim final para mantener el par coherente."""
+    r, g, b = [x / 255.0 for x in prim]
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    if l > 0.60 or s < 0.30:
+        l, s = min(l, 0.50), max(s, 0.45)
+        prim = tuple(int(round(x * 255)) for x in colorsys.hls_to_rgb(h, l, s))
+        sec = tuple(int(x * 0.55) for x in prim)
+    if luminancia(sec) >= luminancia(prim):
+        sec = tuple(int(x * 0.55) for x in prim)
+    return prim, sec
+
+
 def tiene_transparencia(img):
     a = img.getchannel("A")
     datos = list(a.getdata())
@@ -1219,8 +1235,9 @@ def _prim_sec(logo, ajustes):
     color = (ajustes or {}).get("color")
     if color:
         prim = _hex_a_rgb(color)
-        return prim, tuple(int(x * 0.6) for x in prim)
-    return paleta_del_logo(logo)
+        return paleta_marca(prim, tuple(int(x * 0.6) for x in prim))
+    prim, sec = paleta_del_logo(logo)
+    return paleta_marca(prim, sec)
 
 
 def _ctx_elementos(logo, cliente, ajustes, mostrar):
@@ -1360,6 +1377,7 @@ def generar(ruta_logo, cliente, carpeta_salida=None, color=None):
         sec = tuple(int(x * 0.6) for x in prim)   # tono más oscuro como secundario
     else:
         prim, sec = paleta_del_logo(logo)
+    prim, sec = paleta_marca(prim, sec)
 
     # --- frentes de cada modelo del catálogo, maquetados en HTML/CSS y rasterizados ---
     from plantillas import cara, construir_contexto, catalogo

@@ -15,8 +15,8 @@ _CSS = """
 .mh4 .lens{position:absolute;top:60px;right:-150px;width:880px;height:470px;background:#fff;border-radius:50%}
 /* --- banda inferior ondulada de marca (sube hacia la derecha) --- */
 .mh4 .bot{position:absolute;left:-120px;bottom:-190px;right:-150px;height:330px;background:var(--prim);border-radius:48% 52% 0 0/100% 100% 0 0}
-/* --- acento gris diagonal esquina inferior izquierda --- */
-.mh4 .accent{position:absolute;left:-60px;bottom:-44px;width:400px;height:120px;background:#9aa0a6;border-radius:0 70% 0 0/0 100% 0 0;transform:rotate(-3deg);z-index:1}
+/* --- acento oscuro de marca (--sec) diagonal esquina inferior izquierda --- */
+.mh4 .accent{position:absolute;left:-60px;bottom:-44px;width:400px;height:120px;background:var(--sec);border-radius:0 70% 0 0/0 100% 0 0;transform:rotate(-3deg);z-index:1}
 /* --- logo (tinta real, sin filtros) --- */
 .mh4 .logo{position:absolute;top:42px;left:58px;height:120px;max-width:40%;object-fit:contain;z-index:5}
 /* --- foto circular con aro de marca --- */
