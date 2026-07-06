@@ -1367,8 +1367,9 @@ def exportar_personalizado(logo, cliente, ajustes, carpeta_salida=None, pdf=True
 
 
 def generar(ruta_logo, cliente, carpeta_salida=None, color=None):
-    """Arma el CATÁLOGO personalizado: PDF folleto con todos los modelos (frentes)
-    pintados con la marca del cliente + carpeta para-diseno con las caras limpias.
+    """Arma la PROPUESTA personalizada: PDF curado top-6 (estrella + 5 alternativas
+    con nombres comerciales) pintado con la marca del cliente + carpeta para-diseno
+    con las caras limpias de los 18 modelos.
     color: opcional '#RRGGBB' o (r,g,b); si no, el color sale de la tinta del logo."""
     cliente = (cliente or "Cliente").strip() or "Cliente"
     logo = cargar_logo(ruta_logo)
@@ -1381,12 +1382,13 @@ def generar(ruta_logo, cliente, carpeta_salida=None, color=None):
 
     # --- frentes de cada modelo del catálogo, maquetados en HTML/CSS y rasterizados ---
     from plantillas import cara, construir_contexto, catalogo
-    from render import render_caras
-    from folleto import armar_pdf
+    from plantillas.curaduria import elegir_top, nombre_comercial
+    import render
+    import folleto
     ctx = construir_contexto(logo, prim, sec, cliente)
     modelos = catalogo()
     items = [cara(m.clave, "frontal", ctx) for m in modelos]   # SOLO frentes (folleto)
-    caras = render_caras(items)                                # PIL.Image a escala 2x
+    caras = render.render_caras(items)                         # PIL.Image a escala 2x
 
     def a_cr80(img):
         # baja del render 2x al tamaño real de imprenta (CR80 300 dpi) con LANCZOS
@@ -1411,10 +1413,18 @@ def generar(ruta_logo, cliente, carpeta_salida=None, color=None):
         fr.convert("RGB").save(ruta, optimize=True)
         rutas_diseno.append(ruta)
 
-    # PDF folleto personalizado (portada con el logo del cliente + grillas de modelos)
-    items_folleto = [(m.nombre, m.orientacion, fr) for m, fr in zip(modelos, frentes)]
+    # PDF propuesta curada (portada v2 + estrella + 5 alternativas + CTA).
+    # para-diseno conserva los 18; el PDF que ve el cliente lleva solo el top-6.
+    top = elegir_top(prim)
+    por_clave = {m.clave: (m, fr) for m, fr in zip(modelos, frentes)}
+
+    def item(clave):
+        m, fr = por_clave[clave]
+        return (nombre_comercial(clave), m.orientacion, fr)
+
     ruta_pdf = os.path.join(carpeta_salida, f"catalogo-{slug(cliente)}.pdf")
-    armar_pdf(cliente, logo, items_folleto, ruta_pdf)
+    folleto.armar_propuesta(cliente, logo, item(top[0]),
+                            [item(c) for c in top[1:]], ruta_pdf, (prim, sec))
 
     return carpeta_salida, [ruta_pdf] + rutas_diseno
 

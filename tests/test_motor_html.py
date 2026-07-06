@@ -118,6 +118,35 @@ def test_robustez_nombre_largo():
     assert any(r.lower().endswith(".pdf") for r in rutas)
 
 
+# ---- Propuesta wow (Task 5): generar() cura top-6, para-diseno conserva 18 ----
+
+def test_generar_cura_top6_y_para_diseno_conserva_18(monkeypatch, tmp_path):
+    import motor
+    llamadas = {}
+
+    def fake_armar_propuesta(cliente, logo, estrella, alts, ruta, marca):
+        llamadas["estrella"] = estrella[0]
+        llamadas["n_alts"] = len(alts)
+        open(ruta, "wb").write(b"%PDF-1.4 fake")
+        return 4
+    import folleto
+    monkeypatch.setattr(folleto, "armar_propuesta", fake_armar_propuesta)
+    # render_caras es caro (Edge): sustituir por imágenes sintéticas
+    from PIL import Image
+    import render
+    monkeypatch.setattr(render, "render_caras",
+        lambda items: [Image.new("RGB", (a, b), (220, 220, 225)) for _h, a, b in items])
+    # cargar_logo(None) explota (Image.open(None)): usar un logo sintético mínimo
+    ruta_logo = str(tmp_path / "logo.png")
+    Image.new("RGBA", (200, 80), (90, 70, 190, 255)).save(ruta_logo)
+    carpeta, archivos = motor.generar(ruta_logo, "ACME SAC", carpeta_salida=str(tmp_path))
+    assert llamadas["n_alts"] == 5
+    assert carpeta == str(tmp_path)
+    assert archivos and archivos[0].endswith(".pdf") and os.path.exists(archivos[0])
+    diseno = os.listdir(os.path.join(str(tmp_path), "para-diseno"))
+    assert len([f for f in diseno if f.endswith(".png")]) == 18
+
+
 # ---- Fase 2: variedad de fondos ----
 
 def test_variante_es_determinista_y_varia():
