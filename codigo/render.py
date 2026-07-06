@@ -36,17 +36,37 @@ def _navegador_sistema():
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
+def _startupinfo_oculto():
+    """STARTUPINFO con SW_HIDE: CREATE_NO_WINDOW solo oculta la CONSOLA, pero Edge
+    puede abrir su ventana GUI (el 'parpadeo oscuro' al generar el catálogo). Chromium
+    honra wShowWindow de la ventana inicial, así que esto la esconde. En SO sin
+    STARTUPINFO (no-Windows) devuelve None."""
+    if not hasattr(subprocess, "STARTUPINFO"):
+        return None
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    si.wShowWindow = getattr(subprocess, "SW_HIDE", 0)
+    return si
+
+
 # Modos headless probados EN CASCADA: `--headless=new --screenshot` es un NO-OP en
 # algunas versiones de Edge (sale rc=0, stderr vacío y NO escribe el PNG); `--headless=old`
 # y el `--headless` clásico sí lo escriben. Probamos los tres y nos quedamos con el primero
 # que produzca el archivo, así funciona sin importar la versión de Edge del vendedor.
 _MODOS_HEADLESS = ("--headless=new", "--headless=old", "--headless")
 
+# Modo que YA funcionó en esta corrida: las caras siguientes lo usan directo, sin
+# re-probar la cascada. Menos lanzamientos de Edge = más rápido y menos riesgo de
+# parpadeo (⚠️ en Edge moderno `--headless=old` es flag desconocido → abre una
+# ventana REAL del navegador; solo se intenta si el modo anterior falló).
+_MODO_QUE_FUNCIONA = None
+
 
 def _edge_version(exe):
     try:
         r = subprocess.run([exe, "--version"], capture_output=True, timeout=20,
-                           creationflags=_CREATE_NO_WINDOW)
+                           stdin=subprocess.DEVNULL, creationflags=_CREATE_NO_WINDOW,
+                           startupinfo=_startupinfo_oculto())
         return (r.stdout or b"").decode("utf-8", "replace").strip() or "?"
     except Exception:
         return "?"
@@ -71,7 +91,8 @@ def _intento_captura(exe, modo, hpath, opath, perfil, w, h, escala):
     try:
         r = subprocess.run(cmd, timeout=90,
                            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                           stderr=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW)
+                           stderr=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW,
+                           startupinfo=_startupinfo_oculto())
     except subprocess.TimeoutExpired:
         return False, "timeout"
     if os.path.exists(opath) and os.path.getsize(opath) > 0:
@@ -84,11 +105,15 @@ def _edge_screenshot(exe, hpath, opath, perfil_base, w, h, escala, modos=_MODOS_
     """Captura opath con Edge headless probando varios modos en cascada (perfil aislado
     por intento). Si ninguno escribe el PNG, lanza un error CLARO con la versión de Edge
     y el detalle por modo (antes daba el genérico 'logo inválido' que despistaba)."""
+    global _MODO_QUE_FUNCIONA
+    if _MODO_QUE_FUNCIONA in modos:
+        modos = (_MODO_QUE_FUNCIONA,) + tuple(m for m in modos if m != _MODO_QUE_FUNCIONA)
     detalles = []
     for i, modo in enumerate(modos):
         ok, det = _intento_captura(exe, modo, hpath, opath, "%s_%d" % (perfil_base, i),
                                    w, h, escala)
         if ok:
+            _MODO_QUE_FUNCIONA = modo
             return
         detalles.append("%s -> %s" % (modo, det))
     raise RuntimeError("Edge no generó la captura (Edge %s). Intentos: %s"
