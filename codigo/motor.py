@@ -30,6 +30,13 @@ V_W, V_H = CARD_H, CARD_W           # vertical
 RADIO = 36                          # esquinas redondeadas
 GRIS_DISECOD = (56, 56, 56)         # #383838
 LILA = (153, 135, 247)              # #9987F7
+# Paleta NEUTRA elegante (v33 "ojo"): logos negro/gris → carbón/grafito,
+# JAMÁS un matiz inventado del ruido de antialiasing.
+NEUTRO_ACC = (43, 43, 43)           # #2b2b2b
+NEUTRO_PROF = (21, 21, 21)          # #151515
+NEUTRO_CARBON = (26, 26, 26)        # #1a1a1a
+NEUTRO_CLARO = (242, 242, 242)      # #f2f2f2
+NEUTRO_ACC2 = (108, 108, 108)       # gris medio para detalles finos
 VERDE_LIMA = (231, 248, 73)         # #E7F849
 FONDO_OSCURO = (26, 26, 29)
 
@@ -195,8 +202,21 @@ def cargar_logo(ruta):
     return logo
 
 
+def dif_matiz(h1, h2):
+    """Distancia circular entre dos matices (0..1)."""
+    d = abs(h1 - h2)
+    return min(d, 1.0 - d)
+
+
 def paleta_del_logo(logo):
-    """Devuelve (primario, secundario). Ignora blancos y pondera saturación."""
+    """v33 "ojo de diseñador": agrupa la tinta del logo por MATIZ (buckets de 24°
+    fusionados al pico más cercano a <30°) y devuelve (primario, secundario).
+    - La tinta NEUTRA (negro/gris del wordmark) no vota matiz; si el logo casi no
+      tiene color, la marca es NEUTRA → carbón elegante, jamás un color inventado
+      del ruido de antialiasing.
+    - secundario = un color REAL del logo si existe un 2º cluster con matiz
+      distinto (≥30°) y presencia ≥12% de la tinta de color (ej. verde + dorado);
+      si no, un derivado del primario."""
     mini = logo.copy()
     mini.thumbnail((160, 160))
     pixeles = [
@@ -204,44 +224,46 @@ def paleta_del_logo(logo):
         if a > 200 and not (luminancia((r, g, b)) > 0.88 and saturacion((r, g, b)) < 0.12)
     ]
     if not pixeles:
-        return GRIS_DISECOD, LILA
+        return NEUTRO_ACC, NEUTRO_PROF
 
-    # agrupar colores parecidos
-    grupos = []  # [color_representante, conteo]
-    for px in pixeles:
-        for grupo in grupos:
-            if distancia(px, grupo[0]) < 55:
-                grupo[1] += 1
-                break
-        else:
-            grupos.append([px, 1])
+    # histograma de matiz de la tinta CON color (buckets de 24°)
+    buckets = {}  # idx -> [n, sum_r, sum_g, sum_b, sum_sat]
+    n_color = 0
+    for r, g, b in pixeles:
+        h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+        if s < 0.15 or v < 0.15:
+            continue
+        n_color += 1
+        bk = buckets.setdefault(int(h * 360) // 24 % 15, [0, 0, 0, 0, 0.0])
+        bk[0] += 1; bk[1] += r; bk[2] += g; bk[3] += b; bk[4] += s
+    if n_color < max(12, len(pixeles) * 0.05):
+        return NEUTRO_ACC, NEUTRO_PROF          # marca neutra (negro/gris)
 
-    def puntaje(grupo):
-        return grupo[1] * (0.25 + saturacion(grupo[0]))
+    # fusionar buckets en clusters de matiz: cada bucket se une al PICO más
+    # cercano (<30°); se procesan de mayor a menor para que el pico mande.
+    clusters = []  # {"h": matiz del pico, "n", "sr", "sg", "sb", "ss"}
+    for idx, (n, sr, sg, sb, ss) in sorted(buckets.items(), key=lambda kv: -kv[1][0]):
+        h = (idx * 24 + 12) / 360.0
+        dest = next((c for c in clusters if dif_matiz(h, c["h"]) < 30 / 360.0), None)
+        if dest is None:
+            dest = {"h": h, "n": 0, "sr": 0, "sg": 0, "sb": 0, "ss": 0.0}
+            clusters.append(dest)
+        dest["n"] += n; dest["sr"] += sr; dest["sg"] += sg; dest["sb"] += sb; dest["ss"] += ss
 
-    grupos.sort(key=puntaje, reverse=True)
-    # Preferir el color de MARCA (saturado y con presencia) por encima del gris/negro
-    # dominante: un wordmark típico es texto gris/negro + un acento de color (el de la
-    # marca, ej. la "D" morada de DISECOD = 20% pero el gris es 80%). Si hay un grupo con
-    # color real (sat≥0.20) y presencia (>5%), ese manda; si no, el dominante.
-    prominentes = [g for g in grupos if g[1] > len(pixeles) * 0.05]
-    con_color = [g for g in prominentes if saturacion(g[0]) >= 0.20]
-    if con_color:
-        primario = max(con_color, key=lambda g: saturacion(g[0]) * (0.4 + g[1] / len(pixeles)))[0]
-    else:
-        primario = grupos[0][0]
+    def color_de(c):
+        return (c["sr"] // c["n"], c["sg"] // c["n"], c["sb"] // c["n"])
+
+    # peso de diseñador: presencia × (0.25 + saturación media)
+    clusters.sort(key=lambda c: c["n"] * (0.25 + c["ss"] / c["n"]), reverse=True)
+    primario = color_de(clusters[0])
 
     secundario = None
-    for grupo in grupos[1:]:
-        if distancia(grupo[0], primario) > 110 and grupo[1] > len(pixeles) * 0.03:
-            secundario = grupo[0]
+    for c in clusters[1:]:
+        if dif_matiz(c["h"], clusters[0]["h"]) >= 30 / 360.0 and c["n"] >= n_color * 0.12:
+            secundario = color_de(c)
             break
     if secundario is None:
         secundario = ajustar(primario, 0.55) if luminancia(primario) > 0.35 else ajustar(primario, 1.55)
-
-    # logo monocromo oscuro → respaldo de marca
-    if saturacion(primario) < 0.08 and luminancia(primario) < 0.25:
-        return GRIS_DISECOD, LILA
     return tuple(primario), tuple(secundario)
 
 
@@ -267,14 +289,25 @@ def paleta_marca(prim, sec):
     """Regla anti-lavado (propuesta wow 2026-07-06): si la tinta del cliente es
     pastel (clara o desaturada), las bandas usan una versión PROFUNDA del mismo
     matiz (L<=0.50, S>=0.45); una tinta ya fuerte no se toca. sec se deriva
-    del prim final para mantener el par coherente."""
+    del prim final para mantener el par coherente.
+    Ojo v33: (1) marca NEUTRA (sat<0.12) → carbón elegante — JAMÁS saturar el
+    ruido de antialias e inventar un matiz; (2) un secundario REAL del logo
+    (matiz distinto ≥30° y con color) se respeta como acento — solo se oscurece
+    a legible, no se pisa aunque sea más claro que el prim."""
     r, g, b = [x / 255.0 for x in prim]
     h, l, s = colorsys.rgb_to_hls(r, g, b)
+    if s < 0.12:
+        return NEUTRO_ACC, NEUTRO_PROF
+    hs, _ls, ss = colorsys.rgb_to_hls(*[x / 255.0 for x in sec])
+    sec_real = dif_matiz(h, hs) >= 30 / 360.0 and ss >= 0.18
     if l > 0.60 or s < 0.30:
         l, s = min(l, 0.50), max(s, 0.45)
         prim = tuple(int(round(x * 255)) for x in colorsys.hls_to_rgb(h, l, s))
-        sec = tuple(int(x * 0.55) for x in prim)
-    if luminancia(sec) >= luminancia(prim):
+        if not sec_real:
+            sec = tuple(int(x * 0.55) for x in prim)
+    if sec_real:
+        sec = marca_legible(sec)
+    elif luminancia(sec) >= luminancia(prim):
         sec = tuple(int(x * 0.55) for x in prim)
     return prim, sec
 
@@ -290,14 +323,27 @@ def paleta_roles(prim, sec):
       acc    = el prim ya anti-lavado (acento vivo de la marca)
       prof   = mismo matiz, profundo y saturado (bandas grandes con peso)
       carbon = casi neutro del matiz ("navy" de la marca del cliente)
-      claro  = tinte suave (fondos/detalles claros)"""
+      claro  = tinte suave (fondos/detalles claros)
+      acc2   = acento fino (v33): el 2º color REAL del logo (legible) si existe;
+               si no, un análogo apagado del dominante (matiz +25°, saturación
+               moderada — jamás complementario chillón)
+    Marca NEUTRA (logo negro/gris) → paleta gris elegante sin matiz inventado."""
     acc, _sec2 = paleta_marca(prim, sec)
+    if saturacion(acc) < 0.12:
+        return {"acc": NEUTRO_ACC, "prof": NEUTRO_PROF, "carbon": NEUTRO_CARBON,
+                "claro": NEUTRO_CLARO, "acc2": NEUTRO_ACC2}
     h, _l, _s = colorsys.rgb_to_hls(*[x / 255.0 for x in acc])
+    hs, _ls, ss = colorsys.rgb_to_hls(*[x / 255.0 for x in sec])
+    if dif_matiz(h, hs) >= 30 / 360.0 and ss >= 0.18:
+        acc2 = marca_legible(sec)                                    # acento REAL del logo
+    else:
+        acc2 = marca_legible(_hls_a_rgb((h + 25 / 360.0) % 1.0, 0.36, 0.42))
     return {
         "acc": acc,
         "prof": _hls_a_rgb(h, 0.28, max(0.5, saturacion(acc))),
         "carbon": _hls_a_rgb(h, 0.16, 0.18),
         "claro": _hls_a_rgb(h, 0.90, 0.35),
+        "acc2": acc2,
     }
 
 
