@@ -8,9 +8,9 @@ from plantillas.registro import registrar
 _CSS = """
 .mv2{background:#fff}
 /* Blob color de marca arriba-derecha (esquina), curva hacia abajo-izquierda */
-.mv2 .blobR{position:absolute;top:-150px;right:-150px;width:360px;height:540px;background:var(--prim);border-radius:0 0 0 100%;z-index:1}
+.mv2 .blobR{position:absolute;top:-170px;right:-170px;width:330px;height:470px;background:var(--prim);border-radius:0 0 0 100%;z-index:1}
 /* Acento oscuro arriba-izquierda (esquina), para el bicolor estilo Böka */
-.mv2 .blobTL{position:absolute;top:-170px;left:-170px;width:330px;height:430px;background:var(--oscuro);border-radius:0 0 100% 0;z-index:1}
+.mv2 .blobTL{position:absolute;top:-190px;left:-190px;width:300px;height:380px;background:var(--oscuro);border-radius:0 0 100% 0;z-index:1}
 /* Blob menor color de marca a la izquierda, detras del disco de la foto */
 .mv2 .blobL{position:absolute;top:330px;left:-150px;width:430px;height:430px;background:var(--prim);border-radius:50%;z-index:1}
 /* Disco blanco que "perfora" el color y enmarca la foto */
