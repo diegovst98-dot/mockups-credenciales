@@ -14,7 +14,7 @@ _CSS = """
 .mh1 .info{position:absolute;left:436px;right:56px;top:196px}
 .mh1 .name{font-weight:800;font-size:62px;line-height:1.04;color:#1a1a1a;letter-spacing:.005em}
 .mh1 .dni{margin-top:22px;font-weight:800;font-size:40px;color:#1a1a1a}
-.mh1 .cargo{margin-top:28px;display:inline-block;background:var(--prim);color:var(--txtprim);font-weight:800;font-size:34px;letter-spacing:.05em;text-transform:uppercase;padding:14px 48px}
+.mh1 .cargo{margin-top:28px;display:inline-block;background:var(--acc2m);color:var(--txtacc2m);font-weight:800;font-size:34px;letter-spacing:.05em;text-transform:uppercase;padding:14px 48px}
 .mh1 .botcorner{position:absolute;right:0;bottom:0;width:34%;height:118px;background:var(--oscuro);clip-path:polygon(42% 0,100% 0,100% 100%,0 100%)}
 """
 

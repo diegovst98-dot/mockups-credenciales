@@ -131,7 +131,8 @@ def _filas_de(ajustes):
 
 
 def construir_contexto(logo, prim, sec, cliente, ajustes=None):
-    from motor import web_cliente, luminancia, marca_legible, pseudo_qr, distancia, saturacion
+    import colorsys
+    from motor import web_cliente, luminancia, marca_legible, pseudo_qr, distancia, saturacion, dif_matiz
     ajustes = ajustes or {}
     textos = ajustes.get("textos", {})
     # empresa = campo de arriba (marca web/monograma); cae al cliente pasado al render
@@ -141,6 +142,13 @@ def construir_contexto(logo, prim, sec, cliente, ajustes=None):
     # realmente distinto y con color; si no, cae al oro. Regla: un color manda, otro puntua.
     sec_distinta = distancia(prim, sec) > 70 and saturacion(sec) > 0.18
     acc2 = marca_legible(sec) if sec_distinta else None
+    # acc2 REAL vs HUMO (iter2): solo un sec de MATIZ distinto (2º color real del
+    # logo) puede pintar ÁREA MEDIA (--acc2m: banda del cargo mh1, banda b2 mv6);
+    # el humo/derivado del mismo matiz cae al prim → render idéntico al de siempre.
+    h_p = colorsys.rgb_to_hls(*[x / 255.0 for x in prim[:3]])[0]
+    h_s = colorsys.rgb_to_hls(*[x / 255.0 for x in sec[:3]])[0]
+    acc2m = marca_legible(sec) if (dif_matiz(h_p, h_s) >= 30 / 360.0
+                                   and saturacion(sec) > 0.18) else None
     # textos demo con overrides del usuario (copia: NO muta el DATOS global)
     datos = dict(DATOS)
     datos.update({k: v for k, v in textos.items() if v and k in DATOS})
@@ -155,6 +163,8 @@ def construir_contexto(logo, prim, sec, cliente, ajustes=None):
         "claro_css": _rgb(_ajustar(prim, 1.7)),
         "prim_legible": _rgb(marca_legible(prim)),
         "acc2_css": _rgb(acc2) if acc2 else ORO,
+        "acc2m_css": _rgb(acc2m) if acc2m else _rgb(prim),
+        "txt_acc2m": "#ffffff" if acc2m else ("#ffffff" if oscuro else "#1d1f24"),
         "txt_sobre_prim": "#ffffff" if oscuro else "#1d1f24",
         "logo_oscuro": oscuro,
         "variante": variante_de(empresa),
@@ -188,9 +198,10 @@ def css_base():
 
 
 def _root(ctx):
-    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;--acc:%s;--acc2:%s;--txtprim:%s;}"
+    return (":root{--prim:%s;--medio:%s;--oscuro:%s;--claro:%s;--oro:%s;--acc:%s;--acc2:%s;--acc2m:%s;--txtacc2m:%s;--txtprim:%s;}"
             % (ctx["prim_css"], ctx["medio_css"], ctx["oscuro_css"],
-               ctx["claro_css"], ORO, ctx["prim_legible"], ctx["acc2_css"], ctx["txt_sobre_prim"]))
+               ctx["claro_css"], ORO, ctx["prim_legible"], ctx["acc2_css"],
+               ctx["acc2m_css"], ctx["txt_acc2m"], ctx["txt_sobre_prim"]))
 
 
 def filas_html(ctx, con_empresa=True):

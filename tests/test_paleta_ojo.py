@@ -49,6 +49,9 @@ def test_logo_negro_paleta_neutra_sin_matiz_inventado():
     prim, sec = paleta_del_logo(_logo("logo-prueba-negro.png"))
     roles = paleta_roles(prim, sec)
     for rol, c in roles.items():
+        if rol == "acc2_real":          # iter2: None si no hay 2º color real
+            assert c is None
+            continue
         assert _hsv(c)[1] < 0.08, "rol %s inventó color: %s" % (rol, c)
     # y paleta_marca tampoco satura el ruido de un gris directo
     for gris in ((30, 30, 30), (56, 56, 58), (120, 120, 122)):

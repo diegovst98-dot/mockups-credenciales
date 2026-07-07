@@ -24,7 +24,9 @@ def test_paleta_roles_tiene_los_4_roles():
     from motor import paleta_roles
     roles = paleta_roles(LAVANDA, (90, 80, 140))
     assert set(roles) >= {"acc", "prof", "carbon", "claro"}
-    for c in roles.values():
+    for rol, c in roles.items():
+        if rol == "acc2_real":          # iter2: puede ser None (sin 2º color real)
+            continue
         assert len(c) == 3 and all(0 <= x <= 255 for x in c)
 
 

@@ -14,7 +14,7 @@ _CSS = """
 /* bandas horizontales de marca que cruzan detras de la foto */
 .mv6 .band{position:absolute;left:0;right:0;background:var(--prim)}
 .mv6 .b1{top:368px;height:96px}
-.mv6 .b2{top:500px;height:96px}
+.mv6 .b2{top:500px;height:96px;background:var(--acc2m)}
 /* foto circular centrada, encima de las bandas, anillo blanco para separarla */
 .mv6 .foto{position:absolute;top:318px;left:0;right:0;margin:0 auto;width:300px;height:300px;border-radius:50%;border:10px solid #fff;object-fit:cover;object-position:center 20%;background:#fff;z-index:2}
 .mv6 .ring{position:absolute;top:304px;left:0;right:0;margin:0 auto;width:328px;height:328px;border-radius:50%;background:var(--prim);z-index:1}

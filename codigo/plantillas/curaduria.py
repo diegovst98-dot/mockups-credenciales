@@ -43,7 +43,9 @@ COMBOS = {
     "mh7": ("prof", "acc"),     # Círculo (suele ser estrella: que lleve el color del cliente)
     # limpios / minimal (clasica y gafete dibujan hairlines --acc2 → si el logo
     # trae un 2º color real, ese detalle fino lo lleva; si no, cae al oro)
-    "mv6": ("acc", "carbon"), "mv7": ("acc", "carbon"), "mv8": ("acc", "carbon"),
+    # mv6 alimenta acc2 (iter2): si el logo trae 2º color REAL, la banda b2 lo
+    # pinta (--acc2m, área media bicolor); si es humo, --acc2m cae al prim (igual)
+    "mv6": ("acc", "acc2"), "mv7": ("acc", "carbon"), "mv8": ("acc", "carbon"),
     "clasica": ("acc", "acc2"), "mh5": ("acc", "carbon"),
     "premium": ("acc", "carbon"), "gafete": ("acc", "acc2"),
     # resto: el 2º rol alimenta --acc2 (acento fino) — v33 usa el secundario
@@ -77,10 +79,23 @@ def nombre_comercial(clave):
     return NOMBRES.get(clave, clave.capitalize())
 
 
+COLOR_FORWARD = {"mh7", "mh2", "mv6"}   # modelos que lucen la tinta del cliente
+
+
+def es_viva(prim):
+    """Tinta saturada y con cuerpo: la marca ES el color (McDonald's, Coca-Cola).
+    La estrella no debe caer en Premium (crema): la marca desaparecería."""
+    _h, l, s = _hls(prim)
+    return s >= 0.50 and l <= 0.62
+
+
 def elegir_top(prim, n=6):
     """Claves de los n mejores modelos para esta tinta; [0] = estrella.
-    Garantiza ≥2 verticales y ≥2 horizontales."""
+    Garantiza ≥2 verticales y ≥2 horizontales.
+    Iter2: con marca VIVA los color-forward suben a 10 → la estrella siempre
+    lleva el color del cliente (rota entre ellos por hash, variedad intacta)."""
     pastel = es_pastel(prim)
+    viva = es_viva(prim)
     ori = {m.clave: m.orientacion for m in catalogo()}
 
     def score(clave):
@@ -88,6 +103,8 @@ def elegir_top(prim, n=6):
         s = a["base"]
         if pastel and a["necesita_oscuro"]:
             s -= 4
+        if viva and clave in COLOR_FORWARD:
+            s = max(s, 10)
         return s
 
     # desempate variado: dentro de cada grupo de empate se rota por hash del

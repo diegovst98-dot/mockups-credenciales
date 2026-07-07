@@ -140,8 +140,16 @@ def saturacion(rgb):
 
 def marca_legible(rgb, tope=0.32):
     """Oscurece un color de marca hasta que sea legible sobre fondo claro
-    (logos pastel → texto lavado si se usa el color tal cual)."""
+    (logos pastel → texto lavado si se usa el color tal cual).
+    Iter2 (2026-07-06): los matices LUMINOSOS (amarillo/lima 40–90°) oscurecidos
+    en su propio matiz quedan mostaza débil (nombre dorado sobre crema, McD) →
+    corren ~12° hacia el ámbar y profundizan más (tope 0.20): marrón dorado
+    con peso de TEXTO, criterio editorial de iter1."""
     c = tuple(rgb[:3])
+    h, l, s = colorsys.rgb_to_hls(*[x / 255.0 for x in c])
+    if 40 / 360.0 <= h <= 90 / 360.0 and s >= 0.25:
+        c = _hls_a_rgb((h - 12 / 360.0) % 1.0, l, s)
+        tope = min(tope, 0.20)
     for _ in range(6):
         if luminancia(c) <= tope:
             break
@@ -336,6 +344,11 @@ def paleta_roles(prim, sec):
       acc2   = acento fino (v33): el 2º color REAL del logo (legible) si existe;
                si no, HUMO de la marca (iter1): mismo matiz profundo apagado —
                el análogo +25° inventaba oliva en amarillos y marrón en rojos
+      acc2_real = SOLO el 2º color real (None si no existe) — iter2: el real
+               puede pintar ÁREA MEDIA (--acc2m); el humo se queda en hairlines
+    Tope ANTI-NEÓN (iter2): un acento muy saturado Y luminoso (verde Spotify)
+    grita en bandas medianas → baja a un tono rico imprimible (Evolis plano);
+    los saturados oscuros (rojo Coca, azul Pepsi) no se tocan.
     Marca NEUTRA (logo negro/gris) → paleta gris elegante sin matiz inventado.
     Matices LUMINOSOS (amarillo/lima 40–90°, iter1): su versión oscura en el
     mismo matiz cae en mostaza/oliva sucia → prof/carbon/acc2 corren el matiz
@@ -343,14 +356,21 @@ def paleta_roles(prim, sec):
     acc, _sec2 = paleta_marca(prim, sec)
     if saturacion(acc) < 0.12:
         return {"acc": NEUTRO_ACC, "prof": NEUTRO_PROF, "carbon": NEUTRO_CARBON,
-                "claro": NEUTRO_CLARO, "acc2": NEUTRO_ACC2}
+                "claro": NEUTRO_CLARO, "acc2": NEUTRO_ACC2, "acc2_real": None}
+    ha, la, sa = colorsys.rgb_to_hls(*[x / 255.0 for x in acc])
+    # tope anti-neón (iter2): NO aplica a matices luminosos (40–90°) — el amarillo
+    # McD ES la marca y su texto va oscuro; apagarlo lo volvía ocre en las bandas.
+    if sa > 0.75 and luminancia(acc) > 0.45 and not (40 / 360.0 <= ha <= 90 / 360.0):
+        acc = _hls_a_rgb(ha, min(la, 0.44), 0.70)
     h, _l, _s = colorsys.rgb_to_hls(*[x / 255.0 for x in acc])
     hs, _ls, ss = colorsys.rgb_to_hls(*[x / 255.0 for x in sec])
     # matiz luminoso (amarillo/lima): la profundidad corre hacia el ámbar
     h_prof = (h - 12 / 360.0) % 1.0 if 40 / 360.0 <= h <= 90 / 360.0 else h
     if dif_matiz(h, hs) >= 30 / 360.0 and ss >= 0.18:
-        acc2 = marca_legible(sec)                                    # acento REAL del logo
+        acc2_real = marca_legible(sec)                               # acento REAL del logo
+        acc2 = acc2_real
     else:
+        acc2_real = None
         acc2 = marca_legible(_hls_a_rgb(h_prof, 0.30, 0.30))         # humo de la marca
     return {
         "acc": acc,
@@ -358,6 +378,7 @@ def paleta_roles(prim, sec):
         "carbon": _hls_a_rgb(h_prof, 0.16, 0.18),
         "claro": _hls_a_rgb(h, 0.90, 0.35),
         "acc2": acc2,
+        "acc2_real": acc2_real,
     }
 
 
