@@ -58,7 +58,7 @@ def test_combos_cubren_catalogo_con_roles_validos():
     from plantillas.curaduria import COMBOS
     from plantillas.registro import catalogo
     import plantillas  # noqa: F401
-    roles = {"acc", "prof", "carbon", "claro"}
+    roles = {"acc", "prof", "carbon", "claro", "acc2"}
     for m in catalogo():
         c1, c2 = COMBOS.get(m.clave, ("acc", "prof"))
         assert c1 in roles and c2 in roles and c1 != c2

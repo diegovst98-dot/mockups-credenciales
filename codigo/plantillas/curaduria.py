@@ -41,13 +41,15 @@ COMBOS = {
     "mh4": ("prof", "acc"),     # Fluida
     "mh2": ("prof", "acc"),     # Dinámica
     "mh7": ("prof", "acc"),     # Círculo (suele ser estrella: que lleve el color del cliente)
-    # limpios / minimal
+    # limpios / minimal (clasica y gafete dibujan hairlines --acc2 → si el logo
+    # trae un 2º color real, ese detalle fino lo lleva; si no, cae al oro)
     "mv6": ("acc", "carbon"), "mv7": ("acc", "carbon"), "mv8": ("acc", "carbon"),
-    "clasica": ("acc", "carbon"), "mh5": ("acc", "carbon"),
-    "premium": ("acc", "carbon"), "gafete": ("acc", "carbon"),
-    # resto
-    "mv5": ("acc", "prof"), "mh1": ("acc", "prof"),
-    "mh3": ("acc", "prof"), "mh6": ("acc", "prof"),
+    "clasica": ("acc", "acc2"), "mh5": ("acc", "carbon"),
+    "premium": ("acc", "carbon"), "gafete": ("acc", "acc2"),
+    # resto: el 2º rol alimenta --acc2 (acento fino) — v33 usa el secundario
+    # real del logo (o el análogo apagado) en vez del profundo del mismo matiz
+    "mv5": ("acc", "acc2"), "mh1": ("acc", "acc2"),
+    "mh3": ("acc", "acc2"), "mh6": ("acc", "acc2"),
 }
 
 NOMBRES = {
