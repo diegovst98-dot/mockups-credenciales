@@ -37,6 +37,25 @@ def test_toda_llamada_edge_va_oculta():
             "llamada subprocess (línea %d) sin stdin=DEVNULL" % c.lineno
 
 
+def test_captura_va_fuera_de_pantalla():
+    """Defensa en profundidad: aunque SW_HIDE falle (algunas versiones de Edge
+    materializan la ventana un instante en headless), la ventana debe nacer FUERA
+    de cualquier pantalla (--window-position muy negativo)."""
+    import render
+    assert "--window-position=-32000,-32000" in render._FLAGS_OCULTOS
+    # flags que reducen procesos auxiliares (menos ventanas potenciales)
+    for f in ("--disable-gpu", "--no-first-run", "--disable-features=Translate"):
+        assert f in render._FLAGS_OCULTOS, "falta %s en _FLAGS_OCULTOS" % f
+
+
+def test_cascada_empieza_por_headless_clasico():
+    """El modo clásico --headless jamás dibuja ventana en ninguna versión; los
+    =new/=old quedan de fallback."""
+    import render
+    assert render._MODOS_HEADLESS[0] == "--headless"
+    assert set(render._MODOS_HEADLESS) == {"--headless", "--headless=new", "--headless=old"}
+
+
 def test_startupinfo_oculto():
     import render
     si = render._startupinfo_oculto()

@@ -49,11 +49,22 @@ def _startupinfo_oculto():
     return si
 
 
-# Modos headless probados EN CASCADA: `--headless=new --screenshot` es un NO-OP en
-# algunas versiones de Edge (sale rc=0, stderr vacío y NO escribe el PNG); `--headless=old`
-# y el `--headless` clásico sí lo escriben. Probamos los tres y nos quedamos con el primero
-# que produzca el archivo, así funciona sin importar la versión de Edge del vendedor.
-_MODOS_HEADLESS = ("--headless=new", "--headless=old", "--headless")
+# Modos headless probados EN CASCADA. Orden v32 (anti-parpadeo): primero el clásico
+# `--headless` pelado, que JAMÁS dibuja ventana en ninguna versión; `--headless=new`
+# puede materializar una ventana un instante en algunas versiones de Edge (los
+# "pantallazos grises" al generar), así que queda de fallback junto con `=old`
+# (que además es flag desconocido en Edge moderno → abre ventana REAL; último recurso).
+# Nos quedamos con el primero que produzca el archivo (`=new --screenshot` es un NO-OP
+# en algunas versiones: rc=0, stderr vacío y sin PNG).
+_MODOS_HEADLESS = ("--headless", "--headless=new", "--headless=old")
+
+# Defensa en profundidad anti-parpadeo (v32): aunque SW_HIDE/CREATE_NO_WINDOW fallen
+# (los procesos hijos de Chromium ignoran wShowWindow), la ventana nace FUERA de
+# cualquier pantalla y con menos procesos auxiliares. OJO: --window-size NO va aquí
+# (define el viewport del screenshot; se calcula por cara).
+_FLAGS_OCULTOS = ("--window-position=-32000,-32000", "--disable-gpu",
+                  "--no-first-run", "--disable-features=Translate",
+                  "--hide-scrollbars", "--no-sandbox", "--disable-extensions")
 
 # Modo que YA funcionó en esta corrida: las caras siguientes lo usan directo, sin
 # re-probar la cascada. Menos lanzamientos de Edge = más rápido y menos riesgo de
@@ -80,8 +91,7 @@ def _intento_captura(exe, modo, hpath, opath, perfil, w, h, escala):
             os.remove(opath)
         except OSError:
             pass
-    cmd = [exe, modo, "--disable-gpu", "--hide-scrollbars",
-           "--no-sandbox", "--no-first-run", "--disable-extensions",
+    cmd = [exe, modo] + list(_FLAGS_OCULTOS) + [
            "--force-device-scale-factor=%d" % escala,
            "--force-color-profile=srgb",
            "--user-data-dir=" + perfil,
