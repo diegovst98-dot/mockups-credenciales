@@ -255,6 +255,15 @@ def paleta_del_logo(logo):
 
     # peso de diseñador: presencia × (0.25 + saturación media)
     clusters.sort(key=lambda c: c["n"] * (0.25 + c["ss"] / c["n"]), reverse=True)
+    # bicolor 50/50 (iter1 2026-07-06): con dos clusters de presencia comparable
+    # la estructura de la marca es el matiz PROFUNDO y el claro es el acento
+    # (Pepsi = azul dominante, rojo de acento). Margen 0.04 de L para no voltear
+    # pares de profundidad pareja donde el mayoritario manda (Interbank).
+    if len(clusters) > 1 and clusters[1]["n"] >= clusters[0]["n"] * 0.60:
+        l0 = colorsys.rgb_to_hls(*[x / 255.0 for x in color_de(clusters[0])])[1]
+        l1 = colorsys.rgb_to_hls(*[x / 255.0 for x in color_de(clusters[1])])[1]
+        if l1 < l0 - 0.04:
+            clusters[0], clusters[1] = clusters[1], clusters[0]
     primario = color_de(clusters[0])
 
     secundario = None
@@ -325,23 +334,28 @@ def paleta_roles(prim, sec):
       carbon = casi neutro del matiz ("navy" de la marca del cliente)
       claro  = tinte suave (fondos/detalles claros)
       acc2   = acento fino (v33): el 2º color REAL del logo (legible) si existe;
-               si no, un análogo apagado del dominante (matiz +25°, saturación
-               moderada — jamás complementario chillón)
-    Marca NEUTRA (logo negro/gris) → paleta gris elegante sin matiz inventado."""
+               si no, HUMO de la marca (iter1): mismo matiz profundo apagado —
+               el análogo +25° inventaba oliva en amarillos y marrón en rojos
+    Marca NEUTRA (logo negro/gris) → paleta gris elegante sin matiz inventado.
+    Matices LUMINOSOS (amarillo/lima 40–90°, iter1): su versión oscura en el
+    mismo matiz cae en mostaza/oliva sucia → prof/carbon/acc2 corren el matiz
+    ~12° hacia el ámbar (marrón dorado rico, criterio editorial)."""
     acc, _sec2 = paleta_marca(prim, sec)
     if saturacion(acc) < 0.12:
         return {"acc": NEUTRO_ACC, "prof": NEUTRO_PROF, "carbon": NEUTRO_CARBON,
                 "claro": NEUTRO_CLARO, "acc2": NEUTRO_ACC2}
     h, _l, _s = colorsys.rgb_to_hls(*[x / 255.0 for x in acc])
     hs, _ls, ss = colorsys.rgb_to_hls(*[x / 255.0 for x in sec])
+    # matiz luminoso (amarillo/lima): la profundidad corre hacia el ámbar
+    h_prof = (h - 12 / 360.0) % 1.0 if 40 / 360.0 <= h <= 90 / 360.0 else h
     if dif_matiz(h, hs) >= 30 / 360.0 and ss >= 0.18:
         acc2 = marca_legible(sec)                                    # acento REAL del logo
     else:
-        acc2 = marca_legible(_hls_a_rgb((h + 25 / 360.0) % 1.0, 0.36, 0.42))
+        acc2 = marca_legible(_hls_a_rgb(h_prof, 0.30, 0.30))         # humo de la marca
     return {
         "acc": acc,
-        "prof": _hls_a_rgb(h, 0.28, max(0.5, saturacion(acc))),
-        "carbon": _hls_a_rgb(h, 0.16, 0.18),
+        "prof": _hls_a_rgb(h_prof, 0.28, max(0.5, saturacion(acc))),
+        "carbon": _hls_a_rgb(h_prof, 0.16, 0.18),
         "claro": _hls_a_rgb(h, 0.90, 0.35),
         "acc2": acc2,
     }
