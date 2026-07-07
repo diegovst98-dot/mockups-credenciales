@@ -12,9 +12,9 @@ _CSS = """
 /* --- arco superior: anillo curvo que enmarca las esquinas de arriba ---
    se hace con un círculo grande de BORDE grueso (banda) recortado por overflow
    de la tarjeta, dejando una franja curva fina. Filo oscuro detrás + banda primaria. */
-.mv7 .topdark{position:absolute;top:-560px;left:-90px;width:820px;height:820px;
+.mv7 .topdark{position:absolute;top:-604px;left:-90px;width:820px;height:820px;
   border-radius:50%;border:44px solid var(--oscuro);background:transparent}
-.mv7 .topprim{position:absolute;top:-578px;left:-72px;width:820px;height:820px;
+.mv7 .topprim{position:absolute;top:-622px;left:-72px;width:820px;height:820px;
   border-radius:50%;border:40px solid var(--prim);background:transparent}
 /* --- barrido curvo inferior derecho: anillo recortado en la esquina --- */
 .mv7 .botdark{position:absolute;bottom:-690px;right:-300px;width:760px;height:760px;
@@ -22,12 +22,12 @@ _CSS = """
 .mv7 .botprim{position:absolute;bottom:-708px;right:-282px;width:760px;height:760px;
   border-radius:50%;border:42px solid var(--prim);background:transparent}
 /* --- zona segura de contenido (no se enciman con los arcos) --- */
-.mv7 .safe{position:absolute;left:0;right:0;top:0;bottom:150px;z-index:3;
+.mv7 .safe{position:absolute;left:0;right:0;top:0;bottom:132px;z-index:3;
   display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 40px}
-.mv7 .logo{margin-top:248px;height:104px;max-width:62%;object-fit:contain}
-.mv7 .foto{margin-top:34px;width:282px;height:312px;border:6px solid var(--acc);
+.mv7 .logo{margin-top:232px;height:146px;max-width:72%;object-fit:contain}
+.mv7 .foto{margin-top:24px;width:274px;height:300px;border:6px solid var(--acc);
   object-fit:cover;object-position:center 22%;background:#fff}
-.mv7 .name{margin-top:28px;font-weight:800;font-size:48px;line-height:1.04;
+.mv7 .name{margin-top:24px;font-weight:800;font-size:48px;line-height:1.04;
   color:#2b2b2b;max-width:100%;letter-spacing:.005em}
 .mv7 .dni{margin-top:13px;font-weight:800;font-size:37px;color:var(--acc)}
 .mv7 .cargo{margin-top:7px;font-weight:800;font-size:37px;color:#1a1a1a;
