@@ -24,6 +24,7 @@ def test_edge_screenshot_cae_al_modo_que_escribe(monkeypatch):
         return (modo == "--headless=old", "no escribió")
 
     monkeypatch.setattr(render, "_intento_captura", fake)
+    monkeypatch.setattr(render, "_MODO_QUE_FUNCIONA", None)  # aislar del caché de otros tests
     render._edge_screenshot("edge.exe", "h.html", "o.png", "perfil", 100, 100, 2,
                             modos=("--headless=new", "--headless=old", "--headless"))
     assert llamados == ["--headless=new", "--headless=old"]
